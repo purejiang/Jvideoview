@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="JVideoView">
+        <attr name="circleColor" format="reference|color" />
+        <attr name="progressColor" format="reference|color"/>
+        <attr name="textColor" format="reference|color"/>
+        <attr name="textSize" format="float"/>
+        <attr name="startText" format="string"/>
+        <attr name="ingText" format="string"/>
+        <attr name="successText" format="string"/>
+        <attr name="failedText" format="string"/>
+        <attr name="cancelText" format="string"/>
+        <attr name="pauseText" format="string"/>
+        <attr name="showNumProgress" format="boolean"/>
+        <attr name="isNoProgress" format="boolean"/>
+    </declare-styleable>
+</resources>

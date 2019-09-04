@@ -30,3 +30,6 @@ dependencies {
     implementation project(path: ':jvideo')
 
 }
+androidExtensions {
+    experimental = true
+}
