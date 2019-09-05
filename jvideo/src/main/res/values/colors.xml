@@ -2,6 +2,7 @@
 <resources>
     <color name="controller_layout_background">#59000000</color>
     <color name="seek_bar_progress_background">#25000000</color>
+    <color name="video_layout_background">#00000000</color>
     <color name="seek_bar_progress">#E95325</color>
     <color name="seek_bar_progress_second">#DFFFFFFF</color>
     <color name="seek_bar_progress_thumb">#CE3400</color>

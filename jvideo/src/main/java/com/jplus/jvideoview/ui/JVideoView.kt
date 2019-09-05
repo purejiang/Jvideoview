@@ -1,7 +1,10 @@
 package com.jplus.jvideoview.ui
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.SurfaceTexture
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
 import android.os.Build
 import android.support.annotation.RequiresApi
 import android.util.AttributeSet
@@ -53,6 +56,7 @@ class JVideoView : LinearLayout, JVideoViewContract.View, TextureView.SurfaceTex
     private fun initView(context: Context) {
         mContext = context
         mView = LayoutInflater.from(context).inflate(R.layout.layout_jvideo, this)
+        hideOrShowController(true)
     }
 
     private fun initListener() {
@@ -171,7 +175,9 @@ class JVideoView : LinearLayout, JVideoViewContract.View, TextureView.SurfaceTex
         }
 
     }
-
+    override fun setThumbnail(bitmap: Bitmap?) {
+        rl_controller_bar_layout.background = BitmapDrawable(null, bitmap)
+    }
 
     private fun playStateChanged() {
         when (mPresenter?.getPlayState()) {
@@ -205,13 +211,14 @@ class JVideoView : LinearLayout, JVideoViewContract.View, TextureView.SurfaceTex
     }
 
     override fun startPlay(position: Int) {
-        imb_video_play?.setImageResource(R.drawable.ic_video_pause)
         seek_video_progress?.progress = position
+        rl_controller_bar_layout.setBackgroundResource(0)
     }
 
 
     override fun preparedPlay() {
         showLoading(false)
+        hideOrShowController(false)
         tv_video_playing_progress.text =
             JVideoUtil.progress2Time(null) + "/" + JVideoUtil.progress2Time(mPresenter?.getDuration())
         seek_video_progress?.max = mPresenter?.getDuration() ?: 0
@@ -262,7 +269,7 @@ class JVideoView : LinearLayout, JVideoViewContract.View, TextureView.SurfaceTex
     }
 
     override fun playing(position: Int?) {
-        tv_video_playing_progress.text =
+            tv_video_playing_progress.text =
             JVideoUtil.progress2Time(position) + "/" + JVideoUtil.progress2Time(mPresenter?.getDuration())
         seek_video_progress?.progress = position ?: 0
     }

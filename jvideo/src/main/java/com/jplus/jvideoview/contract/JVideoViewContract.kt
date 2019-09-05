@@ -1,5 +1,6 @@
 package com.jplus.jvideoview.contract
 
+import android.graphics.Bitmap
 import android.graphics.SurfaceTexture
 import android.widget.LinearLayout
 
@@ -27,6 +28,10 @@ interface JVideoViewContract {
          * 播放准备就绪
          */
         fun preparedPlay()
+        /**
+         * 缩略图
+         */
+        fun setThumbnail(bitmap:Bitmap?)
         /**
          * 开始播放
          * @param position 可选任意位置，默认为初始位置

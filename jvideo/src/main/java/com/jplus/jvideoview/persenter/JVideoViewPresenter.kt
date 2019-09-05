@@ -2,11 +2,9 @@ package com.jplus.jvideoview.persenter
 
 import android.content.Context
 import android.content.pm.ActivityInfo
+import android.graphics.Bitmap
 import android.graphics.SurfaceTexture
-import android.media.AudioAttributes
-import android.media.AudioFocusRequest
-import android.media.AudioManager
-import android.media.MediaPlayer
+import android.media.*
 import android.os.Build
 import android.os.Handler
 import android.support.v7.app.AppCompatActivity
@@ -270,6 +268,7 @@ class JVideoViewPresenter(
     }
 
     private fun loadVideo(surface: Surface, urls: List<String>) {
+        mView.setThumbnail(getNetVideoBitmap(urls[0]))
         mPlayer?.run {
             setDataSource(urls[0])
             //设置渲染画板
@@ -398,6 +397,21 @@ class JVideoViewPresenter(
         mPlayer = null
     }
 
+    private  fun getNetVideoBitmap(videoUrl:String):Bitmap? {
+        var bitmap:Bitmap ?= null
+        val retriever =  MediaMetadataRetriever()
+        try {
+            //根据url获取缩略图
+            retriever.setDataSource(videoUrl,  HashMap())
+            //获得第一帧图片
+            bitmap = retriever.frameAtTime
+        } catch ( e:IllegalArgumentException) {
+            e.printStackTrace()
+        } finally {
+            retriever.release()
+        }
+        return bitmap
+    }
 
 
     inner class MyRunnable : Runnable {
@@ -412,4 +426,5 @@ class JVideoViewPresenter(
             mHandler.postDelayed(this, 200)
         }
     }
+
 }
