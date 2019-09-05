@@ -20,6 +20,7 @@ import com.jplus.jvideoview.contract.JVideoViewContract
 import com.jplus.jvideoview.model.JVideoState.PlayMode
 import com.jplus.jvideoview.model.JVideoState.PlayState
 import com.jplus.jvideoview.utils.JVideoUtil.Companion.dt2progress
+import kotlin.math.floor
 
 
 /**
@@ -32,6 +33,8 @@ class JVideoViewPresenter(
     private val mUrlMap: Map<String, String>
 ) :
     JVideoViewContract.Presenter {
+
+
     private var mPlayer: MediaPlayer? = null
     private var mPlayState = PlayState.STATE_IDLE
     private var mPlayMode = PlayMode.MODE_NORMAL
@@ -41,11 +44,16 @@ class JVideoViewPresenter(
     private var mRunnable: MyRunnable? = null
     private var mParams: LinearLayout.LayoutParams? = null
     private var mAudioManager: AudioManager? = null
+    private var mVolumeProgress = 0
+    private var mVideoProgress = 0
+    private var mLightProgress = 0.0
+    
     private fun initMediaPlayer() {
         mPlayer = mPlayer ?: MediaPlayer()
         mView.setPresenter(this)
         Log.d("pipa", "initMediaPlayer:$mPlayer")
         initVolume()
+
     }
 
     private fun initVolume() {
@@ -131,16 +139,68 @@ class JVideoViewPresenter(
     }
 
     override fun setLight(distance: Float) {
-
+        if (mLightProgress == 0.0) {
+            mLightProgress = (mContext as AppCompatActivity).window.attributes.screenBrightness.toDouble()
+        }
+        var light = mLightProgress + dt2progress(distance, 1, (mView as LinearLayout).height, 1.0)
+        when {
+            light in 0.0..1.0 -> {
+            }
+            light < 0.0 -> light = 0.0
+            else ->  light = 1.0
+        }
+        val params =(mContext as AppCompatActivity).window.attributes
+        params.screenBrightness = light.toFloat()
+        mContext.window.attributes = params
+        mView.setLight(floor(light*100).toInt())
     }
 
     override fun setVolume(distance: Float) {
-        if (getVolume(false) in 0..getVolume(true)) {
-            val volume = getVolume(false) + dt2progress(-distance, getVolume(true), (mView as LinearLayout).height, 1.0)
-            Log.d("piap","max:"+getVolume(true)+",volume:"+volume+",distance:"+ distance+",height:"+(mView as LinearLayout).height)
-            mAudioManager?.setStreamVolume(AudioManager.STREAM_MUSIC, volume, 0)
-            mView.setVolume(volume * 100 / getVolume(true))
+        if (mVolumeProgress == 0) {
+            mVolumeProgress = getVolume(false)
         }
+        val volume = mVolumeProgress + floor(dt2progress(distance, getVolume(true), (mView as LinearLayout).height, 1.0)).toInt()
+        when {
+            volume in 0..getVolume(true) -> {
+                mAudioManager?.setStreamVolume(AudioManager.STREAM_MUSIC, volume, 0)
+                mView.setVolume(volume * 100 / getVolume(true))
+            }
+            volume < 0 -> mView.setVolume(0)
+            else -> mView.setVolume(100)
+        }
+
+    }
+
+    override fun endLight() {
+        mLightProgress = (mContext as AppCompatActivity).window.attributes.screenBrightness.toDouble()
+        mView.hideLight()
+    }
+
+    override fun endVolume() {
+        mVolumeProgress = getVolume(false)
+        mView.hideVolume()
+    }
+    /**
+     * 滑动屏幕快进或者后退
+     * @param distance 滑动的距离
+     */
+    override fun forwardOrBackVideo(distance: Float) {
+        if (mVideoProgress == 0) {
+            mVideoProgress = getPosition()
+        }
+        val progress = mVideoProgress + floor(dt2progress(distance, getDuration(), (mView as LinearLayout).width, 2.0)).toInt()
+        when {
+            progress in 0..getDuration() -> {
+                seekToPlay(progress)
+            }
+            progress < 0 -> seekToPlay(0)
+            else -> seekToPlay(getDuration())
+        }
+
+    }
+    override fun endForwardOrBack() {
+        mVideoProgress = getPosition()
+        mView.hideForwardOrBack()
     }
 
     override fun entrySpecialMode(mode: Int, view: LinearLayout) {
@@ -338,19 +398,7 @@ class JVideoViewPresenter(
         mPlayer = null
     }
 
-    /**
-     * 滑动屏幕快进或者后退
-     * @param distance 滑动的距离
-     */
-    override fun forwardOrBackVideo(distance: Float) {
-        val progress = getPosition() + dt2progress(distance, getDuration(), (mView as LinearLayout).width, 0.3)
-        seekToPlay(progress)
-//            when {
-//                progress >= getDuration() -> seekToPlay(progress)
-//                progress <= 0 -> startPlay()
-//                else -> seekToPlay(progress)
-//            }
-    }
+
 
     inner class MyRunnable : Runnable {
         override fun run() {

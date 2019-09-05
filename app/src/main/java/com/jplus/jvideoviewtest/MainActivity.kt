@@ -1,15 +1,14 @@
-package com.jplus.jvideoview
+package com.jplus.jvideoviewtest
 
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import com.jplus.jvideoview.persenter.JVideoViewPresenter
 import kotlinx.android.synthetic.main.activity_main.*
-import android.view.ViewGroup
 
 
 
 class MainActivity : AppCompatActivity() {
-   private  var presenter:JVideoViewPresenter?=null
+   private  var presenter: JVideoViewPresenter?=null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)

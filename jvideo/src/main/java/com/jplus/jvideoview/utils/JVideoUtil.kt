@@ -4,7 +4,7 @@ import android.content.Context
 import android.view.WindowManager
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.math.roundToInt
+import kotlin.math.floor
 
 /**
  * @author JPlus
@@ -32,8 +32,8 @@ class JVideoUtil {
          * @param proportion 一次屏幕的滑动所占总进度的比例
          * @param all 总高度/总宽度
          */
-        fun dt2progress(distance: Float, duration: Int, all: Int, proportion: Double): Int {
-            return (distance * duration * proportion / all).roundToInt()
+        fun dt2progress(distance: Float, duration: Int, all: Int, proportion: Double): Double {
+            return (distance * duration * proportion / all)
         }
 
         /**

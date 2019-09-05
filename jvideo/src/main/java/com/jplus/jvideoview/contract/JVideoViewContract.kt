@@ -12,7 +12,7 @@ interface JVideoViewContract {
         /**
          * 设置presenter
          */
-        fun setPresenter(presenter:Presenter)
+        fun setPresenter(presenter: Presenter)
         /**
          * 缓冲加载中/播放准备中
          * @param isShow 是否显示
@@ -69,6 +69,18 @@ interface JVideoViewContract {
          */
         fun setVolume(volumePercent:Int)
         /**
+         * 调节亮度结束
+         */
+        fun hideLight()
+        /**
+         * 调节音量结束
+         */
+        fun hideVolume()
+        /**
+         * 调节进度结束
+         */
+        fun hideForwardOrBack()
+        /**
          * 进入特殊模式
          * @param mode 全屏/窗口
          */
@@ -118,15 +130,27 @@ interface JVideoViewContract {
          */
         fun restart()
         /**
-         * 调节亮度
+         * 调节亮度,不断调用
          * @param distance 屏幕上滑动的距离
          */
         fun setLight(distance: Float)
         /**
-         * 调节音量
+         * 调节音量,不断调用
          * @param distance 屏幕上滑动的距离
          */
         fun setVolume(distance: Float)
+        /**
+         * 调节亮度结束
+         */
+        fun endLight()
+        /**
+         * 调节音量结束
+         */
+        fun endVolume()
+        /**
+         * 调节进度结束
+         */
+        fun endForwardOrBack()
         /**
          * 进入特殊模式
          * @param mode 全屏/窗口
