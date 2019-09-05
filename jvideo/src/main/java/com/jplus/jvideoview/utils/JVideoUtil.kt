@@ -35,7 +35,6 @@ class JVideoUtil {
         fun dt2progress(distance: Float, duration: Int, all: Int, proportion: Double): Double {
             return (distance * duration * proportion / all)
         }
-
         /**
          * 获取屏幕宽度
          * @param context 上下文

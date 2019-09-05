@@ -87,6 +87,7 @@ class JVideoView : LinearLayout, JVideoViewContract.View, TextureView.SurfaceTex
 
                 override fun onStopTrackingTouch(seekBar: SeekBar) {
                     mPresenter?.seekToPlay(seekBar.progress)
+                    hideForwardOrBack()
                 }
 
             })
@@ -340,5 +341,4 @@ class JVideoView : LinearLayout, JVideoViewContract.View, TextureView.SurfaceTex
         Log.d("pipa", "onSurfaceTextureAvailable")
         mPresenter?.openMediaPlayer(surface, width, height)
     }
-
 }

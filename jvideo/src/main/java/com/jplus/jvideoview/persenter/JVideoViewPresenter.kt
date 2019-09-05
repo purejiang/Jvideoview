@@ -172,13 +172,13 @@ class JVideoViewPresenter(
     }
 
     override fun endLight() {
-        mLightProgress = (mContext as AppCompatActivity).window.attributes.screenBrightness.toDouble()
         mView.hideLight()
+        mLightProgress = 0.0
     }
 
     override fun endVolume() {
-        mVolumeProgress = getVolume(false)
         mView.hideVolume()
+        mVolumeProgress = 0
     }
     /**
      * 滑动屏幕快进或者后退
@@ -199,8 +199,8 @@ class JVideoViewPresenter(
 
     }
     override fun endForwardOrBack() {
-        mVideoProgress = getPosition()
         mView.hideForwardOrBack()
+        mVideoProgress = 0
     }
 
     override fun entrySpecialMode(mode: Int, view: LinearLayout) {

@@ -5,8 +5,10 @@ package com.jplus.jvideoview.model
  * @date 2019/8/30.
  */
 class JVideoState {
-
-        class PlayState{
+    /**
+     * 播放器状态
+     */
+    class PlayState{
             companion object{
                 /**
                  * 播放错误
@@ -50,6 +52,10 @@ class JVideoState {
                 val STATE_COMPLETED = 8
             }
         }
+
+    /**
+     * 播放模式
+     */
     class PlayMode{
         companion object{
             /**
@@ -66,6 +72,10 @@ class JVideoState {
             val MODE_TINY_WINDOW = 12
         }
     }
+
+    /**
+     * 调节模式
+     */
     class PlayAdjust{
         companion object{
             /**
