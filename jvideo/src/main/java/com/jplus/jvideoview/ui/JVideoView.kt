@@ -4,13 +4,11 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.SurfaceTexture
 import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.Drawable
 import android.os.Build
 import android.support.annotation.RequiresApi
 import android.util.AttributeSet
 import android.util.Log
 import android.view.LayoutInflater
-import android.view.MotionEvent
 import android.view.TextureView
 import android.view.View
 import android.widget.LinearLayout
@@ -19,10 +17,10 @@ import com.jplus.jvideoview.R
 import com.jplus.jvideoview.contract.JVideoViewContract
 import com.jplus.jvideoview.model.JVideoState
 import com.jplus.jvideoview.model.JVideoState.PlayState
+import com.jplus.jvideoview.model.JVideoState.PlayAdjust
 import com.jplus.jvideoview.utils.JVideoUtil
 import kotlinx.android.synthetic.main.layout_controller.view.*
 import kotlinx.android.synthetic.main.layout_jvideo.view.*
-import kotlin.math.abs
 
 
 /**
@@ -30,51 +28,54 @@ import kotlin.math.abs
  * @date 2019/8/30.
  */
 @RequiresApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
-class JVideoView : LinearLayout, JVideoViewContract.View, TextureView.SurfaceTextureListener {
+class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTextureListener {
 
 
     private var mPresenter: JVideoViewContract.Presenter? = null
-    private var mIsShowControllerView = false
     private var mView: View? = null
     private var mContext: Context? = null
-    private var mAdjustWay = JVideoState.PlayAdjust.ADJUST_VIDEO
-    private var mDownX: Float = 0.0f
-    private var mDownY: Float = 0.0f
+
 
     constructor(context: Context) : super(context) {
-        initView(context)
+        initControllerView(context)
     }
 
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
-        initView(context)
+        initControllerView(context)
     }
 
     constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(context, attrs, defStyleAttr) {
-        initView(context)
+        initControllerView(context)
     }
 
-    private fun initView(context: Context) {
+    private fun initControllerView(context: Context) {
         mContext = context
         mView = LayoutInflater.from(context).inflate(R.layout.layout_jvideo, this)
-        hideOrShowController(true)
     }
 
     private fun initListener() {
         ttv_video_player.surfaceTextureListener = this
+
         mPresenter?.run {
-
-            img_video_back.setOnClickListener {
-                Log.d("pipa", "img_video_back.setOnClickListener")
-                mPresenter?.exitMode(true)
-            }
-
-            imb_video_play.setOnClickListener {
+            imb_video_center_play.setOnClickListener {
                 Log.d("pipa", "state:${getPlayState()}")
                 if (getPlayState() == PlayState.STATE_PLAYING) {
                     pausePlay()
                 } else {
                     if (getPlayState() == PlayState.STATE_PAUSED) {
-                        restart()
+                        continuePlay()
+                    } else if (getPlayState() == PlayState.STATE_PREPARED) {
+                        startPlay()
+                    }
+                }
+            }
+            imb_video_control_play.setOnClickListener {
+                Log.d("pipa", "state:${getPlayState()}")
+                if (getPlayState() == PlayState.STATE_PLAYING) {
+                    pausePlay()
+                } else {
+                    if (getPlayState() == PlayState.STATE_PAUSED) {
+                        continuePlay()
                     } else if (getPlayState() == PlayState.STATE_PREPARED) {
                         startPlay()
                     }
@@ -82,148 +83,66 @@ class JVideoView : LinearLayout, JVideoViewContract.View, TextureView.SurfaceTex
             }
             seek_video_progress?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
-
+                    Log.d("pipa","seekbar,progress:"+progress)
+                    mPresenter?.seekBarPlay(progress)
                 }
 
                 override fun onStartTrackingTouch(seekBar: SeekBar) {
-//                    mPresenter?.pausePlay()
+
                 }
 
                 override fun onStopTrackingTouch(seekBar: SeekBar) {
+                    Log.d("pipa","onStopTrackingTouch,progress:"+seekBar.progress)
                     mPresenter?.seekToPlay(seekBar.progress)
-                    hideForwardOrBack()
                 }
 
             })
         }
         ly_video_center.setOnTouchListener { v, event ->
             //坐标
-            val ex = event.x
-            val ey = event.y
-
-            when (event.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    mDownX = ex
-                    mDownY = ey
-                    val width = JVideoUtil.getPhoneDisplayWidth(mContext!!)
-                    mAdjustWay = when {
-                        ex >= 0.8 * width -> {
-                            JVideoState.PlayAdjust.ADJUST_VOLUME
-                        }
-                        ex <= 0.2 * width -> {
-                            JVideoState.PlayAdjust.ADJUST_LIGHT
-                        }
-                        else -> JVideoState.PlayAdjust.ADJUST_VIDEO
-                    }
-                }
-                MotionEvent.ACTION_MOVE -> {
-//                    Log.d("pipa", "action_move:X=" + event.x + ",y:" + event.y)
-                    if (abs(event.x - mDownX) < 5 && abs(event.y - mDownY) < 5) {
-
-                    } else {
-                        val deltaX = ex - mDownX
-                        val deltaY = ey - mDownY
-                        when (mAdjustWay) {
-                            JVideoState.PlayAdjust.ADJUST_VOLUME -> {
-                                //音量调节
-                                mPresenter?.setVolume(-deltaY)
-                            }
-                            JVideoState.PlayAdjust.ADJUST_LIGHT -> {
-                                // 亮度调节
-                                mPresenter?.setLight(-deltaY)
-                            }
-                            else -> {
-                                //快进/后退
-                                mPresenter?.forwardOrBackVideo(deltaX)
-                            }
-                        }
-                    }
-                }
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    //通过起始点坐标判断滑动是 快进/后退、亮度调节、音量调节
-                    if (abs(event.x - mDownX) < 5 && abs(event.y - mDownY) < 5) {
-                        hideOrShowController(!mIsShowControllerView)
-                    } else {
-                        when (mAdjustWay) {
-                            JVideoState.PlayAdjust.ADJUST_VOLUME -> {
-                                //音量调节结束
-                                mPresenter?.endVolume()
-                            }
-                            JVideoState.PlayAdjust.ADJUST_LIGHT -> {
-                                // 亮度调节结束
-                                mPresenter?.endLight()
-                            }
-                            else -> {
-                                //快进/后退
-                                mPresenter?.endForwardOrBack()
-                            }
-                        }
-                    }
-
-                }
-            }
+            mPresenter?.slideJudge(v, event)
             true
         }
         img_screen_change.setOnClickListener {
-            val state = mPresenter?.getPlayMode()
-            if (state == JVideoState.PlayMode.MODE_NORMAL) {
-                mPresenter?.entrySpecialMode(JVideoState.PlayMode.MODE_FULL_SCREEN, this)
-            } else if (state == JVideoState.PlayMode.MODE_FULL_SCREEN) {
-                mPresenter?.entrySpecialMode(JVideoState.PlayMode.MODE_NORMAL, this)
-            }
-
+            mPresenter?.entrySpecialMode(this)
         }
 
     }
+
     override fun setThumbnail(bitmap: Bitmap?) {
         rl_controller_bar_layout.background = BitmapDrawable(null, bitmap)
     }
 
-    private fun playStateChanged() {
-        when (mPresenter?.getPlayState()) {
-            PlayState.STATE_IDLE -> {
-            }
-            PlayState.STATE_PREPARING -> {
-
-            }
-            PlayState.STATE_PREPARED -> {
-
-            }
-            PlayState.STATE_PLAYING -> {
-
-            }
-            PlayState.STATE_PAUSED -> {
-
-            }
-        }
-    }
-
-    override fun hideOrShowController(isShow: Boolean) {
-        mIsShowControllerView = isShow
-        ly_video_title.visibility = if (isShow) GONE else VISIBLE
-        ly_video_controller.visibility = if (isShow) GONE else VISIBLE
-        imb_video_play.visibility = if (isShow) GONE else VISIBLE
-    }
 
     override fun setPresenter(presenter: JVideoViewContract.Presenter) {
         mPresenter = presenter
         initListener()
     }
 
-    override fun startPlay(position: Int) {
+    override fun setTitle(title: String) {
+        tv_video_title.text = title
+    }
+
+    override fun preparedVideo(videoTime:String, max:Int) {
+        showLoading(false)
+        hideOrShowController(true)
+        tv_video_playing_progress.text = videoTime
+        seek_video_progress?.max = max
+        if (imb_video_center_play.visibility == GONE) {
+            imb_video_center_play.visibility = VISIBLE
+        }
+        imb_video_control_play.setImageResource(R.drawable.ic_video_pause)
+    }
+
+    override fun startVideo(position: Int) {
         seek_video_progress?.progress = position
         rl_controller_bar_layout.setBackgroundResource(0)
+        if (imb_video_center_play.visibility == VISIBLE) {
+            imb_video_center_play.visibility = GONE
+        }
+        imb_video_control_play.setImageResource(R.drawable.ic_video_continue)
     }
 
-
-    override fun preparedPlay() {
-        showLoading(false)
-        hideOrShowController(false)
-        tv_video_playing_progress.text =
-            JVideoUtil.progress2Time(null) + "/" + JVideoUtil.progress2Time(mPresenter?.getDuration())
-        seek_video_progress?.max = mPresenter?.getDuration() ?: 0
-        imb_video_play.setImageResource(R.drawable.ic_video_play)
-    }
 
     override fun buffering(percent: Int) {
         seek_video_progress.secondaryProgress = if (percent == 100) {
@@ -240,79 +159,99 @@ class JVideoView : LinearLayout, JVideoViewContract.View, TextureView.SurfaceTex
         }
     }
 
-    override fun showLoading(isShow: Boolean) {
-        Log.d("pipa", "loading...")
-        if (isShow) {
-            imb_video_play.visibility = GONE
-            pgb_video_loading.visibility = VISIBLE
-        } else {
-            imb_video_play.visibility = VISIBLE
-            pgb_video_loading.visibility = GONE
+    override fun loadingVideo() {
+        showLoading(true)
+    }
+
+    override fun continueVideo() {
+        if (imb_video_center_play.visibility == VISIBLE) {
+            imb_video_center_play.visibility = GONE
         }
+        imb_video_control_play.setImageResource(R.drawable.ic_video_continue)
     }
 
-    override fun restart() {
-        imb_video_play?.setImageResource(R.drawable.ic_video_pause)
+    override fun pauseVideo() {
+        if (imb_video_center_play.visibility == GONE) {
+            imb_video_center_play.visibility = VISIBLE
+        }
+        imb_video_control_play.setImageResource(R.drawable.ic_video_pause)
     }
 
-    override fun seekToPlay(position: Int) {
-        tv_video_playing_progress.text =
-            JVideoUtil.progress2Time(position) + "/" + JVideoUtil.progress2Time(mPresenter?.getDuration())
+
+    override fun playing(videoTime:String, position: Int) {
+        tv_video_playing_progress.text = videoTime
         seek_video_progress?.progress = position
+    }
+
+
+
+    override fun completedVideo() {
+
+    }
+
+    override fun setLightUi(light: Int) {
         if (tv_progress_center_top.visibility == GONE) {
             tv_progress_center_top.visibility = VISIBLE
         }
-        mPresenter?.let {
-            tv_progress_center_top.text =
-                "进度：" + JVideoUtil.progress2Time(position) + "/" + JVideoUtil.progress2Time(mPresenter?.getDuration())
-        }
+        tv_progress_center_top.text = "亮度：$light%"
     }
 
-    override fun playing(position: Int?) {
-            tv_video_playing_progress.text =
-            JVideoUtil.progress2Time(position) + "/" + JVideoUtil.progress2Time(mPresenter?.getDuration())
-        seek_video_progress?.progress = position ?: 0
-    }
-
-    override fun pausePlay() {
-        imb_video_play?.setImageResource(R.drawable.ic_video_play)
-    }
-
-    override fun completedPlay() {
-
-    }
-
-    override fun setLight(light: Int) {
+    override fun setVolumeUi(volumePercent: Int) {
         if (tv_progress_center_top.visibility == GONE) {
             tv_progress_center_top.visibility = VISIBLE
         }
-        mPresenter?.let {
-            tv_progress_center_top.text = "亮度：$light%"
-        }
+        tv_progress_center_top.text = "音量：$volumePercent%"
     }
 
-    override fun setVolume(volumePercent: Int) {
+    override fun seekToVideo(videoTime:String, position: Int) {
+        tv_video_playing_progress.text = videoTime
+        seek_video_progress?.progress = position
+    }
+
+    override fun slidePlayVideo(videoTime: String, position: Int) {
         if (tv_progress_center_top.visibility == GONE) {
             tv_progress_center_top.visibility = VISIBLE
         }
-        mPresenter?.let {
-            tv_progress_center_top.text = "音量：$volumePercent%"
+        tv_progress_center_top.text = "进度：$videoTime"
+        tv_video_playing_progress.text = videoTime
+        seek_video_progress?.progress = position
+    }
+
+    private fun showLoading(isShow:Boolean){
+        if (isShow) {
+            if (pgb_video_loading.visibility == GONE) {
+                pgb_video_loading.visibility = VISIBLE
+            }
+        } else {
+            if (pgb_video_loading.visibility == VISIBLE) {
+                pgb_video_loading.visibility = GONE
+            }
+        }
+    }
+    private fun showAdjustUi(adjustMode: Int, percent: Int) {
+        if (tv_progress_center_top.visibility == GONE) {
+            tv_progress_center_top.visibility = VISIBLE
+        }
+        when (adjustMode) {
+            PlayAdjust.ADJUST_LIGHT -> {
+                mPresenter?.let {
+                    tv_progress_center_top.text = "亮度：$percent%"
+                }
+            }
+            PlayAdjust.ADJUST_VOLUME -> {
+                mPresenter?.let {
+                    tv_progress_center_top.text = "音量：$percent%"
+                }
+            }
+            PlayAdjust.ADJUST_VIDEO -> {
+                mPresenter?.let {
+                    tv_progress_center_top.text = "进度：" + JVideoUtil.progress2Time(percent)
+                }
+            }
         }
     }
 
-    override fun hideLight() {
-        if (tv_progress_center_top.visibility == VISIBLE) {
-            tv_progress_center_top.visibility = GONE
-        }
-    }
-
-    override fun hideVolume() {
-        if (tv_progress_center_top.visibility == VISIBLE) {
-            tv_progress_center_top.visibility = GONE
-        }
-    }
-
-    override fun hideForwardOrBack() {
+    override fun hideAdjustUi() {
         if (tv_progress_center_top.visibility == VISIBLE) {
             tv_progress_center_top.visibility = GONE
         }
@@ -322,12 +261,17 @@ class JVideoView : LinearLayout, JVideoViewContract.View, TextureView.SurfaceTex
 
     }
 
-    override fun errorPlay() {
+    override fun errorVideo() {
 
     }
 
     override fun exitMode() {
 
+    }
+
+    override fun hideOrShowController(isShow: Boolean) {
+        ly_video_title.visibility = if (isShow) VISIBLE else GONE
+        ly_video_controller.visibility = if (isShow) VISIBLE else GONE
     }
 
     override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture?, width: Int, height: Int) {

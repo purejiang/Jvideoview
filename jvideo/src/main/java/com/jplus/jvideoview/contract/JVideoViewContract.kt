@@ -2,6 +2,8 @@ package com.jplus.jvideoview.contract
 
 import android.graphics.Bitmap
 import android.graphics.SurfaceTexture
+import android.view.MotionEvent
+import android.view.View
 import android.widget.LinearLayout
 
 /**
@@ -9,16 +11,20 @@ import android.widget.LinearLayout
  * @date 2019/8/30.
  */
 interface JVideoViewContract {
-    interface View {
+    interface Views {
         /**
          * 设置presenter
          */
         fun setPresenter(presenter: Presenter)
         /**
-         * 缓冲加载中/播放准备中
-         * @param isShow 是否显示
+         * 设置播放标题
+         * @param title 标题
          */
-        fun showLoading(isShow:Boolean)
+        fun setTitle(title:String)
+        /**
+         * 播放器loading中
+         */
+        fun loadingVideo()
         /**
          * 缓冲中
          *@param percent 百分比
@@ -26,8 +32,10 @@ interface JVideoViewContract {
         fun buffering(percent:Int)
         /**
          * 播放准备就绪
+         * @param videoTime 播放时间
+         * @param max 最大进度
          */
-        fun preparedPlay()
+        fun preparedVideo(videoTime:String, max:Int)
         /**
          * 缩略图
          */
@@ -36,55 +44,51 @@ interface JVideoViewContract {
          * 开始播放
          * @param position 可选任意位置，默认为初始位置
          */
-        fun startPlay(position: Int = 0)
+        fun startVideo(position: Int = 0)
         /**
          * 播放中
+         *  @param videoTime 播放时间
          * @param position 播放位置
          */
-        fun playing(position: Int? = 0)
+        fun playing(videoTime:String, position: Int)
         /**
-         * seek到某个位置继续播放
+         * seek到某个位置播放
+         * @param videoTime 播放时间
          * @param position 任意位置
          */
-        fun seekToPlay(position: Int)
+        fun seekToVideo(videoTime:String, position: Int)
+        /**
+         * 手势滑动快进/后退
+         * @param videoTime 播放时间
+         * @param position 任意位置
+         */
+        fun slidePlayVideo(videoTime:String, position: Int)
         /**
          * 暂停播放
          */
-        fun pausePlay()
+        fun pauseVideo()
+        /**
+         * 继续播放
+         */
+        fun continueVideo()
         /**
          * 播放完成
          */
-        fun completedPlay()
-        /**
-         * 重新播放
-         */
-        fun restart()
+        fun completedVideo()
         /**
          * 播放错误
          */
-        fun errorPlay()
+        fun errorVideo()
         /**
          * 调节亮度
          * @param light 亮度
          */
-        fun setLight(light:Int)
+        fun setLightUi(light:Int)
         /**
          * 调节音量
          * @param volumePercent 音量百分比
          */
-        fun setVolume(volumePercent:Int)
-        /**
-         * 调节亮度结束
-         */
-        fun hideLight()
-        /**
-         * 调节音量结束
-         */
-        fun hideVolume()
-        /**
-         * 调节进度结束
-         */
-        fun hideForwardOrBack()
+        fun setVolumeUi(volumePercent:Int)
         /**
          * 进入特殊模式
          * @param mode 全屏/窗口
@@ -99,6 +103,10 @@ interface JVideoViewContract {
          * @param isShow 是否显示
          */
         fun hideOrShowController(isShow:Boolean)
+        /**
+         * 隐藏进度控制ui
+         */
+        fun hideAdjustUi()
 
     }
 
@@ -126,41 +134,40 @@ interface JVideoViewContract {
          */
         fun pausePlay()
         /**
-         * 快进或者后退
+         * 继续播放
+         */
+        fun continuePlay()
+        /**
+         * 手势判断
          * @param distance 屏幕上滑动的距离
          */
-        fun forwardOrBackVideo(distance: Float)
+        fun slideJudge(view:View, event:MotionEvent)
         /**
-         * 重新播放
+         * 进度条拖动快进/后退
+         * @param position 进度条进度
          */
-        fun restart()
-        /**
-         * 调节亮度,不断调用
-         * @param distance 屏幕上滑动的距离
-         */
-        fun setLight(distance: Float)
-        /**
-         * 调节音量,不断调用
-         * @param distance 屏幕上滑动的距离
-         */
-        fun setVolume(distance: Float)
-        /**
-         * 调节亮度结束
-         */
-        fun endLight()
-        /**
-         * 调节音量结束
-         */
-        fun endVolume()
-        /**
-         * 调节进度结束
-         */
-        fun endForwardOrBack()
+        fun seekBarPlay(position: Int)
+//        /**
+//         * 调节亮度,不断调用
+//         * @param distance 屏幕上滑动的距离
+//         */
+//        fun setLight(distance: Float)
+//        /**
+//         * 调节音量,不断调用
+//         * @param distance 屏幕上滑动的距离
+//         */
+//        fun setVolume(distance: Float)
+//        /**
+//         * 保存调节进度
+//         * @param adjustMode 调节的形式
+//         */
+//        fun saveAdjust(adjustMode: Int)
+
         /**
          * 进入特殊模式
-         * @param mode 全屏/窗口
+         * @param view 播放器view
          */
-        fun entrySpecialMode(mode:Int, view:LinearLayout)
+        fun entrySpecialMode(view:LinearLayout)
         /**
          * 退出当前模式
          * @param isBackNormal  是否恢复普通模式

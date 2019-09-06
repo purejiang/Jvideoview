@@ -7,16 +7,16 @@
     <LinearLayout
             android:id="@+id/ly_video_title"
             android:layout_width="match_parent"
-            android:layout_height="30dp"
-            android:background="@color/controller_layout_background"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_top_controller_trans"
             android:gravity="center_vertical"
+            android:visibility="gone"
             android:orientation="horizontal">
         <ImageButton
-                android:id="@+id/img_video_back"
+                android:id="@+id/imb_video_back"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:src="@drawable/ic_back"
-                android:background="@android:color/transparent"
+
         />
         <TextView
                 android:id="@+id/tv_video_title"
@@ -45,7 +45,7 @@
                     android:gravity="center"
                     android:text="进度"
                     android:visibility="gone"
-                    android:background="@color/controller_layout_background"/>
+                    android:background="@color/video_transparent_bg_dark_light"/>
 
         </LinearLayout>
         <LinearLayout
@@ -54,10 +54,11 @@
                 android:gravity="center"
                 android:layout_weight="1">
             <ImageButton
-                    android:id="@+id/imb_video_play"
+                    android:id="@+id/imb_video_center_play"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:padding="8dp"
+                    android:src="@drawable/ic_video_pause"
                     android:background="@android:color/transparent"
             />
             <ProgressBar
@@ -77,23 +78,31 @@
     <LinearLayout
             android:id="@+id/ly_video_controller"
             android:layout_width="match_parent"
-            android:layout_height="30dp"
-            android:background="@color/controller_layout_background"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_bottom_controller_trans"
             android:padding="5dp"
+            android:visibility="gone"
             android:gravity="center_vertical"
             android:orientation="horizontal">
+        <ImageButton
+                android:id="@+id/imb_video_control_play"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@color/video_transparent_bg"
+                android:textSize="12sp"/>
         <TextView
                 android:id="@+id/tv_video_playing_progress"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textColor="@android:color/white"
+                android:text="00:00/00:00"
                 android:textSize="12sp"/>
         <SeekBar
                 android:id="@+id/seek_video_progress"
                 android:layout_weight="1"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:background="@android:color/transparent"
+                android:background="@color/video_transparent_bg"
                 android:maxHeight="5dp"
                 android:minHeight="5dp"
                 android:thumbTint="@color/seek_bar_progress_thumb"
