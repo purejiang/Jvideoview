@@ -2,6 +2,7 @@ package com.jplus.jvideoview.ui
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Color
 import android.graphics.SurfaceTexture
 import android.graphics.drawable.BitmapDrawable
 import android.os.Build
@@ -55,7 +56,7 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
 
     private fun initListener() {
         ttv_video_player.surfaceTextureListener = this
-
+        rl_controller_bar_layout
         mPresenter?.run {
             imb_video_center_play.setOnClickListener {
                 Log.d("pipa", "state:${getPlayState()}")
@@ -205,7 +206,6 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
 
     override fun seekToVideo(videoTime:String, position: Int) {
         tv_video_playing_progress.text = videoTime
-        seek_video_progress?.progress = position
     }
 
     override fun slidePlayVideo(videoTime: String, position: Int) {
@@ -225,28 +225,6 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
         } else {
             if (pgb_video_loading.visibility == VISIBLE) {
                 pgb_video_loading.visibility = GONE
-            }
-        }
-    }
-    private fun showAdjustUi(adjustMode: Int, percent: Int) {
-        if (tv_progress_center_top.visibility == GONE) {
-            tv_progress_center_top.visibility = VISIBLE
-        }
-        when (adjustMode) {
-            PlayAdjust.ADJUST_LIGHT -> {
-                mPresenter?.let {
-                    tv_progress_center_top.text = "亮度：$percent%"
-                }
-            }
-            PlayAdjust.ADJUST_VOLUME -> {
-                mPresenter?.let {
-                    tv_progress_center_top.text = "音量：$percent%"
-                }
-            }
-            PlayAdjust.ADJUST_VIDEO -> {
-                mPresenter?.let {
-                    tv_progress_center_top.text = "进度：" + JVideoUtil.progress2Time(percent)
-                }
             }
         }
     }

@@ -3,7 +3,8 @@
               android:orientation="vertical"
               android:id="@+id/rl_controller_bar_layout"
               android:layout_width="match_parent"
-              android:layout_height="match_parent">
+              android:layout_height="match_parent"
+              android:background="@color/video_transparent_bg_dark">
     <LinearLayout
             android:id="@+id/ly_video_title"
             android:layout_width="match_parent"

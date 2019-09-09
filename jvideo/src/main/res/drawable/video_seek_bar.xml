@@ -11,7 +11,9 @@
     <item android:id="@android:id/secondaryProgress">
         <clip>
             <shape>
-                <corners android:radius="5dp"/>
+                <corners android:radius="5dp"
+                android:bottomRightRadius="5dp"
+                android:topLeftRadius="5dp"/>
                 <size android:height="5dp"/>
                 <solid android:color="@color/seek_bar_progress_second"/>
             </shape>

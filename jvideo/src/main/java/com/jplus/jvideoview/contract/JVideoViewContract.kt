@@ -197,6 +197,12 @@ interface JVideoViewContract {
          */
         fun getVolume(isMax:Boolean):Int
         /**
+         * 获取亮度
+         * @param isMax 可选是否返回最大亮度
+         * @return 亮度大小
+         */
+        fun getLight(isMax:Boolean):Double
+        /**
          * 获取视频总时长
          * @return 视频时长
          */
