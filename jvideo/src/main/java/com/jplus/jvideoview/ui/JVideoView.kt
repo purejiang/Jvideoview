@@ -31,7 +31,6 @@ import kotlinx.android.synthetic.main.layout_jvideo.view.*
 @RequiresApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
 class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTextureListener {
 
-
     private var mPresenter: JVideoViewContract.Presenter? = null
     private var mView: View? = null
     private var mContext: Context? = null
@@ -59,7 +58,7 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
         rl_controller_bar_layout
         mPresenter?.run {
             imb_video_center_play.setOnClickListener {
-                Log.d("pipa", "state:${getPlayState()}")
+                Log.d("pipa", "imb_video_center_play, state:${getPlayState()}")
                 if (getPlayState() == PlayState.STATE_PLAYING) {
                     pausePlay()
                 } else {
@@ -71,7 +70,7 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
                 }
             }
             imb_video_control_play.setOnClickListener {
-                Log.d("pipa", "state:${getPlayState()}")
+                Log.d("pipa", "imb_video_control_play,state:${getPlayState()}")
                 if (getPlayState() == PlayState.STATE_PLAYING) {
                     pausePlay()
                 } else {
@@ -84,8 +83,8 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
             }
             seek_video_progress?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
-                    Log.d("pipa","seekbar,progress:"+progress)
-                    mPresenter?.seekBarPlay(progress)
+//                    Log.d("pipa","seekbar,progress:"+progress)
+                    mPresenter?.seekBarPlay(seekBar.progress)
                 }
 
                 override fun onStartTrackingTouch(seekBar: SeekBar) {
@@ -160,9 +159,6 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
         }
     }
 
-    override fun loadingVideo() {
-        showLoading(true)
-    }
 
     override fun continueVideo() {
         if (imb_video_center_play.visibility == VISIBLE) {
@@ -217,10 +213,13 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
         seek_video_progress?.progress = position
     }
 
-    private fun showLoading(isShow:Boolean){
+    override fun showLoading(isShow:Boolean){
         if (isShow) {
             if (pgb_video_loading.visibility == GONE) {
                 pgb_video_loading.visibility = VISIBLE
+            }
+            if (imb_video_center_play.visibility == VISIBLE) {
+                imb_video_center_play.visibility = GONE
             }
         } else {
             if (pgb_video_loading.visibility == VISIBLE) {

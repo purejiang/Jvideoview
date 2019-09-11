@@ -24,7 +24,7 @@ interface JVideoViewContract {
         /**
          * 播放器loading中
          */
-        fun loadingVideo()
+        fun showLoading(isShow:Boolean)
         /**
          * 缓冲中
          *@param percent 百分比

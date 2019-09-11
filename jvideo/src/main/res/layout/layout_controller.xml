@@ -60,6 +60,7 @@
                     android:layout_height="wrap_content"
                     android:padding="8dp"
                     android:src="@drawable/ic_video_pause"
+                    android:visibility="gone"
                     android:background="@android:color/transparent"
             />
             <ProgressBar

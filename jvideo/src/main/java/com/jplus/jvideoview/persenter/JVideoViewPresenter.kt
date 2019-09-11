@@ -10,6 +10,7 @@ import android.os.Handler
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.view.*
+import android.view.GestureDetector.SimpleOnGestureListener
 import android.widget.LinearLayout
 import com.jplus.jvideoview.contract.JVideoViewContract
 import com.jplus.jvideoview.model.JVideoState.*
@@ -17,8 +18,6 @@ import com.jplus.jvideoview.utils.JVideoUtil
 import com.jplus.jvideoview.utils.JVideoUtil.Companion.dt2progress
 import kotlin.math.abs
 import kotlin.math.floor
-import android.view.MotionEvent
-import android.widget.Toast
 
 
 /**
@@ -41,7 +40,7 @@ class JVideoViewPresenter(
 
     private var mPlayState = PlayState.STATE_IDLE
     private var mPlayMode = PlayMode.MODE_NORMAL
-    private var mAdjustWay = PlayAdjust.ADJUST_VIDEO
+    private var mAdjustWay = 0
 
     private var mPlayer: MediaPlayer? = null
     private var mSurface: Surface? = null
@@ -49,33 +48,27 @@ class JVideoViewPresenter(
     private var mParams: LinearLayout.LayoutParams? = null
     private var mAudioManager: AudioManager? = null
 
-    private var mVolumeStart = 0
-    private var mVideoStart = 0
-    private var mLightStart = 0.0
-
-    private var mVolume = 0
-    private var mProgress = 0
-    private var mLight = 0.0
-
-    private var mDownX: Float = 0.0f
-    private var mDownY: Float = 0.0f
+    private var mStartVolume = 0
+    private var mStartPosition = 0
+    private var mPosition = 0
+    private var mStartLight = 0.0
+    
+    private var mIsFirstDown=true
     private var mBufferPercent = 0
 
     private val mHandler = Handler()
     private var mIsShowControllerView = false
 
 
-    private var mCurrentDownEvent: MotionEvent? = null
-    private var mPreviousUpEvent: MotionEvent? = null
-
     private fun initMediaPlayer() {
         mPlayer = mPlayer ?: MediaPlayer()
         mView.setPresenter(this)
         Log.d("pipa", "initMediaPlayer:$mPlayer")
-        initVolume()
+        initMediaData()
     }
 
-    private fun initVolume() {
+    private fun initMediaData() {
+        //初始化volume
         mAudioManager = mContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             //8.0以上需要响应音频焦点的状态改变
@@ -100,6 +93,9 @@ class JVideoViewPresenter(
         } else {
             mAudioManager?.requestAudioFocus(null, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
         }
+        mStartVolume = getVolume(false)
+        //初始化light
+        mStartLight = getLight(false)
     }
 
     override fun subscribe() {
@@ -111,16 +107,12 @@ class JVideoViewPresenter(
     }
 
     override fun startPlay(position: Int) {
-        Log.d("pipa", "startPlay")
+        Log.d("pipa", "startPlay:$position")
         mPlayer?.let {
-            if (it.isPlaying) {
-                //如果在播放中，指定视频播放位置
-                it.seekTo(position)
-            } else {
                 //如果不在播放中，指定视频播放位置并开始播放
                 it.seekTo(position)
-            }
-            it.start()
+                it.start()
+                mPlayState == PlayState.STATE_PLAYING
         }
         mView.startVideo(position)
         runVideoTime()
@@ -128,19 +120,25 @@ class JVideoViewPresenter(
     }
 
     override fun seekToPlay(position: Int) {
+        Log.d("pipa", "seekToPlay:$position")
+        mPosition = position
         mPlayer?.let {
             it.seekTo(position)
-            if (mPlayState == PlayState.STATE_PAUSED) {
-                pausePlay()
-            } else if (mPlayState == PlayState.STATE_PLAYING) {
+            if (mPlayState == PlayState.STATE_PAUSED||mPlayState == PlayState.STATE_BUFFERING_PAUSED) {
+               pausePlay()
+            } else if (mPlayState == PlayState.STATE_PLAYING||mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
+                continuePlay()
+            }else if(mPlayState == PlayState.STATE_PREPARED){
                 it.start()
+                pausePlay()
             }
         }
+        mView.seekToVideo(getVideoTimeStr(position), position)
     }
 
     override fun pausePlay() {
         Log.d("pipa", "pausePlay")
-        if (mPlayState == PlayState.STATE_PLAYING) {
+        if (mPlayState == PlayState.STATE_PLAYING||mPlayState == PlayState.STATE_PREPARED) {
             mPlayState = PlayState.STATE_PAUSED
         } else if (mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
             mPlayState = PlayState.STATE_BUFFERING_PAUSED
@@ -150,91 +148,123 @@ class JVideoViewPresenter(
         stopVideoTime()
     }
 
-
     override fun seekBarPlay(position: Int) {
         mView.seekToVideo(getVideoTimeStr(position), position)
     }
 
-    override fun slideJudge(view: View, event: MotionEvent) {
-        val ex = event.x
-        val ey = event.y
-        when (event.action) {
-            MotionEvent.ACTION_DOWN -> {
-                mDownX = ex
-                mDownY = ey
-                val width = JVideoUtil.getPhoneDisplayWidth(mContext)
-                if (mPreviousUpEvent != null
-                    && mCurrentDownEvent != null
-                    && isConsideredDoubleTap(mPreviousUpEvent!!, event)) {
-                    mAdjustWay  = 0
-                    Toast.makeText(mContext, "doubleclick", Toast.LENGTH_SHORT).show()
-                }else {
-                    mAdjustWay = when {
-                        //通过起始点坐标判断滑动是 快进/后退、亮度调节、音量调节
-                        ex >= 0.8 * width -> {
-                            mVolumeStart = getVolume(false)
-                            PlayAdjust.ADJUST_VOLUME
-                        }
-                        ex <= 0.2 * width -> {
-                            mLightStart = getLight(false)
-                            PlayAdjust.ADJUST_LIGHT
-                        }
-                        else -> {
-                            mVideoStart = getPosition()
-                            PlayAdjust.ADJUST_VIDEO
-                        }
-                    }
-                }
-                mCurrentDownEvent = MotionEvent.obtain(event)
-            }
-            MotionEvent.ACTION_MOVE -> {
-                if (abs(event.x - mDownX) < 5 && abs(event.y - mDownY) < 5) {
+    override fun continuePlay() {
+        Log.d("pipa", "continuePlay")
+        if (mPlayState == PlayState.STATE_PAUSED) {
+            mPlayer?.start()
+            mPlayState = PlayState.STATE_PLAYING
+        } else if (mPlayState == PlayState.STATE_BUFFERING_PAUSED) {
+            mPlayer?.start()
+            mPlayState = PlayState.STATE_BUFFERING_PLAYING
+        } else if (mPlayState == PlayState.STATE_COMPLETED || mPlayState == PlayState.STATE_ERROR) {
+            mPlayer?.reset()
+            loadVideo(mSurface!!,  mUrlMap.keys.toList()[0], mUrlMap.keys.toList()[0])
+        } else {
 
-                } else {
-                    val deltaX = ex - mDownX
-                    val deltaY = ey - mDownY
-                    when (mAdjustWay) {
-                        PlayAdjust.ADJUST_VOLUME -> {
-                            //音量调节，从下往上为加，所以需要加上负号
-                            setVolume(mVolumeStart, -deltaY)
-                        }
-                        PlayAdjust.ADJUST_LIGHT -> {
-                            // 亮度调节
-                            setLight(mLightStart, -deltaY)
-                        }
-                        PlayAdjust.ADJUST_VIDEO-> {
-                            //快进/后退
-                            slidePlay(mVideoStart, deltaX)
-                        }
-                    }
+        }
+        mView.continueVideo()
+        runVideoTime()
+        hideControlDelay(5000)
+    }
+
+    // 1.创建一个监听回调
+    val listener: SimpleOnGestureListener = object : SimpleOnGestureListener() {
+        override fun onDown(e: MotionEvent): Boolean {
+            Log.d("pipa", "onDown")
+            return super.onDown(e)
+        }
+
+        override fun onShowPress(e: MotionEvent) {
+            Log.d("pipa", "onShowPress")
+            super.onShowPress(e)
+        }
+        override fun onDoubleTap(e: MotionEvent): Boolean {
+            Log.d("pipa", "onDoubleTap")
+            mPlayer?.let{
+                if(it.isPlaying){
+                    pausePlay()
+                }else if(mPlayState == PlayState.STATE_PREPARED){
+                    startPlay()
+                }else if(!it.isPlaying){
+                    continuePlay()
                 }
             }
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                mPreviousUpEvent = MotionEvent.obtain(event)
-                //通过判断是点击、双击还是滑动
-                if (abs(event.x - mDownX) < 5 && abs(event.y - mDownY) < 5) {
-                    mIsShowControllerView = !mIsShowControllerView
-                    mView.hideOrShowController(mIsShowControllerView)
-                } else {
-                    saveAdjust(mAdjustWay)
+            return super.onDoubleTap(e)
+        }
+
+        override fun onSingleTapConfirmed(e: MotionEvent?): Boolean {
+            Log.d("pipa", "onSingleTapConfirmed")
+            mIsShowControllerView = !mIsShowControllerView
+            mView.hideOrShowController(mIsShowControllerView)
+            return true
+        }
+
+        override fun onScroll(e1: MotionEvent, e2: MotionEvent, distanceX: Float, distanceY: Float): Boolean {
+            if(mIsFirstDown) {
+                mAdjustWay = getAdjustMode(e1)
+                mIsFirstDown = false
+            }
+            val distX = e2.x -e1.x
+            val distY = e2.y -e1.y
+            when (mAdjustWay) {
+                PlayAdjust.ADJUST_VOLUME -> {
+                    //音量调节，从下往上为加，所以需要加上负号
+                    setVolume(mStartVolume, -distY)
+                }
+                PlayAdjust.ADJUST_LIGHT -> {
+                    // 亮度调节
+                    setLight(mStartLight, -distY)
+                }
+                PlayAdjust.ADJUST_VIDEO-> {
+                    //快进/后退
+                    slidePlay(mStartPosition, distX)
+                }
+            }
+            return super.onScroll(e1, e2, distanceX, distanceY)
+        }
+    }
+    // 2.创建一个检测器
+    val detector = GestureDetector(mContext, listener)
+
+    override fun slideJudge(view: View, event: MotionEvent) {
+        detector.onTouchEvent(event)
+        when(event.action){
+            MotionEvent.ACTION_UP,MotionEvent.ACTION_CANCEL->{
+                if(mAdjustWay!=0) {
+                    endAdjust()
                     mView.hideAdjustUi()
                 }
-
             }
         }
     }
-    private fun isConsideredDoubleTap(
-        firstUp: MotionEvent, secondDown: MotionEvent
-    ): Boolean {
-        if (secondDown.eventTime - firstUp.eventTime > DOUBLE_TAP_TIMEOUT) {
-            return false
+    private fun getAdjustMode(event:MotionEvent):Int{
+       val width = (mView as LinearLayout).width
+       return  when {
+            //通过起始点坐标判断滑动是 快进/后退、亮度调节、音量调节
+           event.x >= 0.8 * width -> {
+               mStartLight = getLight(false)
+                PlayAdjust.ADJUST_VOLUME
+            }
+           event.x <= 0.2 * width -> {
+               mStartVolume = getVolume(false)
+                PlayAdjust.ADJUST_LIGHT
+            }
+            else -> {
+                mStartPosition = getPosition()
+                stopVideoTime()
+                PlayAdjust.ADJUST_VIDEO
+            }
         }
-        val deltaX = firstUp.x.toInt() - secondDown.x.toInt()
-        val deltaY = firstUp.y.toInt() - secondDown.y.toInt()
-        return deltaX * deltaX + deltaY * deltaY < 10000
     }
-    private fun saveAdjust(adjustMode: Int) {
-        when (adjustMode) {
+
+
+    private fun endAdjust() {
+        mIsFirstDown = true
+        when (mAdjustWay) {
             PlayAdjust.ADJUST_LIGHT -> {
 
             }
@@ -242,9 +272,12 @@ class JVideoViewPresenter(
 
             }
             PlayAdjust.ADJUST_VIDEO -> {
-                seekToPlay(mProgress)
+                mStartPosition = mPosition
+                seekToPlay(mStartPosition)
+                runVideoTime()
             }
         }
+        mAdjustWay = 0
     }
 
     override fun entrySpecialMode(view: LinearLayout) {
@@ -280,29 +313,12 @@ class JVideoViewPresenter(
         }
     }
 
-    override fun continuePlay() {
-        Log.d("pipa", "restart")
-        if (mPlayState == PlayState.STATE_PAUSED) {
-            mPlayer?.start()
-            mPlayState = PlayState.STATE_PLAYING
-        } else if (mPlayState == PlayState.STATE_BUFFERING_PAUSED) {
-            mPlayer?.start()
-            mPlayState = PlayState.STATE_BUFFERING_PLAYING
-        }
-//        else if (mPlayState == PlayState.STATE_COMPLETED || mPlayState == PlayState.STATE_ERROR) {
-//            mPlayer?.reset()
-//            loadVideo(mSurface!!, mUrlMap.keys.toList())
-//        } else {
-//
-//        }
-        mView.continueVideo()
-        hideControlDelay(5000)
-    }
 
     private fun hideControlDelay(delayTime: Long) {
         //5秒后执行
         mHandler.postDelayed({ mView.hideOrShowController(false) }, delayTime)
     }
+
     private fun runVideoTime(){
         //开始计时
         if (mRunnable == null) {
@@ -319,6 +335,7 @@ class JVideoViewPresenter(
     }
 
     override fun openMediaPlayer(surface: SurfaceTexture, width: Int, height: Int) {
+        mView.showLoading(true)
         Log.d("pipa", "openMediaPlayer")
         mSurface = mSurface ?: Surface(surface)
         mPlayState = PlayState.STATE_PREPARING
@@ -386,8 +403,7 @@ class JVideoViewPresenter(
             position < 0 -> position = 0
             else -> position = getDuration()
         }
-        mProgress = position
-        Log.d("pipa", "mProgress:$mProgress")
+        mPosition = position
         mView.slidePlayVideo(getVideoTimeStr(position), position)
     }
 
@@ -402,8 +418,6 @@ class JVideoViewPresenter(
         val params = (mContext as AppCompatActivity).window.attributes
         params.screenBrightness = light.toFloat()
         mContext.window.attributes = params
-        mLight = light
-        Log.d("pipa", "light:$mLight")
         mView.setLightUi(floor(light * 100).toInt())
     }
 
@@ -419,14 +433,11 @@ class JVideoViewPresenter(
         }
         mAudioManager?.setStreamVolume(AudioManager.STREAM_MUSIC, volume, 0)
         mView.setVolumeUi(volume * 100 / getVolume(true))
-        Log.d("pipa", "volume:$mVolume")
 }
 
 private fun loadVideo(surface: Surface, url: String, title: String?) {
     //设置title
     mView.setTitle(title ?: "未知视频")
-    //获取第一帧图片
-    mView.setThumbnail(getNetVideoBitmap(url))
 
     mPlayer?.run {
         setDataSource(url)
@@ -458,6 +469,7 @@ private fun loadVideo(surface: Surface, url: String, title: String?) {
         //预加载监听
         setOnPreparedListener {
             Log.d("pipa", "setOnPreparedListener")
+            mView.showLoading(false)
             mPlayState = PlayState.STATE_PREPARED
             mView.preparedVideo(getVideoTimeStr(null), duration)
         }
@@ -467,7 +479,7 @@ private fun loadVideo(surface: Surface, url: String, title: String?) {
             mView.buffering(percent)
         }
         setOnErrorListener { mp, what, extra ->
-            Log.d("pipa", "setOnErrorListener")
+            Log.d("pipa", "setOnErrorListener:$what")
             mPlayState = PlayState.STATE_ERROR
             mView.errorVideo()
             true
@@ -475,21 +487,25 @@ private fun loadVideo(surface: Surface, url: String, title: String?) {
         setOnInfoListener { mp, what, extra ->
             when (what) {
                 MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START -> {
+                    Log.d("pipa", "MEDIA_INFO_VIDEO_RENDERING_START")
                     // 播放器开始渲染
                     mPlayState = PlayState.STATE_PLAYING
-
                 }
                 MediaPlayer.MEDIA_INFO_BUFFERING_START -> {
+                    Log.d("pipa", "MEDIA_INFO_BUFFERING_START")
                     // MediaPlayer暂时不播放，以缓冲更多的数据
                     mPlayState =
                         if (mPlayState == PlayState.STATE_PAUSED || mPlayState == PlayState.STATE_BUFFERING_PAUSED) {
                             PlayState.STATE_BUFFERING_PAUSED
-
                         } else {
                             PlayState.STATE_BUFFERING_PLAYING
                         }
+                    //loading
+                    mView.showLoading(true)
                 }
                 MediaPlayer.MEDIA_INFO_BUFFERING_END -> {
+                    mView.showLoading(false)
+                    Log.d("pipa", "MEDIA_INFO_BUFFERING_END")
                     // 填充缓冲区后，MediaPlayer恢复播放/暂停
                     if (mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
                         mPlayState = PlayState.STATE_PLAYING
