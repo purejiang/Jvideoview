@@ -1,6 +1,8 @@
 package com.jplus.jvideoview.utils
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.media.MediaMetadataRetriever
 import android.view.WindowManager
 import java.text.SimpleDateFormat
 import java.util.*
@@ -49,5 +51,27 @@ class JVideoUtil {
         fun getPhoneDisplayHeight(context:Context): Int {
             return (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay.height
         }
+
+        /**
+         * 获取视频流的第一帧图片
+         * @param videoUri 在线视频的播放地址/本地视频的uri
+         * @return Bitmap
+         */
+         fun getNetVideoBitmap(videoUri: String): Bitmap? {
+            var bitmap: Bitmap? = null
+            val retriever = MediaMetadataRetriever()
+            try {
+                //根据url获取缩略图
+                retriever.setDataSource(videoUri, HashMap())
+                //获得第一帧图片
+                bitmap = retriever.frameAtTime
+            } catch (e: IllegalArgumentException) {
+                e.printStackTrace()
+            } finally {
+                retriever.release()
+            }
+            return bitmap
+        }
+
     }
 }

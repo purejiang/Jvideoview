@@ -8,7 +8,7 @@
     <LinearLayout
             android:id="@+id/ly_video_title"
             android:layout_width="match_parent"
-            android:layout_height="48dp"
+            android:layout_height="@dimen/controller_height"
             android:background="@drawable/bg_top_controller_trans"
             android:gravity="center_vertical"
             android:visibility="gone"
@@ -17,13 +17,16 @@
                 android:id="@+id/imb_video_back"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-
+                android:layout_margin="@dimen/view_margin_small"
+                android:background="@color/video_transparent_bg"
+                android:src="@mipmap/ic_video_back"
         />
         <TextView
                 android:id="@+id/tv_video_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@android:color/white"
+                android:textColor="@color/video_text_color"
+                android:layout_margin="@dimen/view_margin_small"
                 android:textSize="20sp"/>
     </LinearLayout>
     <LinearLayout
@@ -42,7 +45,7 @@
                     android:id="@+id/tv_progress_center_top"
                     android:layout_width="150dp"
                     android:layout_height="48dp"
-                    android:textColor="@android:color/white"
+                    android:textColor="@color/video_text_color"
                     android:gravity="center"
                     android:text="进度"
                     android:visibility="gone"
@@ -50,25 +53,56 @@
 
         </LinearLayout>
         <LinearLayout
+                android:id="@+id/ly_video_play"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:gravity="center"
+                android:orientation="vertical"
                 android:layout_weight="1">
             <ImageButton
                     android:id="@+id/imb_video_center_play"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:padding="8dp"
-                    android:src="@drawable/ic_video_pause"
+                    android:src="@mipmap/ic_video_pause"
                     android:visibility="gone"
-                    android:background="@android:color/transparent"
+                    android:background="@color/video_transparent_bg"
             />
             <ProgressBar
                     android:id="@+id/pgb_video_loading"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:visibility="gone"/>
+            <TextView
+                    android:id="@+id/tv_video_center_hint"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone"
+                    android:textColor="@color/video_text_color"/>
+
         </LinearLayout>
+        <RelativeLayout
+                android:id="@+id/rly_video_error"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:gravity="center"
+                android:visibility="gone"
+                android:layout_weight="1">
+            <TextView
+                    android:id="@+id/tv_video_error"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone"
+                    android:drawableTop="@mipmap/ic_video_refresh"
+                    android:text="播放错误，请重试！"
+                    android:textColor="@color/video_text_color"/>
+            <TextView
+                    android:id="@+id/tv_video_refresh"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_toRightOf="@id/tv_video_error"
+                    android:visibility="gone"
+                    android:textColor="@color/video_text_color"/>
+        </RelativeLayout>
         <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
@@ -80,24 +114,27 @@
     <LinearLayout
             android:id="@+id/ly_video_controller"
             android:layout_width="match_parent"
-            android:layout_height="48dp"
+            android:layout_height="@dimen/controller_height"
             android:background="@drawable/bg_bottom_controller_trans"
-            android:padding="5dp"
             android:visibility="gone"
             android:gravity="center_vertical"
             android:orientation="horizontal">
+
         <ImageButton
                 android:id="@+id/imb_video_control_play"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@color/video_transparent_bg"
-                android:textSize="12sp"/>
+                android:layout_marginLeft="@dimen/view_margin_big"
+                android:layout_marginRight="@dimen/view_margin_small"
+                android:background="@color/video_transparent_bg"/>
+
         <TextView
                 android:id="@+id/tv_video_playing_progress"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@android:color/white"
+                android:textColor="@color/video_text_color"
                 android:text="00:00/00:00"
+                android:layout_margin="@dimen/view_margin_small"
                 android:textSize="12sp"/>
         <SeekBar
                 android:id="@+id/seek_video_progress"
@@ -105,6 +142,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:background="@color/video_transparent_bg"
+                android:layout_margin="@dimen/view_margin_small"
                 android:maxHeight="5dp"
                 android:minHeight="5dp"
                 android:thumbTint="@color/seek_bar_progress_thumb"
@@ -113,12 +151,15 @@
         <ImageView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:src="@drawable/ic_music"/>
+                android:layout_margin="@dimen/view_margin_small"
+                android:src="@mipmap/ic_video_volume"/>
         <ImageView
                 android:id="@+id/img_screen_change"
+                android:layout_marginLeft="@dimen/view_margin_small"
+                android:layout_marginRight="@dimen/view_margin_big"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:src="@drawable/ic_full_screen"/>
+                android:src="@mipmap/ic_video_arrawsalt"/>
     </LinearLayout>
 
 </LinearLayout>

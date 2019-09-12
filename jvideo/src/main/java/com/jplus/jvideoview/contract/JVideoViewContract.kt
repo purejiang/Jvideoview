@@ -22,9 +22,11 @@ interface JVideoViewContract {
          */
         fun setTitle(title:String)
         /**
-         * 播放器loading中
+         * 播放器loading
+         * @param isShow 是否显示进度条
+         * @param text 提示文字
          */
-        fun showLoading(isShow:Boolean)
+        fun showLoading(isShow:Boolean, text:String)
         /**
          * 缓冲中
          *@param percent 百分比
@@ -139,7 +141,8 @@ interface JVideoViewContract {
         fun continuePlay()
         /**
          * 手势判断
-         * @param distance 屏幕上滑动的距离
+         * @param view View
+         * @param event 手势事件
          */
         fun slideJudge(view:View, event:MotionEvent)
         /**
@@ -147,22 +150,6 @@ interface JVideoViewContract {
          * @param position 进度条进度
          */
         fun seekBarPlay(position: Int)
-//        /**
-//         * 调节亮度,不断调用
-//         * @param distance 屏幕上滑动的距离
-//         */
-//        fun setLight(distance: Float)
-//        /**
-//         * 调节音量,不断调用
-//         * @param distance 屏幕上滑动的距离
-//         */
-//        fun setVolume(distance: Float)
-//        /**
-//         * 保存调节进度
-//         * @param adjustMode 调节的形式
-//         */
-//        fun saveAdjust(adjustMode: Int)
-
         /**
          * 进入特殊模式
          * @param view 播放器view
@@ -199,9 +186,13 @@ interface JVideoViewContract {
         /**
          * 获取亮度
          * @param isMax 可选是否返回最大亮度
-         * @return 亮度大小
+         * @return 亮度大小0~255
          */
-        fun getLight(isMax:Boolean):Double
+        fun getLight(isMax:Boolean):Int
+
+        fun onPause()
+
+        fun onResume()
         /**
          * 获取视频总时长
          * @return 视频时长

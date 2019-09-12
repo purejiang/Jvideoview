@@ -6,4 +6,5 @@
     <color name="seek_bar_progress">#E95325</color>
     <color name="seek_bar_progress_second">#DFFFFFFF</color>
     <color name="seek_bar_progress_thumb">#CE3400</color>
+    <color name="video_text_color">#FFFFFF</color>
 </resources>

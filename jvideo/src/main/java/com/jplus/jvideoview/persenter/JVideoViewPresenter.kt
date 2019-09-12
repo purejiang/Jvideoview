@@ -7,6 +7,7 @@ import android.graphics.SurfaceTexture
 import android.media.*
 import android.os.Build
 import android.os.Handler
+import android.provider.Settings
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.view.*
@@ -33,10 +34,6 @@ class JVideoViewPresenter(
     private val mUrlMap: Map<String, String>
 ) :
     JVideoViewContract.Presenter {
-    companion object{
-        //双击判断
-        private const val DOUBLE_TAP_TIMEOUT = 200
-    }
 
     private var mPlayState = PlayState.STATE_IDLE
     private var mPlayMode = PlayMode.MODE_NORMAL
@@ -50,11 +47,13 @@ class JVideoViewPresenter(
 
     private var mStartVolume = 0
     private var mStartPosition = 0
+    private var mStartLight = 0
     private var mPosition = 0
-    private var mStartLight = 0.0
-    
-    private var mIsFirstDown=true
+    private var mVolume = 0
+    private var mLight = 0
+    private var mIsFirstDown = true
     private var mBufferPercent = 0
+    private var mIsBackContinue = false
 
     private val mHandler = Handler()
     private var mIsShowControllerView = false
@@ -109,10 +108,10 @@ class JVideoViewPresenter(
     override fun startPlay(position: Int) {
         Log.d("pipa", "startPlay:$position")
         mPlayer?.let {
-                //如果不在播放中，指定视频播放位置并开始播放
-                it.seekTo(position)
-                it.start()
-                mPlayState == PlayState.STATE_PLAYING
+            //如果不在播放中，指定视频播放位置并开始播放
+            it.seekTo(position)
+            it.start()
+            mPlayState == PlayState.STATE_PLAYING
         }
         mView.startVideo(position)
         runVideoTime()
@@ -124,13 +123,10 @@ class JVideoViewPresenter(
         mPosition = position
         mPlayer?.let {
             it.seekTo(position)
-            if (mPlayState == PlayState.STATE_PAUSED||mPlayState == PlayState.STATE_BUFFERING_PAUSED) {
-               pausePlay()
-            } else if (mPlayState == PlayState.STATE_PLAYING||mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
-                continuePlay()
-            }else if(mPlayState == PlayState.STATE_PREPARED){
-                it.start()
+            if (mPlayState == PlayState.STATE_PAUSED || mPlayState == PlayState.STATE_BUFFERING_PAUSED) {
                 pausePlay()
+            } else if (mPlayState == PlayState.STATE_PLAYING || mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
+                continuePlay()
             }
         }
         mView.seekToVideo(getVideoTimeStr(position), position)
@@ -138,7 +134,7 @@ class JVideoViewPresenter(
 
     override fun pausePlay() {
         Log.d("pipa", "pausePlay")
-        if (mPlayState == PlayState.STATE_PLAYING||mPlayState == PlayState.STATE_PREPARED) {
+        if (mPlayState == PlayState.STATE_PLAYING || mPlayState == PlayState.STATE_PREPARED) {
             mPlayState = PlayState.STATE_PAUSED
         } else if (mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
             mPlayState = PlayState.STATE_BUFFERING_PAUSED
@@ -162,7 +158,7 @@ class JVideoViewPresenter(
             mPlayState = PlayState.STATE_BUFFERING_PLAYING
         } else if (mPlayState == PlayState.STATE_COMPLETED || mPlayState == PlayState.STATE_ERROR) {
             mPlayer?.reset()
-            loadVideo(mSurface!!,  mUrlMap.keys.toList()[0], mUrlMap.keys.toList()[0])
+            loadVideo(mSurface!!, mUrlMap.keys.toList()[0], mUrlMap.keys.toList()[0])
         } else {
 
         }
@@ -171,6 +167,22 @@ class JVideoViewPresenter(
         hideControlDelay(5000)
     }
 
+    override fun onPause() {
+        if (mPlayState == PlayState.STATE_PAUSED || mPlayState == PlayState.STATE_BUFFERING_PAUSED) {
+            mIsBackContinue = false
+        } else if (mPlayState == PlayState.STATE_PLAYING || mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
+            mIsBackContinue = true
+        }
+        pausePlay()
+    }
+
+    override fun onResume() {
+        if (!mIsBackContinue) {
+            pausePlay()
+        } else {
+            continuePlay()
+        }
+    }
     // 1.创建一个监听回调
     val listener: SimpleOnGestureListener = object : SimpleOnGestureListener() {
         override fun onDown(e: MotionEvent): Boolean {
@@ -182,14 +194,15 @@ class JVideoViewPresenter(
             Log.d("pipa", "onShowPress")
             super.onShowPress(e)
         }
+
         override fun onDoubleTap(e: MotionEvent): Boolean {
             Log.d("pipa", "onDoubleTap")
-            mPlayer?.let{
-                if(it.isPlaying){
+            mPlayer?.let {
+                if (it.isPlaying) {
                     pausePlay()
-                }else if(mPlayState == PlayState.STATE_PREPARED){
+                } else if (mPlayState == PlayState.STATE_PREPARED) {
                     startPlay()
-                }else if(!it.isPlaying){
+                } else if (!it.isPlaying) {
                     continuePlay()
                 }
             }
@@ -204,12 +217,12 @@ class JVideoViewPresenter(
         }
 
         override fun onScroll(e1: MotionEvent, e2: MotionEvent, distanceX: Float, distanceY: Float): Boolean {
-            if(mIsFirstDown) {
+            if (mIsFirstDown) {
                 mAdjustWay = getAdjustMode(e1)
                 mIsFirstDown = false
             }
-            val distX = e2.x -e1.x
-            val distY = e2.y -e1.y
+            val distX = e2.x - e1.x
+            val distY = e2.y - e1.y
             when (mAdjustWay) {
                 PlayAdjust.ADJUST_VOLUME -> {
                     //音量调节，从下往上为加，所以需要加上负号
@@ -219,7 +232,7 @@ class JVideoViewPresenter(
                     // 亮度调节
                     setLight(mStartLight, -distY)
                 }
-                PlayAdjust.ADJUST_VIDEO-> {
+                PlayAdjust.ADJUST_VIDEO -> {
                     //快进/后退
                     slidePlay(mStartPosition, distX)
                 }
@@ -232,25 +245,27 @@ class JVideoViewPresenter(
 
     override fun slideJudge(view: View, event: MotionEvent) {
         detector.onTouchEvent(event)
-        when(event.action){
-            MotionEvent.ACTION_UP,MotionEvent.ACTION_CANCEL->{
-                if(mAdjustWay!=0) {
+        when (event.action) {
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                if (mAdjustWay != 0) {
                     endAdjust()
                     mView.hideAdjustUi()
                 }
             }
         }
     }
-    private fun getAdjustMode(event:MotionEvent):Int{
-       val width = (mView as LinearLayout).width
-       return  when {
+
+    private fun getAdjustMode(event: MotionEvent): Int {
+        Log.d("pipa", "getAdjustMode")
+        val width = (mView as LinearLayout).width
+        return when {
             //通过起始点坐标判断滑动是 快进/后退、亮度调节、音量调节
-           event.x >= 0.8 * width -> {
-               mStartLight = getLight(false)
+            event.x >= 0.8 * width -> {
+//                mStartLight = getLight(false)
                 PlayAdjust.ADJUST_VOLUME
             }
-           event.x <= 0.2 * width -> {
-               mStartVolume = getVolume(false)
+            event.x <= 0.2 * width -> {
+//                mStartVolume = getVolume(false)
                 PlayAdjust.ADJUST_LIGHT
             }
             else -> {
@@ -263,13 +278,14 @@ class JVideoViewPresenter(
 
 
     private fun endAdjust() {
+        Log.d("pipa", "endAdjust")
         mIsFirstDown = true
         when (mAdjustWay) {
             PlayAdjust.ADJUST_LIGHT -> {
-
+                mStartLight = mLight
             }
             PlayAdjust.ADJUST_VOLUME -> {
-
+                mStartVolume = mVolume
             }
             PlayAdjust.ADJUST_VIDEO -> {
                 mStartPosition = mPosition
@@ -311,6 +327,7 @@ class JVideoViewPresenter(
             mContext.window.decorView.systemUiVisibility = View.INVISIBLE
             view.layoutParams = params
         }
+        mView.entrySpecialMode(mPlayMode)
     }
 
 
@@ -319,23 +336,25 @@ class JVideoViewPresenter(
         mHandler.postDelayed({ mView.hideOrShowController(false) }, delayTime)
     }
 
-    private fun runVideoTime(){
+    private fun runVideoTime() {
         //开始计时
         if (mRunnable == null) {
             mRunnable = MyRunnable()
         }
         mHandler.post(mRunnable)
     }
-    private fun stopVideoTime(){
+
+    private fun stopVideoTime() {
         //停止计时
         mHandler.removeCallbacks(mRunnable)
     }
+
     override fun exitMode(isBackNormal: Boolean) {
         Log.d("pipa", "exitMode")
     }
 
     override fun openMediaPlayer(surface: SurfaceTexture, width: Int, height: Int) {
-        mView.showLoading(true)
+        mView.showLoading(true, "播放器初始化中...")
         Log.d("pipa", "openMediaPlayer")
         mSurface = mSurface ?: Surface(surface)
         mPlayState = PlayState.STATE_PREPARING
@@ -351,8 +370,14 @@ class JVideoViewPresenter(
         return mPlayMode
     }
 
-    override fun getLight(isMax: Boolean): Double {
-        return (mContext as AppCompatActivity).window.attributes.screenBrightness.toDouble()
+    override fun getLight(isMax: Boolean): Int {
+        var nowBrightnessValue = 0
+        try{
+            nowBrightnessValue = Settings.System.getInt(mContext.contentResolver, Settings.System.SCREEN_BRIGHTNESS)
+        }catch (e:Exception){
+
+        }
+        return nowBrightnessValue
     }
 
     override fun getVolume(isMax: Boolean): Int {
@@ -407,18 +432,21 @@ class JVideoViewPresenter(
         mView.slidePlayVideo(getVideoTimeStr(position), position)
     }
 
-    private fun setLight(startLight: Double, distance: Float) {
-        var light = startLight + dt2progress(distance, 1, (mView as LinearLayout).height, 1.0)
+    private fun setLight(startLight: Int, distance: Float) {
+        Log.d("pipa", "startLight:$startLight, distance$distance")
+        var light = startLight + floor(dt2progress(distance, 255, (mView as LinearLayout).height, 1.0)).toInt()
         when {
-            light in 0.0..1.0 -> {
+            light in 0..255 -> {
             }
-            light <= 0.0 -> light = 0.0
-            else -> light = 1.0
+            light <= 0 -> light = 0
+            else -> light = 255
         }
         val params = (mContext as AppCompatActivity).window.attributes
-        params.screenBrightness = light.toFloat()
+        params.screenBrightness = light/255f
         mContext.window.attributes = params
-        mView.setLightUi(floor(light * 100).toInt())
+        //保存亮度
+        mLight = light
+        mView.setLightUi(floor( light/255f * 100).toInt())
     }
 
     private fun setVolume(startVolume: Int, distance: Float) {
@@ -432,135 +460,125 @@ class JVideoViewPresenter(
             else -> volume = getVolume(true)
         }
         mAudioManager?.setStreamVolume(AudioManager.STREAM_MUSIC, volume, 0)
+        mVolume = volume
         mView.setVolumeUi(volume * 100 / getVolume(true))
-}
+    }
 
-private fun loadVideo(surface: Surface, url: String, title: String?) {
-    //设置title
-    mView.setTitle(title ?: "未知视频")
+    private fun loadVideo(surface: Surface, url: String, title: String?) {
+        //设置title
+        mView.setTitle(title ?: "未知视频")
 
-    mPlayer?.run {
-        setDataSource(url)
-        //设置渲染画板
-        setSurface(surface)
-        //设置播放类型
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            val attributes = AudioAttributes.Builder()
-                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                .setFlags(AudioAttributes.FLAG_LOW_LATENCY)
-                .setUsage(AudioAttributes.USAGE_MEDIA)
-                .setLegacyStreamType(AudioManager.STREAM_MUSIC)
-                .build()
-            setAudioAttributes(attributes)
-        } else {
-            setAudioStreamType(AudioManager.STREAM_MUSIC)
-        }
-        //播放完成监听
-        setOnCompletionListener {
-            Log.d("pipa", "setOnCompletionListener")
-            mPlayState = PlayState.STATE_COMPLETED
-            mView.completedVideo()
-        }
+        mPlayer?.run {
+            setDataSource(url)
+            //设置渲染画板
+            setSurface(surface)
+            //设置播放类型
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                val attributes = AudioAttributes.Builder()
+                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                    .setFlags(AudioAttributes.FLAG_LOW_LATENCY)
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .setLegacyStreamType(AudioManager.STREAM_MUSIC)
+                    .build()
+                setAudioAttributes(attributes)
+            } else {
+                setAudioStreamType(AudioManager.STREAM_MUSIC)
+            }
+            //播放完成监听
+            setOnCompletionListener {
+                Log.d("pipa", "setOnCompletionListener")
+                mPlayState = PlayState.STATE_COMPLETED
+                mView.completedVideo()
+            }
 
-        //播放之前的缓冲监听
+            //播放之前的缓冲监听
 //            setOnSeekCompleteListener {
 //                mPlayState = PlayState.STATE_PREPARED
 //            }
-        //预加载监听
-        setOnPreparedListener {
-            Log.d("pipa", "setOnPreparedListener")
-            mView.showLoading(false)
-            mPlayState = PlayState.STATE_PREPARED
-            mView.preparedVideo(getVideoTimeStr(null), duration)
-        }
-        //相当于缓存进度条
-        setOnBufferingUpdateListener { mp, percent ->
-            mBufferPercent = percent
-            mView.buffering(percent)
-        }
-        setOnErrorListener { mp, what, extra ->
-            Log.d("pipa", "setOnErrorListener:$what")
-            mPlayState = PlayState.STATE_ERROR
-            mView.errorVideo()
-            true
-        }
-        setOnInfoListener { mp, what, extra ->
-            when (what) {
-                MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START -> {
-                    Log.d("pipa", "MEDIA_INFO_VIDEO_RENDERING_START")
-                    // 播放器开始渲染
-                    mPlayState = PlayState.STATE_PLAYING
-                }
-                MediaPlayer.MEDIA_INFO_BUFFERING_START -> {
-                    Log.d("pipa", "MEDIA_INFO_BUFFERING_START")
-                    // MediaPlayer暂时不播放，以缓冲更多的数据
-                    mPlayState =
-                        if (mPlayState == PlayState.STATE_PAUSED || mPlayState == PlayState.STATE_BUFFERING_PAUSED) {
-                            PlayState.STATE_BUFFERING_PAUSED
-                        } else {
-                            PlayState.STATE_BUFFERING_PLAYING
-                        }
-                    //loading
-                    mView.showLoading(true)
-                }
-                MediaPlayer.MEDIA_INFO_BUFFERING_END -> {
-                    mView.showLoading(false)
-                    Log.d("pipa", "MEDIA_INFO_BUFFERING_END")
-                    // 填充缓冲区后，MediaPlayer恢复播放/暂停
-                    if (mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
+            //预加载监听
+            setOnPreparedListener {
+                Log.d("pipa", "setOnPreparedListener")
+                mPlayState = PlayState.STATE_PREPARED
+                mView.showLoading(false, "")
+                mView.hideOrShowController(true)
+                mView.preparedVideo(getVideoTimeStr(null), duration)
+                //预加载后先播放再暂停，1：防止播放错误-38(未开始就停止) 2：可以显示第一帧画面
+//                mPlayer?.start()
+                pausePlay()
+            }
+            //相当于缓存进度条
+            setOnBufferingUpdateListener { mp, percent ->
+                mBufferPercent = percent
+                mView.buffering(percent)
+            }
+            setOnErrorListener { mp, what, extra ->
+                Log.d("pipa", "setOnErrorListener:$what")
+                mPlayState = PlayState.STATE_ERROR
+                mView.errorVideo()
+                true
+            }
+            setOnInfoListener { mp, what, extra ->
+                when (what) {
+                    MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START -> {
+                        Log.d("pipa", "MEDIA_INFO_VIDEO_RENDERING_START")
+                        // 播放器开始渲染
                         mPlayState = PlayState.STATE_PLAYING
-                        mView.playing(getVideoTimeStr(mPlayer?.currentPosition), mPlayer?.currentPosition ?: 0)
                     }
-                    if (mPlayState == PlayState.STATE_BUFFERING_PAUSED) {
-                        mPlayState = PlayState.STATE_PAUSED
-                        mView.pauseVideo()
+                    MediaPlayer.MEDIA_INFO_BUFFERING_START -> {
+                        Log.d("pipa", "MEDIA_INFO_BUFFERING_START")
+                        // MediaPlayer暂时不播放，以缓冲更多的数据
+                        mPlayState =
+                            if (mPlayState == PlayState.STATE_PAUSED || mPlayState == PlayState.STATE_BUFFERING_PAUSED) {
+                                PlayState.STATE_BUFFERING_PAUSED
+                            } else {
+                                PlayState.STATE_BUFFERING_PLAYING
+                            }
+                        //loading
+                        mView.showLoading(true, "加载中...")
+                    }
+                    MediaPlayer.MEDIA_INFO_BUFFERING_END -> {
+                        mView.showLoading(false, "")
+                        Log.d("pipa", "MEDIA_INFO_BUFFERING_END")
+                        // 填充缓冲区后，MediaPlayer恢复播放/暂停
+                        if (mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
+                            mPlayState = PlayState.STATE_PLAYING
+                            mView.playing(getVideoTimeStr(mPlayer?.currentPosition), mPlayer?.currentPosition ?: 0)
+                        }
+                        if (mPlayState == PlayState.STATE_BUFFERING_PAUSED) {
+                            mPlayState = PlayState.STATE_PAUSED
+                            mView.pauseVideo()
+                        }
+                    }
+                    MediaPlayer.MEDIA_INFO_NOT_SEEKABLE -> {
+                        //无法seekTo
                     }
                 }
-                MediaPlayer.MEDIA_INFO_NOT_SEEKABLE -> {
-                    //无法seekTo
+                true
+            }
+            //设置是否保持屏幕常亮
+            setScreenOnWhilePlaying(true)
+            //异步的方式装载流媒体文件
+            prepareAsync()
+        }
+    }
+
+
+
+    private fun getVideoTimeStr(position: Int?): String {
+        return JVideoUtil.progress2Time(position) + "/" + JVideoUtil.progress2Time(getDuration())
+    }
+
+    inner class MyRunnable : Runnable {
+        override fun run() {
+            mPlayer?.let {
+                if (it.isPlaying) {
+                    //更新播放进度
+                    mView.playing(getVideoTimeStr(it.currentPosition), it.currentPosition)
                 }
             }
-            true
+            //重复调起自身
+            mHandler.postDelayed(this, 200)
         }
-        //设置是否保持屏幕常亮
-        setScreenOnWhilePlaying(true)
-        //异步的方式装载流媒体文件
-        prepareAsync()
     }
-}
-
-
-private fun getNetVideoBitmap(videoUrl: String): Bitmap? {
-    var bitmap: Bitmap? = null
-    val retriever = MediaMetadataRetriever()
-    try {
-        //根据url获取缩略图
-        retriever.setDataSource(videoUrl, HashMap())
-        //获得第一帧图片
-        bitmap = retriever.frameAtTime
-    } catch (e: IllegalArgumentException) {
-        e.printStackTrace()
-    } finally {
-        retriever.release()
-    }
-    return bitmap
-}
-
-private fun getVideoTimeStr(position: Int?): String {
-    return JVideoUtil.progress2Time(position) + "/" + JVideoUtil.progress2Time(getDuration())
-}
-
-inner class MyRunnable : Runnable {
-    override fun run() {
-        mPlayer?.let {
-            if (it.isPlaying) {
-                //更新播放进度
-                mView.playing(getVideoTimeStr(it.currentPosition), it.currentPosition)
-            }
-        }
-        //重复调起自身
-        mHandler.postDelayed(this, 200)
-    }
-}
 
 }

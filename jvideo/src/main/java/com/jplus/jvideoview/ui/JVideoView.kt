@@ -19,7 +19,7 @@ import com.jplus.jvideoview.contract.JVideoViewContract
 import com.jplus.jvideoview.model.JVideoState
 import com.jplus.jvideoview.model.JVideoState.PlayState
 import com.jplus.jvideoview.model.JVideoState.PlayAdjust
-import com.jplus.jvideoview.utils.JVideoUtil
+import com.jplus.jvideoview.model.JVideoState.PlayMode
 import kotlinx.android.synthetic.main.layout_controller.view.*
 import kotlinx.android.synthetic.main.layout_jvideo.view.*
 
@@ -55,7 +55,6 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
 
     private fun initListener() {
         ttv_video_player.surfaceTextureListener = this
-        rl_controller_bar_layout
         mPresenter?.run {
             imb_video_center_play.setOnClickListener {
                 Log.d("pipa", "imb_video_center_play, state:${getPlayState()}")
@@ -106,6 +105,14 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
         img_screen_change.setOnClickListener {
             mPresenter?.entrySpecialMode(this)
         }
+        tv_video_error.setOnClickListener {
+            if(rly_video_error.visibility == VISIBLE){
+                rly_video_error.visibility = GONE
+            }
+            if(ly_video_play.visibility == GONE){
+                ly_video_play.visibility = VISIBLE
+            }
+        }
 
     }
 
@@ -124,23 +131,21 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
     }
 
     override fun preparedVideo(videoTime:String, max:Int) {
-        showLoading(false)
-        hideOrShowController(true)
         tv_video_playing_progress.text = videoTime
         seek_video_progress?.max = max
+        rl_controller_bar_layout.setBackgroundResource(0)
         if (imb_video_center_play.visibility == GONE) {
             imb_video_center_play.visibility = VISIBLE
         }
-        imb_video_control_play.setImageResource(R.drawable.ic_video_pause)
+        imb_video_control_play.setImageResource(R.mipmap.ic_video_pause)
     }
 
     override fun startVideo(position: Int) {
         seek_video_progress?.progress = position
-        rl_controller_bar_layout.setBackgroundResource(0)
         if (imb_video_center_play.visibility == VISIBLE) {
             imb_video_center_play.visibility = GONE
         }
-        imb_video_control_play.setImageResource(R.drawable.ic_video_continue)
+        imb_video_control_play.setImageResource(R.mipmap.ic_video_continue)
     }
 
 
@@ -164,14 +169,14 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
         if (imb_video_center_play.visibility == VISIBLE) {
             imb_video_center_play.visibility = GONE
         }
-        imb_video_control_play.setImageResource(R.drawable.ic_video_continue)
+        imb_video_control_play.setImageResource(R.mipmap.ic_video_continue)
     }
 
     override fun pauseVideo() {
         if (imb_video_center_play.visibility == GONE) {
             imb_video_center_play.visibility = VISIBLE
         }
-        imb_video_control_play.setImageResource(R.drawable.ic_video_pause)
+        imb_video_control_play.setImageResource(R.mipmap.ic_video_pause)
     }
 
 
@@ -213,15 +218,23 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
         seek_video_progress?.progress = position
     }
 
-    override fun showLoading(isShow:Boolean){
+    override fun showLoading(isShow:Boolean, text:String){
         if (isShow) {
             if (pgb_video_loading.visibility == GONE) {
                 pgb_video_loading.visibility = VISIBLE
+            }
+            if (tv_video_center_hint.visibility == GONE) {
+                tv_video_center_hint.text = text
+                tv_video_center_hint.visibility = VISIBLE
             }
             if (imb_video_center_play.visibility == VISIBLE) {
                 imb_video_center_play.visibility = GONE
             }
         } else {
+            if (tv_video_center_hint.visibility == VISIBLE) {
+                tv_video_center_hint.text = text
+                tv_video_center_hint.visibility = GONE
+            }
             if (pgb_video_loading.visibility == VISIBLE) {
                 pgb_video_loading.visibility = GONE
             }
@@ -235,11 +248,23 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
     }
 
     override fun entrySpecialMode(mode: Int) {
+        mPresenter?.let{
+            if(it.getPlayMode()==PlayMode.MODE_NORMAL){
+                img_screen_change.setImageResource(R.mipmap.ic_video_arrawsalt)
+            }else if(it.getPlayMode()==PlayMode.MODE_FULL_SCREEN){
+                img_screen_change.setImageResource(R.mipmap.ic_video_shrink)
+            }
+        }
 
     }
 
     override fun errorVideo() {
-
+        if(rly_video_error.visibility == GONE){
+            rly_video_error.visibility = VISIBLE
+        }
+        if(ly_video_play.visibility == VISIBLE){
+            ly_video_play.visibility = GONE
+        }
     }
 
     override fun exitMode() {

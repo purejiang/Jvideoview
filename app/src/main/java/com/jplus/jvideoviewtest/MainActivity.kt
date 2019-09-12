@@ -19,6 +19,16 @@ class MainActivity : AppCompatActivity() {
         presenter?.subscribe()
     }
 
+    override fun onResume() {
+        super.onResume()
+        presenter?.onResume()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        presenter?.onPause()
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         presenter?.unSubscribe()
