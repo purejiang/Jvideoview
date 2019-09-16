@@ -31,6 +31,7 @@ import kotlinx.android.synthetic.main.layout_jvideo.view.*
 @RequiresApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
 class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTextureListener {
 
+
     private var mPresenter: JVideoViewContract.Presenter? = null
     private var mView: View? = null
     private var mContext: Context? = null
@@ -112,14 +113,28 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
             if(ly_video_play.visibility == GONE){
                 ly_video_play.visibility = VISIBLE
             }
+            mPresenter?.continuePlay()
         }
-
+        img_video_volume_open.setOnClickListener {
+            mPresenter?.let{
+                if(it.getVolume(false)==0){
+                    img_video_volume_open.setImageResource(R.mipmap.ic_video_volume_open)
+                    it.setVolumeMute(false)
+                }else{
+                    img_video_volume_open.setImageResource(R.mipmap.ic_video_volume_close)
+                    it.setVolumeMute(true)
+                }
+            }
+        }
     }
 
     override fun setThumbnail(bitmap: Bitmap?) {
         rl_controller_bar_layout.background = BitmapDrawable(null, bitmap)
     }
 
+    override fun showSpeed(speed: String) {
+
+    }
 
     override fun setPresenter(presenter: JVideoViewContract.Presenter) {
         mPresenter = presenter
@@ -133,7 +148,6 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
     override fun preparedVideo(videoTime:String, max:Int) {
         tv_video_playing_progress.text = videoTime
         seek_video_progress?.max = max
-        rl_controller_bar_layout.setBackgroundResource(0)
         if (imb_video_center_play.visibility == GONE) {
             imb_video_center_play.visibility = VISIBLE
         }
@@ -141,6 +155,7 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
     }
 
     override fun startVideo(position: Int) {
+        rl_controller_bar_layout.setBackgroundResource(0)
         seek_video_progress?.progress = position
         if (imb_video_center_play.visibility == VISIBLE) {
             imb_video_center_play.visibility = GONE
@@ -202,6 +217,7 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
         if (tv_progress_center_top.visibility == GONE) {
             tv_progress_center_top.visibility = VISIBLE
         }
+        img_video_volume_open.setImageResource(R.mipmap.ic_video_volume_open)
         tv_progress_center_top.text = "音量：$volumePercent%"
     }
 
@@ -230,6 +246,7 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
             if (imb_video_center_play.visibility == VISIBLE) {
                 imb_video_center_play.visibility = GONE
             }
+
         } else {
             if (tv_video_center_hint.visibility == VISIBLE) {
                 tv_video_center_hint.text = text

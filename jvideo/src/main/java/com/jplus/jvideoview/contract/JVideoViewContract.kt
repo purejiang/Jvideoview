@@ -48,6 +48,11 @@ interface JVideoViewContract {
          */
         fun startVideo(position: Int = 0)
         /**
+         * 显示实时网速
+         * @param speed 实时网速
+         */
+        fun showSpeed(speed: String)
+        /**
          * 播放中
          *  @param videoTime 播放时间
          * @param position 播放位置
@@ -189,9 +194,18 @@ interface JVideoViewContract {
          * @return 亮度大小0~255
          */
         fun getLight(isMax:Boolean):Int
-
+        /**
+         * 是否静音
+         * @param isMute 是否静音
+         */
+        fun setVolumeMute(isMute:Boolean)
+        /**
+         * 生命周期onPause()
+         */
         fun onPause()
-
+        /**
+        * 生命周期onResume()
+        */
         fun onResume()
         /**
          * 获取视频总时长
@@ -208,12 +222,6 @@ interface JVideoViewContract {
          * @return 1~100
          */
         fun getBufferPercent():Int
-        /**
-         * 当前网络速度
-         * @return
-         */
-        fun getNetSpeed():Float
-
         /**
          * 释放资源
          * @param destroyUi 释放MediaPlayer资源后是否退出当前模式

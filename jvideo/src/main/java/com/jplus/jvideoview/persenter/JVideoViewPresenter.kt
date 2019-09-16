@@ -2,9 +2,11 @@ package com.jplus.jvideoview.persenter
 
 import android.content.Context
 import android.content.pm.ActivityInfo
-import android.graphics.Bitmap
 import android.graphics.SurfaceTexture
-import android.media.*
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
+import android.media.MediaPlayer
 import android.os.Build
 import android.os.Handler
 import android.provider.Settings
@@ -17,7 +19,6 @@ import com.jplus.jvideoview.contract.JVideoViewContract
 import com.jplus.jvideoview.model.JVideoState.*
 import com.jplus.jvideoview.utils.JVideoUtil
 import com.jplus.jvideoview.utils.JVideoUtil.Companion.dt2progress
-import kotlin.math.abs
 import kotlin.math.floor
 
 
@@ -34,6 +35,7 @@ class JVideoViewPresenter(
     private val mUrlMap: Map<String, String>
 ) :
     JVideoViewContract.Presenter {
+
 
     private var mPlayState = PlayState.STATE_IDLE
     private var mPlayMode = PlayMode.MODE_NORMAL
@@ -57,7 +59,7 @@ class JVideoViewPresenter(
 
     private val mHandler = Handler()
     private var mIsShowControllerView = false
-
+    private var mVolumeMute = false
 
     private fun initMediaPlayer() {
         mPlayer = mPlayer ?: MediaPlayer()
@@ -115,7 +117,7 @@ class JVideoViewPresenter(
         }
         mView.startVideo(position)
         runVideoTime()
-        hideControlDelay(5000)
+        hideControlDelay(8000)
     }
 
     override fun seekToPlay(position: Int) {
@@ -164,7 +166,6 @@ class JVideoViewPresenter(
         }
         mView.continueVideo()
         runVideoTime()
-        hideControlDelay(5000)
     }
 
     override fun onPause() {
@@ -226,7 +227,9 @@ class JVideoViewPresenter(
             when (mAdjustWay) {
                 PlayAdjust.ADJUST_VOLUME -> {
                     //音量调节，从下往上为加，所以需要加上负号
-                    setVolume(mStartVolume, -distY)
+                    if(!mVolumeMute) {
+                        setVolume(mStartVolume, -distY)
+                    }
                 }
                 PlayAdjust.ADJUST_LIGHT -> {
                     // 亮度调节
@@ -256,6 +259,7 @@ class JVideoViewPresenter(
     }
 
     private fun getAdjustMode(event: MotionEvent): Int {
+        //调整前获取调整的模式
         Log.d("pipa", "getAdjustMode")
         val width = (mView as LinearLayout).width
         return when {
@@ -275,9 +279,17 @@ class JVideoViewPresenter(
             }
         }
     }
-
+    override fun setVolumeMute(isMute: Boolean) {
+        if(isMute) {
+            mAudioManager?.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0)
+        }else{
+            mAudioManager?.setStreamVolume(AudioManager.STREAM_MUSIC, mVolume, 0)
+        }
+        mVolumeMute = isMute
+    }
 
     private fun endAdjust() {
+        //调整结束后保存结果
         Log.d("pipa", "endAdjust")
         mIsFirstDown = true
         when (mAdjustWay) {
@@ -332,7 +344,7 @@ class JVideoViewPresenter(
 
 
     private fun hideControlDelay(delayTime: Long) {
-        //5秒后执行
+        //延时后执行
         mHandler.postDelayed({ mView.hideOrShowController(false) }, delayTime)
     }
 
@@ -398,10 +410,6 @@ class JVideoViewPresenter(
 
     override fun getBufferPercent(): Int {
         return mBufferPercent
-    }
-
-    override fun getNetSpeed(): Float {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
     override fun releasePlay(destroyUi: Boolean) {
@@ -503,7 +511,7 @@ class JVideoViewPresenter(
                 mView.hideOrShowController(true)
                 mView.preparedVideo(getVideoTimeStr(null), duration)
                 //预加载后先播放再暂停，1：防止播放错误-38(未开始就停止) 2：可以显示第一帧画面
-//                mPlayer?.start()
+                startPlay()
                 pausePlay()
             }
             //相当于缓存进度条

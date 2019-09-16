@@ -91,7 +91,6 @@
                     android:id="@+id/tv_video_error"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:visibility="gone"
                     android:drawableTop="@mipmap/ic_video_refresh"
                     android:text="播放错误，请重试！"
                     android:textColor="@color/video_text_color"/>
@@ -100,7 +99,6 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_toRightOf="@id/tv_video_error"
-                    android:visibility="gone"
                     android:textColor="@color/video_text_color"/>
         </RelativeLayout>
         <LinearLayout
@@ -149,10 +147,11 @@
                 android:splitTrack="false"
                 android:progressDrawable="@drawable/video_seek_bar"/>
         <ImageView
+                android:id="@+id/img_video_volume_open"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_margin="@dimen/view_margin_small"
-                android:src="@mipmap/ic_video_volume"/>
+                android:src="@mipmap/ic_video_volume_open"/>
         <ImageView
                 android:id="@+id/img_screen_change"
                 android:layout_marginLeft="@dimen/view_margin_small"
