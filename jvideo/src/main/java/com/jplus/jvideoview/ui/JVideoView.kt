@@ -56,6 +56,7 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
 
     private fun initListener() {
         ttv_video_player.surfaceTextureListener = this
+
         mPresenter?.run {
             imb_video_center_play.setOnClickListener {
                 Log.d("pipa", "imb_video_center_play, state:${getPlayState()}")
@@ -104,7 +105,7 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
             true
         }
         img_screen_change.setOnClickListener {
-            mPresenter?.entrySpecialMode(this)
+            mPresenter?.entrySpecialMode()
         }
         tv_video_error.setOnClickListener {
             if(rly_video_error.visibility == VISIBLE){
@@ -219,6 +220,7 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
         }
         img_video_volume_open.setImageResource(R.mipmap.ic_video_volume_open)
         tv_progress_center_top.text = "音量：$volumePercent%"
+
     }
 
     override fun seekToVideo(videoTime:String, position: Int) {
@@ -294,7 +296,8 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
     }
 
     override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture?, width: Int, height: Int) {
-        Log.d("pipa", "onSurfaceTextureSizeChanged")
+        //这里是改变后的画布大小
+        Log.d("pipa", "onSurfaceTextureSizeChanged:$width - $height")
     }
 
     override fun onSurfaceTextureUpdated(surface: SurfaceTexture?) {
@@ -308,7 +311,8 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
     }
 
     override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
-        Log.d("pipa", "onSurfaceTextureAvailable")
-        mPresenter?.openMediaPlayer(surface, width, height)
+        //这里是原始画布大小
+        Log.d("pipa", "onSurfaceTextureAvailable:$width - $height")
+        mPresenter?.openMediaPlayer(surface, ttv_video_player)
     }
 }

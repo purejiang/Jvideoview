@@ -1,5 +1,6 @@
 package com.jplus.jvideoview.persenter
 
+import android.app.Activity
 import android.content.Context
 import android.content.pm.ActivityInfo
 import android.graphics.SurfaceTexture
@@ -14,12 +15,15 @@ import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.view.*
 import android.view.GestureDetector.SimpleOnGestureListener
+import android.view.View.GONE
 import android.widget.LinearLayout
 import com.jplus.jvideoview.contract.JVideoViewContract
 import com.jplus.jvideoview.model.JVideoState.*
 import com.jplus.jvideoview.utils.JVideoUtil
 import com.jplus.jvideoview.utils.JVideoUtil.Companion.dt2progress
+import kotlin.math.ceil
 import kotlin.math.floor
+import kotlin.math.max
 
 
 /**
@@ -43,6 +47,7 @@ class JVideoViewPresenter(
 
     private var mPlayer: MediaPlayer? = null
     private var mSurface: Surface? = null
+    private var mTextureView: TextureView? = null
     private var mRunnable: MyRunnable? = null
     private var mParams: LinearLayout.LayoutParams? = null
     private var mAudioManager: AudioManager? = null
@@ -61,9 +66,10 @@ class JVideoViewPresenter(
     private var mIsShowControllerView = false
     private var mVolumeMute = false
 
-    private fun initMediaPlayer() {
+    private fun initPresenter() {
         mPlayer = mPlayer ?: MediaPlayer()
         mView.setPresenter(this)
+        mParams = LinearLayout.LayoutParams((mView as LinearLayout).layoutParams)
         Log.d("pipa", "initMediaPlayer:$mPlayer")
         initMediaData()
     }
@@ -100,7 +106,7 @@ class JVideoViewPresenter(
     }
 
     override fun subscribe() {
-        initMediaPlayer()
+        initPresenter()
     }
 
     override fun unSubscribe() {
@@ -184,6 +190,7 @@ class JVideoViewPresenter(
             continuePlay()
         }
     }
+
     // 1.创建一个监听回调
     val listener: SimpleOnGestureListener = object : SimpleOnGestureListener() {
         override fun onDown(e: MotionEvent): Boolean {
@@ -227,7 +234,7 @@ class JVideoViewPresenter(
             when (mAdjustWay) {
                 PlayAdjust.ADJUST_VOLUME -> {
                     //音量调节，从下往上为加，所以需要加上负号
-                    if(!mVolumeMute) {
+                    if (!mVolumeMute) {
                         setVolume(mStartVolume, -distY)
                     }
                 }
@@ -279,10 +286,11 @@ class JVideoViewPresenter(
             }
         }
     }
+
     override fun setVolumeMute(isMute: Boolean) {
-        if(isMute) {
+        if (isMute) {
             mAudioManager?.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0)
-        }else{
+        } else {
             mAudioManager?.setStreamVolume(AudioManager.STREAM_MUSIC, mVolume, 0)
         }
         mVolumeMute = isMute
@@ -308,7 +316,7 @@ class JVideoViewPresenter(
         mAdjustWay = 0
     }
 
-    override fun entrySpecialMode(view: LinearLayout) {
+    override fun entrySpecialMode() {
         if (getPlayMode() == PlayMode.MODE_FULL_SCREEN) {
             //进入普通模式
             mParams?.let {
@@ -319,12 +327,12 @@ class JVideoViewPresenter(
                 )
                 mContext.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
                 mContext.window.decorView.systemUiVisibility = View.VISIBLE
-                view.layoutParams = it
+                (mView as LinearLayout).layoutParams = it
+                changeVideoSize(it.width, it.height)
             }
         } else if (getPlayMode() == PlayMode.MODE_NORMAL) {
             //进入全屏模式
             mPlayMode = PlayMode.MODE_FULL_SCREEN
-            mParams = LinearLayout.LayoutParams(view.layoutParams)
             // 隐藏ActionBar、状态栏，并横屏
             (mContext as AppCompatActivity).supportActionBar?.hide()
             mContext.window.setFlags(
@@ -332,12 +340,16 @@ class JVideoViewPresenter(
                 WindowManager.LayoutParams.FLAG_FULLSCREEN
             )
             mContext.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+            //设置为充满父布局
             val params = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
-            mContext.window.decorView.systemUiVisibility = View.INVISIBLE
-            view.layoutParams = params
+            //隐藏虚拟按键，并且全屏
+            mContext.window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or View.SYSTEM_UI_FLAG_FULLSCREEN
+            (mView as LinearLayout).layoutParams = params
+            //全屏直接使用手机大小,此时未翻转，高宽对调
+            changeVideoSize(JVideoUtil.getPhoneDisplayHeight(mContext), JVideoUtil.getPhoneDisplayWidth(mContext))
         }
         mView.entrySpecialMode(mPlayMode)
     }
@@ -365,10 +377,14 @@ class JVideoViewPresenter(
         Log.d("pipa", "exitMode")
     }
 
-    override fun openMediaPlayer(surface: SurfaceTexture, width: Int, height: Int) {
+    override fun openMediaPlayer(surface: SurfaceTexture, textureView: TextureView) {
+
         mView.showLoading(true, "播放器初始化中...")
         Log.d("pipa", "openMediaPlayer")
+
         mSurface = mSurface ?: Surface(surface)
+        mTextureView = mTextureView ?: textureView
+
         mPlayState = PlayState.STATE_PREPARING
         val firstUrl = mUrlMap.keys.toList()[0]
         loadVideo(mSurface!!, firstUrl, mUrlMap[firstUrl])
@@ -384,9 +400,9 @@ class JVideoViewPresenter(
 
     override fun getLight(isMax: Boolean): Int {
         var nowBrightnessValue = 0
-        try{
+        try {
             nowBrightnessValue = Settings.System.getInt(mContext.contentResolver, Settings.System.SCREEN_BRIGHTNESS)
-        }catch (e:Exception){
+        } catch (e: Exception) {
 
         }
         return nowBrightnessValue
@@ -450,11 +466,11 @@ class JVideoViewPresenter(
             else -> light = 255
         }
         val params = (mContext as AppCompatActivity).window.attributes
-        params.screenBrightness = light/255f
+        params.screenBrightness = light / 255f
         mContext.window.attributes = params
         //保存亮度
         mLight = light
-        mView.setLightUi(floor( light/255f * 100).toInt())
+        mView.setLightUi(floor(light / 255f * 100).toInt())
     }
 
     private fun setVolume(startVolume: Int, distance: Float) {
@@ -511,20 +527,22 @@ class JVideoViewPresenter(
                 mView.hideOrShowController(true)
                 mView.preparedVideo(getVideoTimeStr(null), duration)
                 //预加载后先播放再暂停，1：防止播放错误-38(未开始就停止) 2：可以显示第一帧画面
-                startPlay()
-                pausePlay()
+                mPlayer?.start()
+                mPlayer?.pause()
             }
             //相当于缓存进度条
             setOnBufferingUpdateListener { mp, percent ->
                 mBufferPercent = percent
                 mView.buffering(percent)
             }
+            //播放错误监听
             setOnErrorListener { mp, what, extra ->
                 Log.d("pipa", "setOnErrorListener:$what")
                 mPlayState = PlayState.STATE_ERROR
                 mView.errorVideo()
                 true
             }
+            //播放信息监听
             setOnInfoListener { mp, what, extra ->
                 when (what) {
                     MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START -> {
@@ -563,6 +581,12 @@ class JVideoViewPresenter(
                 }
                 true
             }
+            //播放尺寸
+            setOnVideoSizeChangedListener { mp, width, height ->
+                //这里是视频的原始尺寸大小
+                changeVideoSize((mView as LinearLayout).width, (mView as LinearLayout).height)
+            }
+
             //设置是否保持屏幕常亮
             setScreenOnWhilePlaying(true)
             //异步的方式装载流媒体文件
@@ -570,6 +594,23 @@ class JVideoViewPresenter(
         }
     }
 
+    private fun changeVideoSize(mJVideoWidth: Int, mJVideoHeight:Int) {
+        mPlayer?.let {
+                val videoWidth = it.videoWidth
+                val videoHeight = it.videoHeight
+                //根据视频尺寸去计算->视频可以在TextureView中放大的最大倍数。
+                val max =
+                        //竖屏模式下按视频宽度计算放大倍数值
+                        max(videoHeight * 1.0 / mJVideoHeight, videoWidth*1.0 /mJVideoWidth )
+                //视频宽高分别/最大倍数值 计算出放大后的视频尺寸
+                 val videoWidth2 = ceil(videoWidth * 1.0 / max).toInt()
+                val videoHeight2 = ceil(videoHeight * 1.0 / max).toInt()
+                Log.d("pipa", "mPlayer:$videoWidth - $videoHeight， jvideo：$mJVideoWidth- $mJVideoHeight, changed:$videoWidth2-$videoHeight2")
+                //无法直接设置视频尺寸，将计算出的视频尺寸设置到surfaceView 让视频自动填充。
+                mTextureView?.layoutParams = LinearLayout.LayoutParams(videoWidth2, videoHeight2)
+            }
+
+    }
 
 
     private fun getVideoTimeStr(position: Int?): String {

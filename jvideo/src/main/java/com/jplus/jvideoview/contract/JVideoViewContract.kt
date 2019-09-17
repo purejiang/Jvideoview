@@ -3,6 +3,7 @@ package com.jplus.jvideoview.contract
 import android.graphics.Bitmap
 import android.graphics.SurfaceTexture
 import android.view.MotionEvent
+import android.view.TextureView
 import android.view.View
 import android.widget.LinearLayout
 
@@ -157,9 +158,8 @@ interface JVideoViewContract {
         fun seekBarPlay(position: Int)
         /**
          * 进入特殊模式
-         * @param view 播放器view
          */
-        fun entrySpecialMode(view:LinearLayout)
+        fun entrySpecialMode()
         /**
          * 退出当前模式
          * @param isBackNormal  是否恢复普通模式
@@ -167,11 +167,10 @@ interface JVideoViewContract {
         fun exitMode(isBackNormal:Boolean)
         /**
          * 通过url加载视频
-         * @param surface 幕布
-         * @param width 视频宽度
-         * @param height 视频高度
+         * @param surface 表面
+         * @param textureView 幕布View
          */
-        fun openMediaPlayer(surface: SurfaceTexture, width: Int, height: Int)
+        fun openMediaPlayer(surface: SurfaceTexture, textureView: TextureView)
         /**
          * 获取播放状态
          * @return 播放的九种状态

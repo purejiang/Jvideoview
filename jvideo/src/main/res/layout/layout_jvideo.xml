@@ -6,11 +6,18 @@
     <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent">
-        <TextureView
-                android:id="@+id/ttv_video_player"
+        <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-        />
+                android:background="@color/video_transparent_bg_dark"
+                android:gravity="center">
+            <TextureView
+                    android:id="@+id/ttv_video_player"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"/>
+        </LinearLayout>
+
+
         <include layout="@layout/layout_controller"/>
 
     </FrameLayout>
