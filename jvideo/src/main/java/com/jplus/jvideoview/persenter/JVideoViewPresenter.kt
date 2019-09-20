@@ -66,6 +66,8 @@ class JVideoViewPresenter(
     private var mIsShowControllerView = false
     private var mVolumeMute = false
 
+    private var mVideoIndex =0
+
     private fun initPresenter() {
         mPlayer = mPlayer ?: MediaPlayer()
         mView.setPresenter(this)
@@ -130,11 +132,14 @@ class JVideoViewPresenter(
         Log.d("pipa", "seekToPlay:$position")
         mPosition = position
         mPlayer?.let {
-            it.seekTo(position)
             if (mPlayState == PlayState.STATE_PAUSED || mPlayState == PlayState.STATE_BUFFERING_PAUSED) {
+                it.seekTo(position)
                 pausePlay()
             } else if (mPlayState == PlayState.STATE_PLAYING || mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
+                it.seekTo(position)
                 continuePlay()
+            }else if(mPlayState == PlayState.STATE_PREPARED){
+                startPlay(position)
             }
         }
         mView.seekToVideo(getVideoTimeStr(position), position)
@@ -164,9 +169,10 @@ class JVideoViewPresenter(
         } else if (mPlayState == PlayState.STATE_BUFFERING_PAUSED) {
             mPlayer?.start()
             mPlayState = PlayState.STATE_BUFFERING_PLAYING
-        } else if (mPlayState == PlayState.STATE_COMPLETED || mPlayState == PlayState.STATE_ERROR) {
-            mPlayer?.reset()
-            loadVideo(mSurface!!, mUrlMap.keys.toList()[0], mUrlMap.keys.toList()[0])
+        } else if (mPlayState == PlayState.STATE_ERROR) {
+            mUrlMap.keys.toList()[mVideoIndex].let{
+                entryVideo(it, mUrlMap[it])
+            }
         } else {
 
         }
@@ -179,11 +185,18 @@ class JVideoViewPresenter(
             mIsBackContinue = false
         } else if (mPlayState == PlayState.STATE_PLAYING || mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
             mIsBackContinue = true
+        } else if (mPlayState == PlayState.STATE_PREPARING){
+            //播放器初始化中不做任何操作
+            return
         }
         pausePlay()
     }
 
     override fun onResume() {
+        //播放器初始化中不做任何操作
+        if (mPlayState == PlayState.STATE_PREPARING){
+            return
+        }
         if (!mIsBackContinue) {
             pausePlay()
         } else {
@@ -287,6 +300,14 @@ class JVideoViewPresenter(
         }
     }
 
+    private  fun entryVideo(url:String?, title:String?){
+        url?.let {
+            mPlayer?.reset()
+            loadVideo(mSurface!!, url, title)
+            return
+        }
+    }
+
     override fun setVolumeMute(isMute: Boolean) {
         if (isMute) {
             mAudioManager?.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0)
@@ -386,8 +407,9 @@ class JVideoViewPresenter(
         mTextureView = mTextureView ?: textureView
 
         mPlayState = PlayState.STATE_PREPARING
-        val firstUrl = mUrlMap.keys.toList()[0]
-        loadVideo(mSurface!!, firstUrl, mUrlMap[firstUrl])
+        mUrlMap.keys.toList()[mVideoIndex].let{
+            entryVideo(it, mUrlMap[it])
+        }
     }
 
     override fun getPlayState(): Int {
@@ -512,23 +534,30 @@ class JVideoViewPresenter(
             setOnCompletionListener {
                 Log.d("pipa", "setOnCompletionListener")
                 mPlayState = PlayState.STATE_COMPLETED
+                if(mVideoIndex in 0 until mUrlMap.size-1) {
+                    mVideoIndex++
+                }
+                mUrlMap.keys.toList()[mVideoIndex].let{
+                    entryVideo(it, mUrlMap[it])
+                }
                 mView.completedVideo()
             }
 
             //播放之前的缓冲监听
-//            setOnSeekCompleteListener {
-//                mPlayState = PlayState.STATE_PREPARED
-//            }
+            setOnSeekCompleteListener {
+//                mPlayState = PlayState.STATE_IDLE
+                Log.d("pipa", "setOnSeekCompleteListener")
+            }
             //预加载监听
             setOnPreparedListener {
                 Log.d("pipa", "setOnPreparedListener")
                 mPlayState = PlayState.STATE_PREPARED
                 mView.showLoading(false, "")
                 mView.hideOrShowController(true)
-                mView.preparedVideo(getVideoTimeStr(null), duration)
                 //预加载后先播放再暂停，1：防止播放错误-38(未开始就停止) 2：可以显示第一帧画面
                 mPlayer?.start()
                 mPlayer?.pause()
+                mView.preparedVideo(getVideoTimeStr(null), duration)
             }
             //相当于缓存进度条
             setOnBufferingUpdateListener { mp, percent ->
@@ -551,6 +580,9 @@ class JVideoViewPresenter(
                         mPlayState = PlayState.STATE_PLAYING
                     }
                     MediaPlayer.MEDIA_INFO_BUFFERING_START -> {
+                        //loading
+                        mView.showLoading(true, "加载中...")
+
                         Log.d("pipa", "MEDIA_INFO_BUFFERING_START")
                         // MediaPlayer暂时不播放，以缓冲更多的数据
                         mPlayState =
@@ -559,8 +591,7 @@ class JVideoViewPresenter(
                             } else {
                                 PlayState.STATE_BUFFERING_PLAYING
                             }
-                        //loading
-                        mView.showLoading(true, "加载中...")
+
                     }
                     MediaPlayer.MEDIA_INFO_BUFFERING_END -> {
                         mView.showLoading(false, "")

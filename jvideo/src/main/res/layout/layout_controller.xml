@@ -81,24 +81,28 @@
 
         </LinearLayout>
         <RelativeLayout
-                android:id="@+id/rly_video_error"
+                android:id="@+id/rly_video_hint"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:gravity="center"
                 android:visibility="gone"
                 android:layout_weight="1">
             <TextView
-                    android:id="@+id/tv_video_error"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:drawableTop="@mipmap/ic_video_refresh"
-                    android:text="播放错误，请重试！"
-                    android:textColor="@color/video_text_color"/>
-            <TextView
                     android:id="@+id/tv_video_refresh"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_toRightOf="@id/tv_video_error"
+                    android:drawableTop="@mipmap/ic_video_refresh"
+                    android:layout_margin="@dimen/view_margin_normal"
+                    android:textSize="12sp"
+                    android:textColor="@color/video_text_color"/>
+            <TextView
+                    android:id="@+id/tv_video_hint1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="12sp"
+                    android:layout_margin="@dimen/view_margin_normal"
+                    android:layout_toRightOf="@id/tv_video_refresh"
+                    android:drawableTop="@mipmap/ic_video_refresh"
                     android:textColor="@color/video_text_color"/>
         </RelativeLayout>
         <LinearLayout

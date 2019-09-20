@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <color name="video_bg_dark">#FA000000</color>
     <color name="video_transparent_bg_dark">#A9000000</color>
     <color name="video_transparent_bg_dark_light">#59000000</color>
     <color name="video_transparent_bg">#00000000</color>

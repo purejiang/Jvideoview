@@ -9,7 +9,7 @@
         <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:background="@color/video_transparent_bg_dark"
+                android:background="@color/video_bg_dark"
                 android:gravity="center">
             <TextureView
                     android:id="@+id/ttv_video_player"

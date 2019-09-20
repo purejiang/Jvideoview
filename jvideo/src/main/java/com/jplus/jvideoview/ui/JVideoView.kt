@@ -56,7 +56,6 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
 
     private fun initListener() {
         ttv_video_player.surfaceTextureListener = this
-
         mPresenter?.run {
             imb_video_center_play.setOnClickListener {
                 Log.d("pipa", "imb_video_center_play, state:${getPlayState()}")
@@ -84,7 +83,6 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
             }
             seek_video_progress?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
-//                    Log.d("pipa","seekbar,progress:"+progress)
                     mPresenter?.seekBarPlay(seekBar.progress)
                 }
 
@@ -93,12 +91,14 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
                 }
 
                 override fun onStopTrackingTouch(seekBar: SeekBar) {
-                    Log.d("pipa","onStopTrackingTouch,progress:"+seekBar.progress)
+                    Log.d("pipa", "onStopTrackingTouch,progress:" + seekBar.progress)
                     mPresenter?.seekToPlay(seekBar.progress)
                 }
 
             })
         }
+        //加载完成前禁止拖动seekBar
+        seek_video_progress.setOnTouchListener { _, _ -> true }
         ly_video_center.setOnTouchListener { v, event ->
             //坐标
             mPresenter?.slideJudge(v, event)
@@ -107,21 +107,16 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
         img_screen_change.setOnClickListener {
             mPresenter?.entrySpecialMode()
         }
-        tv_video_error.setOnClickListener {
-            if(rly_video_error.visibility == VISIBLE){
-                rly_video_error.visibility = GONE
-            }
-            if(ly_video_play.visibility == GONE){
-                ly_video_play.visibility = VISIBLE
-            }
+        tv_video_refresh.setOnClickListener {
+            hideCenterHintUi()
             mPresenter?.continuePlay()
         }
         img_video_volume_open.setOnClickListener {
-            mPresenter?.let{
-                if(it.getVolume(false)==0){
+            mPresenter?.let {
+                if (it.getVolume(false) == 0) {
                     img_video_volume_open.setImageResource(R.mipmap.ic_video_volume_open)
                     it.setVolumeMute(false)
-                }else{
+                } else {
                     img_video_volume_open.setImageResource(R.mipmap.ic_video_volume_close)
                     it.setVolumeMute(true)
                 }
@@ -146,21 +141,19 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
         tv_video_title.text = title
     }
 
-    override fun preparedVideo(videoTime:String, max:Int) {
+    override fun preparedVideo(videoTime: String, max: Int) {
+        seek_video_progress.setOnTouchListener { _, _ -> false }
         tv_video_playing_progress.text = videoTime
         seek_video_progress?.max = max
-        if (imb_video_center_play.visibility == GONE) {
-            imb_video_center_play.visibility = VISIBLE
-        }
+        seek_video_progress?.progress = 0
+        showCenterPlayUi()
         imb_video_control_play.setImageResource(R.mipmap.ic_video_pause)
     }
 
     override fun startVideo(position: Int) {
         rl_controller_bar_layout.setBackgroundResource(0)
         seek_video_progress?.progress = position
-        if (imb_video_center_play.visibility == VISIBLE) {
-            imb_video_center_play.visibility = GONE
-        }
+        hideCenterPlayUi()
         imb_video_control_play.setImageResource(R.mipmap.ic_video_continue)
     }
 
@@ -180,97 +173,145 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
         }
     }
 
-
     override fun continueVideo() {
-        if (imb_video_center_play.visibility == VISIBLE) {
-            imb_video_center_play.visibility = GONE
-        }
+        hideCenterPlayUi()
         imb_video_control_play.setImageResource(R.mipmap.ic_video_continue)
     }
 
     override fun pauseVideo() {
-        if (imb_video_center_play.visibility == GONE) {
-            imb_video_center_play.visibility = VISIBLE
-        }
+        showCenterPlayUi()
         imb_video_control_play.setImageResource(R.mipmap.ic_video_pause)
     }
 
 
-    override fun playing(videoTime:String, position: Int) {
+    override fun playing(videoTime: String, position: Int) {
         tv_video_playing_progress.text = videoTime
         seek_video_progress?.progress = position
     }
-
-
 
     override fun completedVideo() {
 
     }
 
     override fun setLightUi(light: Int) {
-        if (tv_progress_center_top.visibility == GONE) {
-            tv_progress_center_top.visibility = VISIBLE
-        }
-        tv_progress_center_top.text = "亮度：$light%"
+        showTopAdjustUi("亮度：$light%")
     }
 
     override fun setVolumeUi(volumePercent: Int) {
-        if (tv_progress_center_top.visibility == GONE) {
-            tv_progress_center_top.visibility = VISIBLE
-        }
         img_video_volume_open.setImageResource(R.mipmap.ic_video_volume_open)
-        tv_progress_center_top.text = "音量：$volumePercent%"
-
+        showTopAdjustUi("音量：$volumePercent%")
     }
 
-    override fun seekToVideo(videoTime:String, position: Int) {
+    override fun seekToVideo(videoTime: String, position: Int) {
         tv_video_playing_progress.text = videoTime
     }
 
     override fun slidePlayVideo(videoTime: String, position: Int) {
-        if (tv_progress_center_top.visibility == GONE) {
-            tv_progress_center_top.visibility = VISIBLE
-        }
-        tv_progress_center_top.text = "进度：$videoTime"
+        showTopAdjustUi("进度：$videoTime")
         tv_video_playing_progress.text = videoTime
         seek_video_progress?.progress = position
     }
 
-    override fun showLoading(isShow:Boolean, text:String){
+    override fun showLoading(isShow: Boolean, text: String) {
         if (isShow) {
-            if (pgb_video_loading.visibility == GONE) {
-                pgb_video_loading.visibility = VISIBLE
-            }
-            if (tv_video_center_hint.visibility == GONE) {
-                tv_video_center_hint.text = text
-                tv_video_center_hint.visibility = VISIBLE
-            }
-            if (imb_video_center_play.visibility == VISIBLE) {
-                imb_video_center_play.visibility = GONE
-            }
-
+            showLoadingUi(text)
+            hideCenterPlayUi()
         } else {
-            if (tv_video_center_hint.visibility == VISIBLE) {
-                tv_video_center_hint.text = text
-                tv_video_center_hint.visibility = GONE
-            }
-            if (pgb_video_loading.visibility == VISIBLE) {
-                pgb_video_loading.visibility = GONE
-            }
+            hideLoadingUi()
         }
     }
 
-    override fun hideAdjustUi() {
+    private fun showLoadingUi(text: String) {
+        if (pgb_video_loading.visibility == GONE) {
+            pgb_video_loading.visibility = VISIBLE
+        }
+        if (tv_video_center_hint.visibility == GONE) {
+            tv_video_center_hint.text = text
+            tv_video_center_hint.visibility = VISIBLE
+        }
+    }
+
+    private fun hideLoadingUi() {
+        if (tv_video_center_hint.visibility == VISIBLE) {
+            tv_video_center_hint.visibility = GONE
+        }
+        if (pgb_video_loading.visibility == VISIBLE) {
+            pgb_video_loading.visibility = GONE
+        }
+    }
+
+    private fun hideControlUi() {
+        if (ly_video_controller.visibility == VISIBLE) {
+            ly_video_controller.visibility = GONE
+        }
+        if (ly_video_title.visibility == VISIBLE) {
+            ly_video_title.visibility = GONE
+        }
+    }
+
+    private fun showControlUi() {
+        if (ly_video_controller.visibility == GONE) {
+            ly_video_controller.visibility = VISIBLE
+        }
+        if (ly_video_title.visibility == GONE) {
+            ly_video_title.visibility = VISIBLE
+        }
+    }
+
+    private fun hideCenterPlayUi() {
+        if (imb_video_center_play.visibility == VISIBLE) {
+            imb_video_center_play.visibility = GONE
+        }
+    }
+
+    private fun showCenterPlayUi() {
+        if (imb_video_center_play.visibility == GONE) {
+            imb_video_center_play.visibility = VISIBLE
+        }
+    }
+
+    private fun showTopAdjustUi(text: String) {
+        if (tv_progress_center_top.visibility == GONE) {
+            tv_progress_center_top.visibility = VISIBLE
+        }
+        tv_progress_center_top.text = text
+    }
+
+    private fun hideTopAdjustUi() {
         if (tv_progress_center_top.visibility == VISIBLE) {
             tv_progress_center_top.visibility = GONE
         }
     }
 
+    private fun showCenterHintUi(text: String) {
+        if (rly_video_hint.visibility == GONE) {
+            rly_video_hint.visibility = VISIBLE
+        }
+        if (ly_video_play.visibility == VISIBLE) {
+            ly_video_play.visibility = GONE
+        }
+        tv_video_refresh.text = text
+        tv_video_hint1.text = "提示"
+    }
+
+    private fun hideCenterHintUi() {
+        if (rly_video_hint.visibility == VISIBLE) {
+            rly_video_hint.visibility = GONE
+        }
+        if (ly_video_play.visibility == GONE) {
+            ly_video_play.visibility = VISIBLE
+        }
+    }
+
+    override fun hideAdjustUi() {
+        hideTopAdjustUi()
+    }
+
     override fun entrySpecialMode(mode: Int) {
-        mPresenter?.let{
-            if(it.getPlayMode()==PlayMode.MODE_NORMAL){
+        mPresenter?.let {
+            if (it.getPlayMode() == PlayMode.MODE_NORMAL) {
                 img_screen_change.setImageResource(R.mipmap.ic_video_arrawsalt)
-            }else if(it.getPlayMode()==PlayMode.MODE_FULL_SCREEN){
+            } else if (it.getPlayMode() == PlayMode.MODE_FULL_SCREEN) {
                 img_screen_change.setImageResource(R.mipmap.ic_video_shrink)
             }
         }
@@ -278,12 +319,7 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
     }
 
     override fun errorVideo() {
-        if(rly_video_error.visibility == GONE){
-            rly_video_error.visibility = VISIBLE
-        }
-        if(ly_video_play.visibility == VISIBLE){
-            ly_video_play.visibility = GONE
-        }
+        showCenterHintUi("播放错误，请重试！")
     }
 
     override fun exitMode() {
@@ -291,8 +327,7 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
     }
 
     override fun hideOrShowController(isShow: Boolean) {
-        ly_video_title.visibility = if (isShow) VISIBLE else GONE
-        ly_video_controller.visibility = if (isShow) VISIBLE else GONE
+        if (isShow) showControlUi() else hideControlUi()
     }
 
     override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture?, width: Int, height: Int) {
