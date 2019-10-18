@@ -1,12 +1,11 @@
-package com.jplus.jvideoview.ui
+package com.jplus.jvideoview.jvideo
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.Color
 import android.graphics.SurfaceTexture
 import android.graphics.drawable.BitmapDrawable
 import android.os.Build
-import android.support.annotation.RequiresApi
+import androidx.annotation.RequiresApi
 import android.util.AttributeSet
 import android.util.Log
 import android.view.LayoutInflater
@@ -15,11 +14,8 @@ import android.view.View
 import android.widget.LinearLayout
 import android.widget.SeekBar
 import com.jplus.jvideoview.R
-import com.jplus.jvideoview.contract.JVideoViewContract
-import com.jplus.jvideoview.model.JVideoState
-import com.jplus.jvideoview.model.JVideoState.PlayState
-import com.jplus.jvideoview.model.JVideoState.PlayAdjust
-import com.jplus.jvideoview.model.JVideoState.PlayMode
+import com.jplus.jvideoview.jvideo.JVideoState.PlayState
+import com.jplus.jvideoview.jvideo.JVideoState.PlayMode
 import kotlinx.android.synthetic.main.layout_controller.view.*
 import kotlinx.android.synthetic.main.layout_jvideo.view.*
 
@@ -34,7 +30,7 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
 
     private var mPresenter: JVideoViewContract.Presenter? = null
     private var mView: View? = null
-    private var mContext: Context? = null
+    private lateinit var mContext: Context
 
 
     constructor(context: Context) : super(context) {
@@ -51,12 +47,15 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
 
     private fun initControllerView(context: Context) {
         mContext = context
+//        Log.d("pipa", mContext.isInitialized)
         mView = LayoutInflater.from(context).inflate(R.layout.layout_jvideo, this)
     }
 
     private fun initListener() {
+        //设置Texture监听
         ttv_video_player.surfaceTextureListener = this
         mPresenter?.run {
+            //控件的点击、拖动、滑动事件
             imb_video_center_play.setOnClickListener {
                 Log.d("pipa", "imb_video_center_play, state:${getPlayState()}")
                 if (getPlayState() == PlayState.STATE_PLAYING) {
@@ -83,15 +82,16 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
             }
             seek_video_progress?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
+                    //seekBar滑动结束的回调
                     mPresenter?.seekBarPlay(seekBar.progress)
                 }
 
                 override fun onStartTrackingTouch(seekBar: SeekBar) {
-
+                    //seekBar开始滑动的回调
                 }
 
                 override fun onStopTrackingTouch(seekBar: SeekBar) {
-                    Log.d("pipa", "onStopTrackingTouch,progress:" + seekBar.progress)
+                    //seekBar滑动中的回调
                     mPresenter?.seekToPlay(seekBar.progress)
                 }
 
@@ -99,20 +99,24 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
         }
         //加载完成前禁止拖动seekBar
         seek_video_progress.setOnTouchListener { _, _ -> true }
+
         ly_video_center.setOnTouchListener { v, event ->
-            //坐标
+            //屏幕滑动设置播放参数
             mPresenter?.slideJudge(v, event)
             true
         }
         img_screen_change.setOnClickListener {
+            //全屏模式和普通模式的切换
             mPresenter?.entrySpecialMode()
         }
         tv_video_refresh.setOnClickListener {
+            //重新播放
             hideCenterHintUi()
             mPresenter?.continuePlay()
         }
         img_video_volume_open.setOnClickListener {
             mPresenter?.let {
+                //音量ui的显示
                 if (it.getVolume(false) == 0) {
                     img_video_volume_open.setImageResource(R.mipmap.ic_video_volume_open)
                     it.setVolumeMute(false)
@@ -154,6 +158,7 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
         rl_controller_bar_layout.setBackgroundResource(0)
         seek_video_progress?.progress = position
         hideCenterPlayUi()
+        hideCenterHintUi()
         imb_video_control_play.setImageResource(R.mipmap.ic_video_continue)
     }
 
@@ -190,7 +195,7 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
     }
 
     override fun completedVideo() {
-
+        showCenterHintUi("即将播放下个视频")
     }
 
     override fun setLightUi(light: Int) {
@@ -290,8 +295,8 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
         if (ly_video_play.visibility == VISIBLE) {
             ly_video_play.visibility = GONE
         }
-        tv_video_refresh.text = text
-        tv_video_hint1.text = "提示"
+        tv_video_refresh.text = "重新播放"
+        tv_video_hint1.text = text
     }
 
     private fun hideCenterHintUi() {
@@ -318,8 +323,8 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
 
     }
 
-    override fun errorVideo() {
-        showCenterHintUi("播放错误，请重试！")
+    override fun errorVideo(errorInfo:String) {
+        showCenterHintUi(errorInfo)
     }
 
     override fun exitMode() {
@@ -348,6 +353,6 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
     override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
         //这里是原始画布大小
         Log.d("pipa", "onSurfaceTextureAvailable:$width - $height")
-        mPresenter?.openMediaPlayer(surface, ttv_video_player)
+        mPresenter?.textureReady(surface, ttv_video_player)
     }
 }

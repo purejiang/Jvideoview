@@ -12,8 +12,7 @@ import kotlin.math.floor
  * @author JPlus
  * @date 2019/9/2.
  */
-class JVideoUtil {
-    companion object{
+object JVideoUtil {
         /**
          * 播放进度转换为时间
          * @param progress 进度(整型)
@@ -72,6 +71,4 @@ class JVideoUtil {
             }
             return bitmap
         }
-
-    }
 }

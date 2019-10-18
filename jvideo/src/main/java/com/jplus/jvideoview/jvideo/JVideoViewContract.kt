@@ -1,22 +1,20 @@
-package com.jplus.jvideoview.contract
+package com.jplus.jvideoview.jvideo
 
 import android.graphics.Bitmap
 import android.graphics.SurfaceTexture
 import android.view.MotionEvent
 import android.view.TextureView
 import android.view.View
-import android.widget.LinearLayout
+import com.jplus.jvideoview.BasePresenter
+import com.jplus.jvideoview.BaseView
 
 /**
- * @author Administrator
+ * @author JPlus
  * @date 2019/8/30.
  */
 interface JVideoViewContract {
-    interface Views {
-        /**
-         * 设置presenter
-         */
-        fun setPresenter(presenter: Presenter)
+
+    interface Views :BaseView<Presenter>{
         /**
          * 设置播放标题
          * @param title 标题
@@ -86,7 +84,7 @@ interface JVideoViewContract {
         /**
          * 播放错误
          */
-        fun errorVideo()
+        fun errorVideo(errorInfo:String)
         /**
          * 调节亮度
          * @param light 亮度
@@ -115,18 +113,8 @@ interface JVideoViewContract {
          * 隐藏进度控制ui
          */
         fun hideAdjustUi()
-
     }
-
-    interface Presenter {
-        /**
-         * 实现订阅关系
-         */
-        fun subscribe()
-        /**
-         * 移除订阅关系
-         */
-        fun unSubscribe()
+    interface Presenter:BasePresenter {
         /**
          * 开始播放
          * @param position 可选任意位置，默认为初始位置
@@ -166,11 +154,11 @@ interface JVideoViewContract {
          */
         fun exitMode(isBackNormal:Boolean)
         /**
-         * 通过url加载视频
+         * 幕布准备就绪
          * @param surface 表面
          * @param textureView 幕布View
          */
-        fun openMediaPlayer(surface: SurfaceTexture, textureView: TextureView)
+        fun textureReady(surface: SurfaceTexture, textureView: TextureView)
         /**
          * 获取播放状态
          * @return 播放的九种状态
@@ -199,12 +187,16 @@ interface JVideoViewContract {
          */
         fun setVolumeMute(isMute:Boolean)
         /**
+         * 循环播放
+         */
+        fun entryVideoLoop()
+        /**
          * 生命周期onPause()
          */
         fun onPause()
         /**
-        * 生命周期onResume()
-        */
+         * 生命周期onResume()
+         */
         fun onResume()
         /**
          * 获取视频总时长

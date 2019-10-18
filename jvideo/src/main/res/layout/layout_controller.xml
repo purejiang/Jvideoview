@@ -88,20 +88,19 @@
                 android:visibility="gone"
                 android:layout_weight="1">
             <TextView
-                    android:id="@+id/tv_video_refresh"
+                    android:id="@+id/tv_video_hint1"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:drawableTop="@mipmap/ic_video_refresh"
                     android:layout_margin="@dimen/view_margin_normal"
                     android:textSize="12sp"
                     android:textColor="@color/video_text_color"/>
             <TextView
-                    android:id="@+id/tv_video_hint1"
+                    android:id="@+id/tv_video_refresh"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textSize="12sp"
                     android:layout_margin="@dimen/view_margin_normal"
-                    android:layout_toRightOf="@id/tv_video_refresh"
+                    android:layout_toRightOf="@id/tv_video_hint1"
                     android:drawableTop="@mipmap/ic_video_refresh"
                     android:textColor="@color/video_text_color"/>
         </RelativeLayout>
