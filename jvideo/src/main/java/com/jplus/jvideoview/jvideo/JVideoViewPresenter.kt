@@ -364,8 +364,10 @@ class JVideoViewPresenter(
             mContext.window.decorView.systemUiVisibility =
                 View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or View.SYSTEM_UI_FLAG_FULLSCREEN
             (mView as LinearLayout).layoutParams = params
-            //全屏直接使用手机大小,此时未翻转，高宽对调
-            changeVideoSize(JVideoUtil.getPhoneDisplayHeight(mContext), JVideoUtil.getPhoneDisplayWidth(mContext))
+            //全屏直接使用手机大小,此时未翻转的话，高宽对调
+            val phoneWidth = JVideoUtil.getPhoneDisplayWidth(mContext)
+            val phoneHeight = JVideoUtil.getPhoneDisplayHeight(mContext)
+            changeVideoSize(if(phoneHeight > phoneWidth) phoneHeight else phoneWidth, if(phoneHeight > phoneWidth) phoneWidth else phoneHeight)
         }
         mView.entrySpecialMode(mPlayMode)
     }
@@ -644,6 +646,7 @@ class JVideoViewPresenter(
             //播放尺寸
             setOnVideoSizeChangedListener { mp, width, height ->
                 //这里是视频的原始尺寸大小
+                Log.d("pipa", "setOnVideoSizeChangedListener")
                 changeVideoSize((mView as LinearLayout).width, (mView as LinearLayout).height)
             }
 
@@ -655,19 +658,20 @@ class JVideoViewPresenter(
     }
 
     private fun changeVideoSize(mJVideoWidth: Int, mJVideoHeight: Int) {
+        val jwidth = if(mJVideoWidth<0) 1080 else mJVideoWidth
         mPlayer?.let {
             val videoWidth = it.videoWidth
             val videoHeight = it.videoHeight
             //根据视频尺寸去计算->视频可以在TextureView中放大的最大倍数。
             val max =
                 //竖屏模式下按视频宽度计算放大倍数值
-                max(videoHeight * 1.0 / mJVideoHeight, videoWidth * 1.0 / mJVideoWidth)
+                max(videoHeight * 1.0 / mJVideoHeight, videoWidth * 1.0 / jwidth)
             //视频宽高分别/最大倍数值 计算出放大后的视频尺寸
             val videoWidth2 = ceil(videoWidth * 1.0 / max).toInt()
             val videoHeight2 = ceil(videoHeight * 1.0 / max).toInt()
             Log.d(
                 "pipa",
-                "mPlayer:$videoWidth - $videoHeight， jvideo：$mJVideoWidth- $mJVideoHeight, changed:$videoWidth2-$videoHeight2"
+                "mPlayer:$videoWidth - $videoHeight， jvideo：$jwidth- $mJVideoHeight, changed:$videoWidth2-$videoHeight2"
             )
             //无法直接设置视频尺寸，将计算出的视频尺寸设置到surfaceView 让视频自动填充。
             mTextureView?.layoutParams = LinearLayout.LayoutParams(videoWidth2, videoHeight2)
