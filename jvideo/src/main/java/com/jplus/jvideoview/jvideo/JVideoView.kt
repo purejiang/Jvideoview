@@ -5,7 +5,6 @@ import android.graphics.Bitmap
 import android.graphics.SurfaceTexture
 import android.graphics.drawable.BitmapDrawable
 import android.os.Build
-import androidx.annotation.RequiresApi
 import android.util.AttributeSet
 import android.util.Log
 import android.view.LayoutInflater
@@ -13,11 +12,17 @@ import android.view.TextureView
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.SeekBar
+import androidx.annotation.RequiresApi
 import com.jplus.jvideoview.R
-import com.jplus.jvideoview.jvideo.JVideoState.PlayState
 import com.jplus.jvideoview.jvideo.JVideoState.PlayMode
+import com.jplus.jvideoview.jvideo.JVideoState.PlayState
+import kotlinx.android.synthetic.main.layout_control_bottom.view.*
+import kotlinx.android.synthetic.main.layout_control_center.view.*
+import kotlinx.android.synthetic.main.layout_control_slide.view.*
 import kotlinx.android.synthetic.main.layout_controller.view.*
+import kotlinx.android.synthetic.main.layout_controller_top.view.*
 import kotlinx.android.synthetic.main.layout_jvideo.view.*
+import kotlinx.android.synthetic.main.layout_line_progress.view.*
 
 
 /**
@@ -31,7 +36,6 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
     private var mPresenter: JVideoViewContract.Presenter? = null
     private var mView: View? = null
     private lateinit var mContext: Context
-
 
     constructor(context: Context) : super(context) {
         initControllerView(context)
@@ -82,8 +86,8 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
             }
             seek_video_progress?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
-                    //seekBar滑动结束的回调
-                    mPresenter?.seekBarPlay(seekBar.progress)
+                    //seekBar滑动中的回调
+                    mPresenter?.seekingPlay(seekBar.progress, false)
                 }
 
                 override fun onStartTrackingTouch(seekBar: SeekBar) {
@@ -91,8 +95,8 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
                 }
 
                 override fun onStopTrackingTouch(seekBar: SeekBar) {
-                    //seekBar滑动中的回调
-                    mPresenter?.seekToPlay(seekBar.progress)
+                    //seekBar滑动结束的回调
+                    mPresenter?.seekCompletePlay(seekBar.progress)
                 }
 
             })
@@ -107,7 +111,14 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
         }
         img_screen_change.setOnClickListener {
             //全屏模式和普通模式的切换
-            mPresenter?.entrySpecialMode()
+            mPresenter?.let {
+                if (it.getPlayMode() == PlayMode.MODE_NORMAL) {
+                    it.setSpecialMode(PlayMode.MODE_FULL_SCREEN)
+                } else {
+                    it.exitMode(true)
+                }
+            }
+
         }
         tv_video_refresh.setOnClickListener {
             //重新播放
@@ -126,18 +137,25 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
                 }
             }
         }
+        imb_video_back.setOnClickListener {
+            mPresenter?.exitMode(true)
+        }
     }
+
 
     override fun setThumbnail(bitmap: Bitmap?) {
-        rl_controller_bar_layout.background = BitmapDrawable(null, bitmap)
+        rl_controller_layout.background = BitmapDrawable(null, bitmap)
     }
 
-    override fun showSpeed(speed: String) {
-
+    override fun showNetSpeed(speed: String) {
+        if (tv_video_loading.visibility == VISIBLE) {
+            tv_video_loading.text = speed
+        }
     }
 
-    override fun setPresenter(presenter: JVideoViewContract.Presenter) {
-        mPresenter = presenter
+    override fun setPresenter(t: JVideoViewContract.Presenter) {
+        mPresenter = t
+        mPresenter?.setPlayForm(JVideoState.PlayForm.PLAYBACK_ONE_LOOP)
         initListener()
     }
 
@@ -145,17 +163,27 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
         tv_video_title.text = title
     }
 
+    override fun showMessagePrompt(message: String) {
+        showMessageUi(message)
+    }
+
     override fun preparedVideo(videoTime: String, max: Int) {
-        seek_video_progress.setOnTouchListener { _, _ -> false }
+        hideCenterHintUi()
         tv_video_playing_progress.text = videoTime
+        //加载完成后可以拖动seekBar
+        seek_video_progress.setOnTouchListener { _, _ -> false }
         seek_video_progress?.max = max
         seek_video_progress?.progress = 0
+
+        pgb_video_line_progress?.max = max
+        pgb_video_line_progress?.progress = 0
+
         showCenterPlayUi()
         imb_video_control_play.setImageResource(R.mipmap.ic_video_pause)
     }
 
     override fun startVideo(position: Int) {
-        rl_controller_bar_layout.setBackgroundResource(0)
+        rl_controller_layout.setBackgroundResource(0)
         seek_video_progress?.progress = position
         hideCenterPlayUi()
         hideCenterHintUi()
@@ -164,10 +192,10 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
 
 
     override fun buffering(percent: Int) {
-        seek_video_progress.secondaryProgress = if (percent == 100) {
-            0
-        } else {
-            (seek_video_progress.max) * percent / 100
+        Log.d("pipa", "缓冲百分比:${percent / 100.0}")
+        seek_video_progress.secondaryProgress = (seek_video_progress.max) * percent / 100
+        if(ly_video_line.visibility == VISIBLE){
+            pgb_video_line_progress?.secondaryProgress = (seek_video_progress.max) * percent / 100
         }
         mPresenter?.let {
             if (it.getPlayState() == PlayState.STATE_BUFFERING_PLAYING) {
@@ -180,11 +208,13 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
 
     override fun continueVideo() {
         hideCenterPlayUi()
+        hideLoadingUi()
         imb_video_control_play.setImageResource(R.mipmap.ic_video_continue)
     }
 
     override fun pauseVideo() {
         showCenterPlayUi()
+        hideLoadingUi()
         imb_video_control_play.setImageResource(R.mipmap.ic_video_pause)
     }
 
@@ -192,10 +222,13 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
     override fun playing(videoTime: String, position: Int) {
         tv_video_playing_progress.text = videoTime
         seek_video_progress?.progress = position
+        if(ly_video_line.visibility == VISIBLE){
+            pgb_video_line_progress?.progress = position
+        }
     }
 
-    override fun completedVideo() {
-        showCenterHintUi("即将播放下个视频")
+    override fun completedVideo(message: String) {
+        showMessageUi(message)
     }
 
     override fun setLightUi(light: Int) {
@@ -207,15 +240,17 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
         showTopAdjustUi("音量：$volumePercent%")
     }
 
-    override fun seekToVideo(videoTime: String, position: Int) {
+    override fun seekingVideo(videoTime: String, position: Int, isSlide: Boolean) {
         tv_video_playing_progress.text = videoTime
+        if (isSlide) {
+            showTopAdjustUi("进度：$videoTime")
+            seek_video_progress?.progress = position
+            if(ly_video_line.visibility == VISIBLE){
+                pgb_video_line_progress?.progress = position
+            }
+        }
     }
 
-    override fun slidePlayVideo(videoTime: String, position: Int) {
-        showTopAdjustUi("进度：$videoTime")
-        tv_video_playing_progress.text = videoTime
-        seek_video_progress?.progress = position
-    }
 
     override fun showLoading(isShow: Boolean, text: String) {
         if (isShow) {
@@ -226,28 +261,35 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
         }
     }
 
-    private fun showLoadingUi(text: String) {
-        if (pgb_video_loading.visibility == GONE) {
-            pgb_video_loading.visibility = VISIBLE
-        }
-        if (tv_video_center_hint.visibility == GONE) {
-            tv_video_center_hint.text = text
-            tv_video_center_hint.visibility = VISIBLE
+    private fun showBottomLineUi() {
+        if(ly_video_line.visibility == GONE){
+            ly_video_line.visibility = VISIBLE
         }
     }
 
-    private fun hideLoadingUi() {
-        if (tv_video_center_hint.visibility == VISIBLE) {
-            tv_video_center_hint.visibility = GONE
+    private fun hideBottomLineUi() {
+        if(ly_video_line.visibility == VISIBLE){
+            ly_video_line.visibility = GONE
         }
-        if (pgb_video_loading.visibility == VISIBLE) {
-            pgb_video_loading.visibility = GONE
+    }
+
+    private fun showLoadingUi(text: String) {
+        if (ly_video_loading.visibility == GONE) {
+            tv_video_loading.text = text
+            ly_video_loading.visibility = VISIBLE
+        }
+        hideCenterPlayUi()
+    }
+
+    private fun hideLoadingUi() {
+        if (ly_video_loading.visibility == VISIBLE) {
+            ly_video_loading.visibility = GONE
         }
     }
 
     private fun hideControlUi() {
-        if (ly_video_controller.visibility == VISIBLE) {
-            ly_video_controller.visibility = GONE
+        if (ly_video_bottom_controller.visibility == VISIBLE) {
+            ly_video_bottom_controller.visibility = GONE
         }
         if (ly_video_title.visibility == VISIBLE) {
             ly_video_title.visibility = GONE
@@ -255,8 +297,8 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
     }
 
     private fun showControlUi() {
-        if (ly_video_controller.visibility == GONE) {
-            ly_video_controller.visibility = VISIBLE
+        if (ly_video_bottom_controller.visibility == GONE) {
+            ly_video_bottom_controller.visibility = VISIBLE
         }
         if (ly_video_title.visibility == GONE) {
             ly_video_title.visibility = VISIBLE
@@ -264,47 +306,43 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
     }
 
     private fun hideCenterPlayUi() {
-        if (imb_video_center_play.visibility == VISIBLE) {
-            imb_video_center_play.visibility = GONE
+        if (ly_video_play.visibility == VISIBLE) {
+            ly_video_play.visibility = GONE
         }
     }
 
     private fun showCenterPlayUi() {
-        if (imb_video_center_play.visibility == GONE) {
-            imb_video_center_play.visibility = VISIBLE
+        if (ly_video_play.visibility == GONE) {
+            ly_video_play.visibility = VISIBLE
         }
     }
 
     private fun showTopAdjustUi(text: String) {
-        if (tv_progress_center_top.visibility == GONE) {
-            tv_progress_center_top.visibility = VISIBLE
+        if (ly_video_slide.visibility == GONE) {
+            ly_video_slide.visibility = VISIBLE
         }
-        tv_progress_center_top.text = text
+        tv_slide_top.text = text
     }
 
     private fun hideTopAdjustUi() {
-        if (tv_progress_center_top.visibility == VISIBLE) {
-            tv_progress_center_top.visibility = GONE
+        if (ly_video_slide.visibility == VISIBLE) {
+            ly_video_slide.visibility = GONE
         }
     }
 
-    private fun showCenterHintUi(text: String) {
-        if (rly_video_hint.visibility == GONE) {
-            rly_video_hint.visibility = VISIBLE
+    private fun showMessageUi(text: String) {
+        if (ly_video_hint.visibility == GONE) {
+            ly_video_hint.visibility = VISIBLE
         }
-        if (ly_video_play.visibility == VISIBLE) {
-            ly_video_play.visibility = GONE
-        }
+        hideCenterPlayUi()
+        hideLoadingUi()
         tv_video_refresh.text = "重新播放"
         tv_video_hint1.text = text
     }
 
     private fun hideCenterHintUi() {
-        if (rly_video_hint.visibility == VISIBLE) {
-            rly_video_hint.visibility = GONE
-        }
-        if (ly_video_play.visibility == GONE) {
-            ly_video_play.visibility = VISIBLE
+        if (ly_video_hint.visibility == VISIBLE) {
+            ly_video_hint.visibility = GONE
         }
     }
 
@@ -314,25 +352,34 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
 
     override fun entrySpecialMode(mode: Int) {
         mPresenter?.let {
-            if (it.getPlayMode() == PlayMode.MODE_NORMAL) {
-                img_screen_change.setImageResource(R.mipmap.ic_video_arrawsalt)
-            } else if (it.getPlayMode() == PlayMode.MODE_FULL_SCREEN) {
+            if (mode == PlayMode.MODE_FULL_SCREEN) {
                 img_screen_change.setImageResource(R.mipmap.ic_video_shrink)
+                //显示返回键
+                if (imb_video_back.visibility == GONE) {
+                    imb_video_back.visibility = VISIBLE
+                }
             }
+        }
+    }
+
+    override fun exitMode() {
+        img_screen_change.setImageResource(R.mipmap.ic_video_arrawsalt)
+        //隐藏返回键
+        if (imb_video_back.visibility == VISIBLE) {
+            imb_video_back.visibility = GONE
         }
 
     }
 
-    override fun errorVideo(errorInfo:String) {
-        showCenterHintUi(errorInfo)
-    }
-
-    override fun exitMode() {
-
-    }
-
     override fun hideOrShowController(isShow: Boolean) {
-        if (isShow) showControlUi() else hideControlUi()
+        Log.d("pipa", "hideOrShowController:$isShow")
+        if (isShow) {
+            showControlUi()
+            hideBottomLineUi()
+        } else {
+            hideControlUi()
+            showBottomLineUi()
+        }
     }
 
     override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture?, width: Int, height: Int) {

@@ -4,4 +4,6 @@
     <dimen name="view_margin_small">5dp</dimen>
     <dimen name="view_margin_normal">8dp</dimen>
     <dimen name="view_margin_big">12dp</dimen>
+    <dimen name="view_slide_margin_top">60dp</dimen>
+    <dimen name="video_line_bottom">2.5dp</dimen>
 </resources>

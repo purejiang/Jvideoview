@@ -1,5 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.jplus.jvideoview" >
+          package="com.jplus.jvideoview"
+          android:versionCode="1"
+          android:versionName="0.0.1">
     <uses-permission android:name="android.permission.INTERNET"/>
     <application>
 

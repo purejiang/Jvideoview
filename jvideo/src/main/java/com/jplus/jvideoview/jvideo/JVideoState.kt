@@ -15,21 +15,21 @@ class JVideoState {
                  */
                 const val STATE_ERROR = -1
                 /**
-                 * 播放未开始
+                 * 播放器闲置转态
                  */
                 const val STATE_IDLE = 0
                 /**
+                 * 播放器初始化完成
+                 */
+                const val STATE_INITLIZED = 1
+                /**
                  * 播放准备中
                  */
-                const val STATE_PREPARING = 1
+                const val STATE_PREPARING = 2
                 /**
                  * 播放准备就绪
                  */
-                const val STATE_PREPARED = 2
-                /**
-                 * 开始播放
-                 */
-                const val STATE_START = 3
+                const val STATE_PREPARED = 3
                 /**
                  * 正在播放
                  */
@@ -81,15 +81,49 @@ class JVideoState {
             /**
              * 音量调节
              */
-            const val ADJUST_VOLUME = 13
+            const val ADJUST_VOLUME = 20
             /**
              * 亮度调节
              */
-            const val ADJUST_LIGHT = 14
+            const val ADJUST_LIGHT = 21
             /**
              * 快退快进
              */
-            const val ADJUST_VIDEO = 15
+            const val ADJUST_VIDEO = 22
+        }
+    }
+    /**
+     * 播放引擎
+     */
+    class PlayBackEngine{
+        companion object{
+            /**
+             * android 自带
+             */
+            const val PLAYBACK_MDEIA_PLAYER = 30
+            /**
+             * IjkPlayer
+             */
+            const val PLAYBACK_IJK_PLAYER = 31
+        }
+    }
+    /**
+     * 播放形式
+     */
+    class PlayForm{
+        companion object{
+            /**
+             * 顺序播放
+             */
+            const val PLAYFORM_TURN= 40
+            /**
+             * 单视频循环
+             */
+            const val PLAYBACK_ONE_LOOP = 41
+            /**
+             * 单视频播放
+             */
+            const val PLAYBACK_ONE_END = 42
         }
     }
 }

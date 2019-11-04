@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@android:id/background">
+        <shape>
+            <corners android:radius="1.5dp" />
+            <size android:height="3dp"/>
+            <solid android:color="@color/video_transparent_bg"/>
+        </shape>
+    </item>
+
+    <item android:id="@android:id/secondaryProgress">
+        <clip>
+            <shape>
+                <corners android:radius="1.5dp"/>
+                <size android:height="5dp"/>
+                <solid android:color="@color/seek_bar_progress_second"/>
+            </shape>
+        </clip>
+    </item>
+
+    <item android:id="@android:id/progress">
+        <clip>
+            <shape>
+                <corners android:radius="1.5dp"/>
+                <size android:height="3dp"/>
+                <gradient android:startColor="@color/video_line_progress_start"
+                          android:centerColor="@color/video_line_progress_center"
+                          android:endColor="@color/video_line_progress_end"/>
+            </shape>
+        </clip>
+    </item>
+</layer-list>

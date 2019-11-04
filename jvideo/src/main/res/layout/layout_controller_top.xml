@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:id="@+id/ly_video_title"
+              android:layout_width="match_parent"
+              android:layout_height="@dimen/controller_height"
+              android:background="@drawable/bg_top_controller_trans"
+              android:gravity="center_vertical"
+              android:orientation="horizontal">
+
+        <ImageButton
+                android:id="@+id/imb_video_back"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/view_margin_small"
+                android:background="@color/video_transparent_bg"
+                android:src="@mipmap/ic_video_back"
+        />
+        <TextView
+                android:id="@+id/tv_video_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/video_text_color"
+                android:layout_margin="@dimen/view_margin_small"
+                android:text="标题"
+                android:textSize="14sp"/>
+
+</LinearLayout>

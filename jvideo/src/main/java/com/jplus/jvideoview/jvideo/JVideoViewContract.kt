@@ -27,16 +27,16 @@ interface JVideoViewContract {
          */
         fun showLoading(isShow:Boolean, text:String)
         /**
-         * 缓冲中
-         *@param percent 百分比
-         */
-        fun buffering(percent:Int)
-        /**
          * 播放准备就绪
          * @param videoTime 播放时间
          * @param max 最大进度
          */
         fun preparedVideo(videoTime:String, max:Int)
+        /**
+         * 缓冲中
+         *@param percent 百分比
+         */
+        fun buffering(percent:Int)
         /**
          * 缩略图
          */
@@ -50,7 +50,7 @@ interface JVideoViewContract {
          * 显示实时网速
          * @param speed 实时网速
          */
-        fun showSpeed(speed: String)
+        fun showNetSpeed(speed: String)
         /**
          * 播放中
          *  @param videoTime 播放时间
@@ -58,17 +58,10 @@ interface JVideoViewContract {
          */
         fun playing(videoTime:String, position: Int)
         /**
-         * seek到某个位置播放
+         * seek滑动到某个位置的UI显示
          * @param videoTime 播放时间
-         * @param position 任意位置
          */
-        fun seekToVideo(videoTime:String, position: Int)
-        /**
-         * 手势滑动快进/后退
-         * @param videoTime 播放时间
-         * @param position 任意位置
-         */
-        fun slidePlayVideo(videoTime:String, position: Int)
+        fun seekingVideo(videoTime:String, position: Int, isSlide: Boolean)
         /**
          * 暂停播放
          */
@@ -79,12 +72,14 @@ interface JVideoViewContract {
         fun continueVideo()
         /**
          * 播放完成
+         * @param message
          */
-        fun completedVideo()
+        fun completedVideo(message: String)
         /**
-         * 播放错误
+         * 显示提示消息
+         * @param message 显示的内容
          */
-        fun errorVideo(errorInfo:String)
+        fun showMessagePrompt(message:String)
         /**
          * 调节亮度
          * @param light 亮度
@@ -121,18 +116,26 @@ interface JVideoViewContract {
          */
         fun startPlay(position: Int = 0)
         /**
-         * seek到某个位置继续播放
-         * @param position 任意位置
-         */
-        fun seekToPlay(position: Int)
-        /**
          * 暂停播放
          */
         fun pausePlay()
         /**
+         * 播放完成
+         * @param videoUrl 接下来的视频Url
+         */
+        fun completedPlay(videoUrl:String?)
+        /**
          * 继续播放
          */
         fun continuePlay()
+        /**
+         * 重新播放
+         */
+        fun resetPlay()
+        /**
+         * 播放错误
+         */
+        fun errorPlay(what: Int, extra: Int, message:String)
         /**
          * 手势判断
          * @param view View
@@ -140,25 +143,45 @@ interface JVideoViewContract {
          */
         fun slideJudge(view:View, event:MotionEvent)
         /**
-         * 进度条拖动快进/后退
+         * 滑动中
+         * @param position 进度条进度
+         * @param isSlide 是否为手势滑动
+         */
+        fun seekingPlay(position: Int, isSlide: Boolean)
+        /**
+         * 滑动完成
          * @param position 进度条进度
          */
-        fun seekBarPlay(position: Int)
+        fun seekCompletePlay(position: Int)
         /**
-         * 进入特殊模式
+         * 设置播放模式
+         * @param playMode 播放模式
          */
-        fun entrySpecialMode()
+        fun setSpecialMode(playMode:Int)
         /**
          * 退出当前模式
          * @param isBackNormal  是否恢复普通模式
          */
         fun exitMode(isBackNormal:Boolean)
         /**
+         * 设置播放顺序
+         * @param playForm
+         */
+        fun setPlayForm(playForm:Int)
+        /**
+         * 获取播放源
+         */
+        fun loadVideosData()
+        /**
          * 幕布准备就绪
          * @param surface 表面
          * @param textureView 幕布View
          */
         fun textureReady(surface: SurfaceTexture, textureView: TextureView)
+        /**
+         * 预加载完成
+         */
+        fun preparedPlay()
         /**
          * 获取播放状态
          * @return 播放的九种状态

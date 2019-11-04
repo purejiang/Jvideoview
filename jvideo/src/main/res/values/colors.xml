@@ -4,8 +4,12 @@
     <color name="video_transparent_bg_dark">#A9000000</color>
     <color name="video_transparent_bg_dark_light">#59000000</color>
     <color name="video_transparent_bg">#00000000</color>
-    <color name="seek_bar_progress">#E95325</color>
+    <color name="video_bar_bg_gray_light">#51D5D5D5</color>
+    <color name="video_line_progress_start">#9661FA</color>
+    <color name="video_line_progress_center">#7B3AF7</color>
+    <color name="video_line_progress_end">#6617FA</color>
+    <color name="seek_bar_progress">#D1B8FF</color>
     <color name="seek_bar_progress_second">#DFFFFFFF</color>
-    <color name="seek_bar_progress_thumb">#CE3400</color>
+    <color name="seek_bar_progress_thumb">#7E57CA</color>
     <color name="video_text_color">#FFFFFF</color>
 </resources>
