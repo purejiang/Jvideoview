@@ -71,11 +71,6 @@ interface JVideoViewContract {
          */
         fun continueVideo()
         /**
-         * 播放完成
-         * @param message
-         */
-        fun completedVideo(message: String)
-        /**
          * 显示提示消息
          * @param message 显示的内容
          */
@@ -128,6 +123,14 @@ interface JVideoViewContract {
          * 继续播放
          */
         fun continuePlay()
+        /**
+         * 缓冲中
+         */
+        fun buffering()
+        /**
+         * 缓冲完成
+         */
+        fun buffered()
         /**
          * 重新播放
          */

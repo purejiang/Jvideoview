@@ -56,6 +56,7 @@ class JVideoViewPresenter(
     private var mAudioManager: AudioManager? = null
     private var mRunnable: Runnable? = null
     private var mHideRunnable: Runnable? = null
+    private var mSpeedRunnable: Runnable? = null
 
     private var mStartVolume = 0
     private var mStartPosition = 0
@@ -65,7 +66,7 @@ class JVideoViewPresenter(
     private var mLight = 0
     private var mIsFirstDown = true
     private var mBufferPercent = 0
-    private var mIsBackContinue = false
+    private var mIsBackContinue: Boolean? = null
 
     private val mHandler = Handler()
     private var mIsShowControllerView = false
@@ -83,6 +84,7 @@ class JVideoViewPresenter(
             mView.hideOrShowController(false)
             mIsShowControllerView = false
         }
+
     }
 
     override fun subscribe() {
@@ -94,6 +96,7 @@ class JVideoViewPresenter(
         }
         Log.d("pipa", "initMediaPlayer:$mPlayer")
         initAudio()
+        mView.showLoading(false, "初始化完成")
     }
 
     override fun unSubscribe() {
@@ -168,7 +171,7 @@ class JVideoViewPresenter(
 
             //预加载监听
             it.setOnPreparedListener {
-                mView.showLoading(false, "初始化完成")
+
                 preparedPlay()
             }
 
@@ -195,11 +198,7 @@ class JVideoViewPresenter(
                         mPlayState = PlayState.STATE_PLAYING
                     }
                     MediaPlayer.MEDIA_INFO_BUFFERING_START -> {
-                        //loading
-                        mView.showLoading(true, "缓冲中...")
-                        if (it is IjkMediaPlayer) {
-                            mView.showNetSpeed("" + (it as IjkMediaPlayer).tcpSpeed / 1024 + "K/s")
-                        }
+                        buffering()
                         Log.d("pipa", "MEDIA_INFO_BUFFERING_START")
                         // MediaPlayer暂时不播放，以缓冲更多的数据
                         mPlayState =
@@ -211,8 +210,7 @@ class JVideoViewPresenter(
 
                     }
                     IMediaPlayer.MEDIA_INFO_BUFFERING_END -> {
-                        mView.showLoading(false, "缓冲完成")
-                        Log.d("pipa", "MEDIA_INFO_BUFFERING_END")
+                        buffered()
                         // 填充缓冲区后，MediaPlayer恢复播放/暂停
                         if (mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
                             mPlayState = PlayState.STATE_PLAYING
@@ -263,6 +261,26 @@ class JVideoViewPresenter(
         runVideoTime()
     }
 
+    override fun buffering() {
+        //loading
+        mView.showLoading(true, "缓冲中...")
+        mPlayer?.let {
+            if (it is IjkMediaPlayer) {
+                mSpeedRunnable = mSpeedRunnable ?: Runnable {
+                    mView.showNetSpeed("" + it.tcpSpeed / 1024 + "K/s")
+                }
+                //重复调起自身
+                mHandler.postDelayed(mSpeedRunnable, 500)
+            }
+        }
+    }
+    override fun buffered() {
+        mView.showLoading(false, "缓冲完成")
+        Log.d("pipa", "MEDIA_INFO_BUFFERING_END")
+        if (mPlayer is IjkMediaPlayer) {
+            mHandler.removeCallbacks(mSpeedRunnable)
+        }
+    }
     override fun seekCompletePlay(position: Int) {
         Log.d("pipa", "seekToPlay:$position")
         mPosition = position
@@ -301,31 +319,39 @@ class JVideoViewPresenter(
         mPlayState = PlayState.STATE_COMPLETED
         when (mPlayForm) {
             PlayForm.PLAYFORM_TURN -> {
-                //播放结束后的显示
-                mView.completedVideo("即将播放下个视频~")
-                //播放结束后，重新设置播放器，避免再次调用setDataSource()时出现IllegalStateException
                 mVideoIndex++
-                Handler().postDelayed(
+
+                //播放结束后的显示,如果播放完成则显示
+                if (mVideoIndex > mVideoList.size) {
+                    mView.showMessagePrompt("视频已播放结束~")
+                    mPlayer?.stop()
+                    return
+                }
+
+                mView.showMessagePrompt("即将播放下个视频~")
+                //播放结束后，重新设置播放器，避免再次调用setDataSource()时出现IllegalStateException
+                mHandler.postDelayed(
                     {
                         entryVideoLoop()
-                    }, 3000
+                    }, 1000
                 )
             }
             PlayForm.PLAYBACK_ONE_LOOP -> {
                 //播放结束后的显示
-                mView.completedVideo("即将重新播放该视频~")
-                Handler().postDelayed(
+                mView.showMessagePrompt("即将重新播放该视频~")
+                mHandler.postDelayed(
                     {
                         entryVideoLoop()
-                    }, 3000
+                    }, 1000
                 )
             }
             else -> //播放结束后的显示
-                mView.completedVideo("播放结束~")
+                mView.showMessagePrompt("播放结束~")
         }
     }
 
     override fun preparedPlay() {
+        mView.showLoading(false, "预加载完成")
         Log.d("pipa", "setOnPreparedListener")
         mPlayer?.let {
             mPlayState = PlayState.STATE_PREPARED
@@ -372,12 +398,13 @@ class JVideoViewPresenter(
 
 
     override fun onPause() {
-        if (mPlayState == PlayState.STATE_PAUSED || mPlayState == PlayState.STATE_BUFFERING_PAUSED) {
-            mIsBackContinue = false
+        mIsBackContinue = if (mPlayState == PlayState.STATE_PAUSED || mPlayState == PlayState.STATE_BUFFERING_PAUSED) {
+            false
         } else if (mPlayState == PlayState.STATE_PLAYING || mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
-            mIsBackContinue = true
-        } else if (mPlayState == PlayState.STATE_PREPARING) {
-            //播放器初始化中不做任何操作
+            true
+        } else {
+            //播放器初始化或者播放完成、播放错误时中不做任何操作
+            mIsBackContinue = null
             return
         }
         pausePlay()
@@ -385,14 +412,12 @@ class JVideoViewPresenter(
 
     override fun onResume() {
         //播放器初始化中不做任何操作
-        if (mPlayState == PlayState.STATE_PREPARING || mPlayState == PlayState.STATE_IDLE) {
-            return
-        }
-        if (!mIsBackContinue) {
-            pausePlay()
-            Log.e("pipa", "pause+play:" + mPlayState)
-        } else {
-            continuePlay()
+        mIsBackContinue?.let {
+            if (!it) {
+                pausePlay()
+            } else {
+                continuePlay()
+            }
         }
     }
 
@@ -581,11 +606,11 @@ class JVideoViewPresenter(
         if (isShow) {
             mView.hideOrShowController(true)
             mIsShowControllerView = true
-            if(mPlayState == PlayState.STATE_PLAYING){
+            if (mPlayState == PlayState.STATE_PLAYING) {
                 mHandler.postDelayed(mHideRunnable, 5000)
             }
         } else {
-            if(isClick){
+            if (isClick) {
                 mHandler.removeCallbacks(mHideRunnable)
                 mView.hideOrShowController(false)
                 mIsShowControllerView = false
@@ -607,7 +632,7 @@ class JVideoViewPresenter(
         }
         mHandler.post(mRunnable)
 
-        if(mIsShowControllerView){
+        if (mIsShowControllerView) {
             mHandler.postDelayed(mHideRunnable, 5000)
         }
     }
@@ -616,7 +641,7 @@ class JVideoViewPresenter(
         //停止计时
         mHandler.removeCallbacks(mRunnable)
 
-        if(mIsShowControllerView) {
+        if (mIsShowControllerView) {
             mHandler.removeCallbacks(mHideRunnable)
         }
     }
@@ -633,29 +658,27 @@ class JVideoViewPresenter(
     //获取数据源
     override fun loadVideosData() {
         Log.d("pipa", "loadVideosData")
-
+        mView.showLoading(true, "数据源获取中...")
         mVideoRepository.getVideos(object : VideoDataSource.LoadVideosCallback {
             override fun onVideosLoaded(videos: List<Video>) {
+                Log.d("pipa", " videos:${videos.size}")
                 mVideoList.addAll(videos)
                 if (mVideoList.isEmpty()) {
                     mView.showMessagePrompt("数据源获取为空~")
                     return
                 }
+                mView.showLoading(false, "数据源获取完成")
                 entryVideoLoop()
             }
 
             override fun onDataNotAvailable() {
+                mView.showLoading(false, "数据源获取失败")
                 mView.showMessagePrompt("数据源获取失败~")
             }
         })
     }
 
     override fun entryVideoLoop() {
-        if (mVideoIndex >= mVideoList.size) {
-            mView.showMessagePrompt("所有视频已播放结束~")
-            mPlayer?.stop()
-            return
-        }
         //播放后如果有顺序播放，则重新开始播放列表
         mSurface?.let {
             Log.d("pipa", "mVideoIndex:$mVideoIndex")
@@ -764,6 +787,7 @@ class JVideoViewPresenter(
 
     //进入视频播放准备
     private fun entryVideo(surface: Surface, video: Video) {
+        mView.showLoading(true, "预加载...")
         Log.d("pipa", "entryVideo:${video.videoUrl}")
         //设置title
         mView.setTitle(video.videoName ?: "未知视频")

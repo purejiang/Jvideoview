@@ -51,7 +51,6 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
 
     private fun initControllerView(context: Context) {
         mContext = context
-//        Log.d("pipa", mContext.isInitialized)
         mView = LayoutInflater.from(context).inflate(R.layout.layout_jvideo, this)
     }
 
@@ -62,10 +61,10 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
             //控件的点击、拖动、滑动事件
             imb_video_center_play.setOnClickListener {
                 Log.d("pipa", "imb_video_center_play, state:${getPlayState()}")
-                if (getPlayState() == PlayState.STATE_PLAYING) {
+                if (getPlayState() == PlayState.STATE_PLAYING||getPlayState() == PlayState.STATE_BUFFERING_PLAYING) {
                     pausePlay()
                 } else {
-                    if (getPlayState() == PlayState.STATE_PAUSED) {
+                    if (getPlayState() == PlayState.STATE_PAUSED||getPlayState() == PlayState.STATE_BUFFERING_PAUSED) {
                         continuePlay()
                     } else if (getPlayState() == PlayState.STATE_PREPARED) {
                         startPlay()
@@ -74,10 +73,10 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
             }
             imb_video_control_play.setOnClickListener {
                 Log.d("pipa", "imb_video_control_play,state:${getPlayState()}")
-                if (getPlayState() == PlayState.STATE_PLAYING) {
+                if (getPlayState() == PlayState.STATE_PLAYING||getPlayState() == PlayState.STATE_BUFFERING_PLAYING) {
                     pausePlay()
                 } else {
-                    if (getPlayState() == PlayState.STATE_PAUSED) {
+                    if (getPlayState() == PlayState.STATE_PAUSED||getPlayState() == PlayState.STATE_BUFFERING_PAUSED) {
                         continuePlay()
                     } else if (getPlayState() == PlayState.STATE_PREPARED) {
                         startPlay()
@@ -155,7 +154,7 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
 
     override fun setPresenter(t: JVideoViewContract.Presenter) {
         mPresenter = t
-        mPresenter?.setPlayForm(JVideoState.PlayForm.PLAYBACK_ONE_LOOP)
+        mPresenter?.setPlayForm(JVideoState.PlayForm.PLAYFORM_TURN)
         initListener()
     }
 
@@ -227,9 +226,6 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
         }
     }
 
-    override fun completedVideo(message: String) {
-        showMessageUi(message)
-    }
 
     override fun setLightUi(light: Int) {
         showTopAdjustUi("亮度：$light%")
@@ -256,6 +252,7 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
         if (isShow) {
             showLoadingUi(text)
             hideCenterPlayUi()
+            hideCenterHintUi()
         } else {
             hideLoadingUi()
         }
