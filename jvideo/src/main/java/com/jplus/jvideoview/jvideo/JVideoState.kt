@@ -72,7 +72,22 @@ class JVideoState {
             const val MODE_TINY_WINDOW = 12
         }
     }
+    /**
+     * 切换模式
+     */
+    class SwitchMode{
+        companion object{
+            /**
+             * 普通->全屏模式
+             */
+            const val SWITCH_TO_FULL = 50
+            /**
+             * 普通->窗口模式
+             */
+            const val SWITCH_TO_WINDOW = 51
 
+        }
+    }
     /**
      * 调节模式
      */
@@ -100,11 +115,15 @@ class JVideoState {
             /**
              * android 自带
              */
-            const val PLAYBACK_MDEIA_PLAYER = 30
+            const val PLAYBACK_MEDIA_PLAYER = 30
             /**
              * IjkPlayer
              */
             const val PLAYBACK_IJK_PLAYER = 31
+            /**
+             * ExoPlayer
+             */
+            const val  PLAYBACK_EXO_PLAYER = 32
         }
     }
     /**
