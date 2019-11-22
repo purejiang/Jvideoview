@@ -16,6 +16,7 @@ import androidx.annotation.RequiresApi
 import com.jplus.jvideoview.R
 import com.jplus.jvideoview.jvideo.JVideoState.PlayMode
 import com.jplus.jvideoview.jvideo.JVideoState.PlayState
+import com.jplus.jvideoview.jvideo.JVideoState.SwitchMode
 import kotlinx.android.synthetic.main.layout_control_bottom.view.*
 import kotlinx.android.synthetic.main.layout_control_center.view.*
 import kotlinx.android.synthetic.main.layout_control_slide.view.*
@@ -52,72 +53,57 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
     private fun initControllerView(context: Context) {
         mContext = context
         mView = LayoutInflater.from(context).inflate(R.layout.layout_jvideo, this)
+        initView()
+    }
+
+    private fun initView() {
+        ly_video_title.setOnTouchListener { _, _ -> true }
+
     }
 
     private fun initListener() {
+        mPresenter?.setPlayForm(JVideoState.PlayForm.PLAYFORM_TURN)
         //设置Texture监听
         ttv_video_player.surfaceTextureListener = this
-        mPresenter?.run {
-            //控件的点击、拖动、滑动事件
-            imb_video_center_play.setOnClickListener {
-                Log.d("pipa", "imb_video_center_play, state:${getPlayState()}")
-                if (getPlayState() == PlayState.STATE_PLAYING||getPlayState() == PlayState.STATE_BUFFERING_PLAYING) {
-                    pausePlay()
-                } else {
-                    if (getPlayState() == PlayState.STATE_PAUSED||getPlayState() == PlayState.STATE_BUFFERING_PAUSED) {
-                        continuePlay()
-                    } else if (getPlayState() == PlayState.STATE_PREPARED) {
-                        startPlay()
-                    }
-                }
-            }
-            imb_video_control_play.setOnClickListener {
-                Log.d("pipa", "imb_video_control_play,state:${getPlayState()}")
-                if (getPlayState() == PlayState.STATE_PLAYING||getPlayState() == PlayState.STATE_BUFFERING_PLAYING) {
-                    pausePlay()
-                } else {
-                    if (getPlayState() == PlayState.STATE_PAUSED||getPlayState() == PlayState.STATE_BUFFERING_PAUSED) {
-                        continuePlay()
-                    } else if (getPlayState() == PlayState.STATE_PREPARED) {
-                        startPlay()
-                    }
-                }
-            }
-            seek_video_progress?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
-                    //seekBar滑动中的回调
-                    mPresenter?.seekingPlay(seekBar.progress, false)
-                }
 
-                override fun onStartTrackingTouch(seekBar: SeekBar) {
-                    //seekBar开始滑动的回调
-                }
-
-                override fun onStopTrackingTouch(seekBar: SeekBar) {
-                    //seekBar滑动结束的回调
-                    mPresenter?.seekCompletePlay(seekBar.progress)
-                }
-
-            })
+        //控件的点击、拖动、滑动事件
+        vpv_video_center_play.setOnClickListener {
+            mPresenter?.controlPlay()
+            Log.d("pipa", "imb_video_center_play, state:${mPresenter?.getPlayState()}")
         }
-        //加载完成前禁止拖动seekBar
-        seek_video_progress.setOnTouchListener { _, _ -> true }
+        vpv_video_control_play.setOnClickListener {
+            mPresenter?.controlPlay()
+            Log.d("pipa", "imb_video_control_play,state:${mPresenter?.getPlayState()}")
+        }
+        seek_video_progress?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
 
+            override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
+                //seekBar滑动中的回调
+                mPresenter?.seekingPlay(seekBar.progress, false)
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar) {
+                //seekBar开始滑动的回调
+            }
+
+            override fun onStopTrackingTouch(seekBar: SeekBar) {
+                //seekBar滑动结束的回调
+                mPresenter?.seekCompletePlay(seekBar.progress)
+            }
+
+        })
+
+        //预加载完成前禁止拖动seekBar
+        seek_video_progress.setOnTouchListener { _, _ -> true }
+        //预加载完成前禁止点击bottom的控制按钮
+        vpv_video_control_play.setOnTouchListener{_,_ -> true}
         ly_video_center.setOnTouchListener { v, event ->
             //屏幕滑动设置播放参数
             mPresenter?.slideJudge(v, event)
             true
         }
         img_screen_change.setOnClickListener {
-            //全屏模式和普通模式的切换
-            mPresenter?.let {
-                if (it.getPlayMode() == PlayMode.MODE_NORMAL) {
-                    it.setSpecialMode(PlayMode.MODE_FULL_SCREEN)
-                } else {
-                    it.exitMode(true)
-                }
-            }
-
+            mPresenter?.switchSpecialMode(SwitchMode.SWITCH_TO_FULL)
         }
         tv_video_refresh.setOnClickListener {
             //重新播放
@@ -154,7 +140,6 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
 
     override fun setPresenter(t: JVideoViewContract.Presenter) {
         mPresenter = t
-        mPresenter?.setPlayForm(JVideoState.PlayForm.PLAYFORM_TURN)
         initListener()
     }
 
@@ -171,6 +156,8 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
         tv_video_playing_progress.text = videoTime
         //加载完成后可以拖动seekBar
         seek_video_progress.setOnTouchListener { _, _ -> false }
+        //加载完成后可以点击控制按钮
+        vpv_video_control_play.setOnTouchListener{_,_ -> false}
         seek_video_progress?.max = max
         seek_video_progress?.progress = 0
 
@@ -178,7 +165,8 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
         pgb_video_line_progress?.progress = 0
 
         showCenterPlayUi()
-        imb_video_control_play.setImageResource(R.mipmap.ic_video_pause)
+        vpv_video_control_play.pause()
+        vpv_video_center_play.pause()
     }
 
     override fun startVideo(position: Int) {
@@ -186,42 +174,45 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
         seek_video_progress?.progress = position
         hideCenterPlayUi()
         hideCenterHintUi()
-        imb_video_control_play.setImageResource(R.mipmap.ic_video_continue)
+        vpv_video_control_play.play()
+        vpv_video_center_play.play()
     }
 
 
     override fun buffering(percent: Int) {
-        Log.d("pipa", "缓冲百分比:${percent / 100.0}")
+//        Log.d("pipa", "缓冲百分比:${percent / 100.0}")
         seek_video_progress.secondaryProgress = (seek_video_progress.max) * percent / 100
-        if(ly_video_line.visibility == VISIBLE){
+        if (ly_video_line.visibility == VISIBLE) {
             pgb_video_line_progress?.secondaryProgress = (seek_video_progress.max) * percent / 100
         }
-        mPresenter?.let {
-            if (it.getPlayState() == PlayState.STATE_BUFFERING_PLAYING) {
-
-            } else if (it.getPlayState() == PlayState.STATE_BUFFERING_PAUSED) {
-
-            }
-        }
+//        mPresenter?.let {
+//            if (it.getPlayState() == PlayState.STATE_BUFFERING_PLAYING) {
+//
+//            } else if (it.getPlayState() == PlayState.STATE_BUFFERING_PAUSED) {
+//
+//            }
+//        }
     }
 
     override fun continueVideo() {
         hideCenterPlayUi()
         hideLoadingUi()
-        imb_video_control_play.setImageResource(R.mipmap.ic_video_continue)
+        vpv_video_control_play.play()
+        vpv_video_center_play.play()
     }
 
     override fun pauseVideo() {
         showCenterPlayUi()
         hideLoadingUi()
-        imb_video_control_play.setImageResource(R.mipmap.ic_video_pause)
+        vpv_video_control_play.pause()
+        vpv_video_center_play.pause()
     }
 
 
     override fun playing(videoTime: String, position: Int) {
         tv_video_playing_progress.text = videoTime
         seek_video_progress?.progress = position
-        if(ly_video_line.visibility == VISIBLE){
+        if (ly_video_line.visibility == VISIBLE) {
             pgb_video_line_progress?.progress = position
         }
     }
@@ -241,7 +232,7 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
         if (isSlide) {
             showTopAdjustUi("进度：$videoTime")
             seek_video_progress?.progress = position
-            if(ly_video_line.visibility == VISIBLE){
+            if (ly_video_line.visibility == VISIBLE) {
                 pgb_video_line_progress?.progress = position
             }
         }
@@ -259,13 +250,13 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
     }
 
     private fun showBottomLineUi() {
-        if(ly_video_line.visibility == GONE){
+        if (ly_video_line.visibility == GONE) {
             ly_video_line.visibility = VISIBLE
         }
     }
 
     private fun hideBottomLineUi() {
-        if(ly_video_line.visibility == VISIBLE){
+        if (ly_video_line.visibility == VISIBLE) {
             ly_video_line.visibility = GONE
         }
     }
@@ -275,7 +266,6 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
             tv_video_loading.text = text
             ly_video_loading.visibility = VISIBLE
         }
-        hideCenterPlayUi()
     }
 
     private fun hideLoadingUi() {
@@ -347,15 +337,11 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
         hideTopAdjustUi()
     }
 
-    override fun entrySpecialMode(mode: Int) {
-        mPresenter?.let {
-            if (mode == PlayMode.MODE_FULL_SCREEN) {
-                img_screen_change.setImageResource(R.mipmap.ic_video_shrink)
-                //显示返回键
-                if (imb_video_back.visibility == GONE) {
-                    imb_video_back.visibility = VISIBLE
-                }
-            }
+    override fun entryFullMode() {
+        img_screen_change.setImageResource(R.mipmap.ic_video_shrink)
+        //显示返回键
+        if (imb_video_back.visibility == GONE) {
+            imb_video_back.visibility = VISIBLE
         }
     }
 
@@ -369,13 +355,20 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
     }
 
     override fun hideOrShowController(isShow: Boolean) {
-        Log.d("pipa", "hideOrShowController:$isShow")
         if (isShow) {
             showControlUi()
             hideBottomLineUi()
         } else {
             hideControlUi()
             showBottomLineUi()
+        }
+    }
+
+    override fun hideOrShowCenterPlay(isShow: Boolean) {
+        if (isShow) {
+            showCenterPlayUi()
+        } else {
+            hideCenterPlayUi()
         }
     }
 

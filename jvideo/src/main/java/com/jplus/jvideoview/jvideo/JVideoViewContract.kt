@@ -86,10 +86,9 @@ interface JVideoViewContract {
          */
         fun setVolumeUi(volumePercent:Int)
         /**
-         * 进入特殊模式
-         * @param mode 全屏/窗口
+         * 进入全屏模式
          */
-        fun entrySpecialMode(mode:Int)
+        fun entryFullMode()
         /**
          * 退出当前模式，恢复普通模式
          */
@@ -100,11 +99,20 @@ interface JVideoViewContract {
          */
         fun hideOrShowController(isShow:Boolean)
         /**
+         * 弹出/隐藏屏幕中心控制按钮
+         * @param isShow 是否显示
+         */
+        fun hideOrShowCenterPlay(isShow:Boolean)
+        /**
          * 隐藏进度控制ui
          */
         fun hideAdjustUi()
     }
     interface Presenter:BasePresenter {
+        /**
+         * 播放控制
+         */
+        fun controlPlay()
         /**
          * 开始播放
          * @param position 可选任意位置，默认为初始位置
@@ -124,17 +132,13 @@ interface JVideoViewContract {
          */
         fun continuePlay()
         /**
-         * 缓冲中
+         * 恢复IDLE
          */
-        fun buffering()
-        /**
-         * 缓冲完成
-         */
-        fun buffered()
+        fun resetPlay()
         /**
          * 重新播放
          */
-        fun resetPlay()
+        fun reStartPlay()
         /**
          * 播放错误
          */
@@ -157,10 +161,10 @@ interface JVideoViewContract {
          */
         fun seekCompletePlay(position: Int)
         /**
-         * 设置播放模式
-         * @param playMode 播放模式
+         * 切换播放模式（全屏与普通模式）
+         * @param switchMode 切换的模式
          */
-        fun setSpecialMode(playMode:Int)
+        fun switchSpecialMode(switchMode:Int)
         /**
          * 退出当前模式
          * @param isBackNormal  是否恢复普通模式
