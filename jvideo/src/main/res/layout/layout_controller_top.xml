@@ -12,6 +12,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_margin="@dimen/view_margin_small"
+                android:visibility="gone"
                 android:background="@color/video_transparent_bg"
                 android:src="@mipmap/ic_video_back"
         />

@@ -17,7 +17,7 @@ import kotlin.math.sqrt
  * @author JPlus
  * @date 2019/11/6.
  */
-class VideoPlayView : View {
+class VideoPlayView(context: Context, attrs: AttributeSet) : View(context, attrs) {
     private var mPlayPaint: Paint? = null
     private var mPlayPath: Path? = null
     private var mCirclePath: Path? = null
@@ -25,9 +25,6 @@ class VideoPlayView : View {
     private var mWidth: Int = 0
     private var mHeight: Int = 0
     private var mIsPause = false
-    constructor(context: Context, attrs: AttributeSet) : super(context, attrs) {
-        initPlayView(context, attrs)
-    }
 
     private val mMinWidth by lazy {
         150
@@ -37,7 +34,10 @@ class VideoPlayView : View {
     }
     private var mStrokeWidth = 0f
 
-    fun initPlayView(context: Context, attrs: AttributeSet) {
+    init {
+        initPlayView(context, attrs)
+    }
+    private fun initPlayView(context: Context, attrs: AttributeSet) {
         val typeArray = context.obtainStyledAttributes(attrs, R.styleable.VideoPlayView)
         val circleColor = typeArray.getColor(
             R.styleable.VideoPlayView_circle_color,
@@ -173,6 +173,9 @@ class VideoPlayView : View {
             mWidth = widthSize
             mHeight = mMinHeight
             setMeasuredDimension(widthSize, mMinHeight)
+        }else{
+            mWidth = widthSize
+            mHeight = heightSize
         }
         Log.d("pipa", "mWidth:$mWidth, mHeight:$mHeight")
         initDrawView(getRealWidthAndHeight(mWidth, mHeight) * 1f)
@@ -187,5 +190,7 @@ class VideoPlayView : View {
         mIsPause = true
         invalidate()
     }
+
+
 
 }

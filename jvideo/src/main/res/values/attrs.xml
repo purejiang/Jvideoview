@@ -14,4 +14,10 @@
         <attr name="showNumProgress" format="boolean"/>
         <attr name="isNoProgress" format="boolean"/>
     </declare-styleable>
+
+    <declare-styleable name="VideoPlayView">
+        <attr name="circle_color" format="reference|color" />
+        <attr name="play_color" format="reference|color" />
+        <attr name="stroke_width" format="float"/>
+    </declare-styleable>
 </resources>

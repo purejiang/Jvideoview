@@ -11,29 +11,27 @@
              android:visibility="gone"/>
 
 
-        <include layout="@layout/layout_controller_top"
-                 android:layout_width="match_parent"
-                 android:layout_height="wrap_content"
-                 android:layout_alignParentTop="true"
-                 android:visibility="gone"
-                 />
+    <include layout="@layout/layout_control_center"
+             android:layout_width="match_parent"
+             android:layout_height="match_parent"/>
 
-        <include layout="@layout/layout_control_center"
-                 android:layout_width="match_parent"
-                 android:layout_height="match_parent"/>
+    <include layout="@layout/layout_controller_top"
+             android:layout_width="match_parent"
+             android:layout_height="wrap_content"
+             android:layout_alignParentTop="true"
+             android:visibility="gone"/>
 
-        <include layout="@layout/layout_line_progress"
-                 android:layout_width="match_parent"
-                 android:layout_height="@dimen/video_line_bottom"
-                 android:layout_alignParentBottom="true"
-                 android:visibility="gone"
-                />
+    <include layout="@layout/layout_line_progress"
+             android:layout_width="match_parent"
+             android:layout_height="@dimen/video_line_bottom"
+             android:layout_alignParentBottom="true"
+             android:visibility="gone"/>
 
-        <include layout="@layout/layout_control_bottom"
-                 android:layout_width="match_parent"
-                 android:layout_height="wrap_content"
-                 android:layout_alignParentBottom="true"
-                 android:visibility="gone"
-                 />
+    <include layout="@layout/layout_control_bottom"
+             android:layout_width="match_parent"
+             android:layout_height="wrap_content"
+             android:layout_alignParentBottom="true"
+             android:visibility="gone"
+            />
 
 </RelativeLayout>

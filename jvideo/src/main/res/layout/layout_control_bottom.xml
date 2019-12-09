@@ -7,14 +7,12 @@
               android:gravity="center_vertical"
               android:orientation="horizontal">
 
-        <ImageButton
-                android:id="@+id/imb_video_control_play"
+        <com.jplus.jvideoview.view.VideoPlayView
+                android:id="@+id/vpv_video_control_play"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="@dimen/view_margin_big"
-                android:layout_marginRight="@dimen/view_margin_small"
-                android:src="@mipmap/ic_video_pause"
-                android:background="@color/video_transparent_bg"/>
+                android:padding="@dimen/view_margin_normal"
+               />
 
         <TextView
                 android:id="@+id/tv_video_playing_progress"

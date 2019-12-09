@@ -384,6 +384,7 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
     override fun onSurfaceTextureDestroyed(surface: SurfaceTexture?): Boolean {
         Log.d("pipa", "onSurfaceTextureDestroyed")
         mPresenter?.releasePlay(false)
+//        ldv_video_loading.close()
         return false
     }
 

@@ -12,4 +12,5 @@
     <color name="seek_bar_progress_second">#DFFFFFFF</color>
     <color name="seek_bar_progress_thumb">#7E57CA</color>
     <color name="video_text_color">#FFFFFF</color>
+    <color name="video_play_color">#FFFFFF</color>
 </resources>

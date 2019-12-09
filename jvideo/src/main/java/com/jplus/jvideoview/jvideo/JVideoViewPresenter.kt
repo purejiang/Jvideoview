@@ -289,9 +289,12 @@ class JVideoViewPresenter(
         mPlayState =
             if (mPlayState == PlayState.STATE_PAUSED || mPlayState == PlayState.STATE_BUFFERING_PAUSED) {
                 PlayState.STATE_BUFFERING_PAUSED
-            } else {
+            } else if(mPlayState == PlayState.STATE_IDLE || mPlayState == PlayState.STATE_PREPARING){
+                return
+            }else {
                 PlayState.STATE_BUFFERING_PLAYING
             }
+        Log.d("pipa", "mPlayState:${mPlayState}")
         //loading
         toLoading(true, "缓冲中....", 3)
     }
@@ -702,7 +705,7 @@ class JVideoViewPresenter(
             mIsLoading = false
             -1
         }
-        Log.d("pipa", "showLoading:$isLoading---$mLoadingNum")
+        Log.d("pipa", "showLoading:$isLoading,mLoadingNum:$mLoadingNum")
         mView.showLoading(isLoading, content)
     }
 
