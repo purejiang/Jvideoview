@@ -2,6 +2,7 @@ package com.jplus.jvideoview.data.source
 
 import android.util.Log
 import com.jplus.jvideoview.data.Video
+import com.jplus.jvideoview.jvideo.JVideoCommon
 import java.util.*
 
 /**
@@ -16,7 +17,7 @@ class VideoRepository(private val mLocal:VideoDataSource, private val mRemote:Vi
     var mIsCacheDirty = false
 
     override fun getVideos(callback: VideoDataSource.LoadVideosCallback) {
-        Log.d("pipa", "VideoRepository.getVideos")
+        Log.d(JVideoCommon.TAG, "VideoRepository.getVideos")
         //数据源不为空就返回
         if (mVideoList.isNotEmpty() && !mIsCacheDirty) {
             callback.onVideosLoaded(mVideoList)
@@ -61,7 +62,7 @@ class VideoRepository(private val mLocal:VideoDataSource, private val mRemote:Vi
     }
 
     override fun activateVideo(videoId: Int) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+
     }
 
     override fun clearCompletedVideos() {
@@ -88,7 +89,7 @@ class VideoRepository(private val mLocal:VideoDataSource, private val mRemote:Vi
     }
 
     override fun deleteVideo(videoId: Int) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+
     }
 
     override fun deleteVideo(video: Video) {

@@ -41,21 +41,17 @@ class JVideoViewPresenter(
     private val mPlayerType: Int
 ) :
     JVideoViewContract.Presenter {
-
-
-    private var mPlayState = PlayState.STATE_IDLE
-    private var mPlayMode = PlayMode.MODE_NORMAL
-    private var mPlayForm = PlayForm.PLAYBACK_ONE_END
-    private var mAdjustWay = 0
-
-
     private var mSurface: Surface? = null
     private var mTextureView: TextureView? = null
     private var mParams: LinearLayout.LayoutParams? = null
     private var mAudioManager: AudioManager? = null
     private var mRunnable: Runnable? = null
-
     private var mSpeedRunnable: Runnable? = null
+    private var mIsBackContinue: Boolean? = null
+
+    private var mPlayState = PlayState.STATE_IDLE
+    private var mPlayMode = PlayMode.MODE_NORMAL
+    private var mPlayForm = PlayForm.PLAYBACK_ONE_END
 
     private var mStartVolume = 0
     private var mStartPosition = 0
@@ -63,18 +59,22 @@ class JVideoViewPresenter(
     private var mPosition = 0
     private var mVolume = 0
     private var mLight = 0
-    private var mIsFirstDown = true
     private var mBufferPercent = 0
-    private var mIsBackContinue: Boolean? = null
-
-    private val mHandler = Handler()
-    private var mIsShowControllerView = false
-    private var mVolumeMute = false
-    private var mVideoList = ArrayList<Video>()
     private var mVideoIndex = 0
-    private var mIsLoading = false
     private var mLoadingNum = -1
+    private var mAdjustWay = 0
 
+    private var mIsFirstDown = true
+    private var mIsShowControllerView = false
+    private var mIsLoading = false
+    private var mVolumeMute = false
+
+    private val mHandler by lazy {
+        Handler()
+    }
+    private val mVideoList by lazy {
+        ArrayList<Video>()
+    }
     private val mHideRunnable: Runnable by lazy {
         //延时后执行
         Runnable {
@@ -146,8 +146,8 @@ class JVideoViewPresenter(
             it.isLooping = false
             //设置播放类型
             if (mPlayer is AndroidMediaPlayer) {
-                Log.d("pipa", "AndroidMediaPlayer")
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                Log.d(JVideoCommon.TAG, "AndroidMediaPlayer")
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     val attributes = AudioAttributes.Builder()
                         .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                         .setFlags(AudioAttributes.FLAG_LOW_LATENCY)
@@ -170,7 +170,7 @@ class JVideoViewPresenter(
             //seekTo()调用并实际查找完成之后
             it.setOnSeekCompleteListener {
                 // mPlayState = PlayState.STATE_IDLE
-                Log.d("pipa", "setOnSeekCompleteListener")
+                Log.d(JVideoCommon.TAG, "setOnSeekCompleteListener")
             }
 
             //预加载监听
@@ -190,16 +190,16 @@ class JVideoViewPresenter(
             }
 
             //播放信息监听
-            it.setOnInfoListener { mp, what, extra ->
+            it.setOnInfoListener { _, what, _ ->
                 when (what) {
                     MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START -> {
-                        Log.d("pipa", "MEDIA_INFO_VIDEO_RENDERING_START")
+                        Log.d(JVideoCommon.TAG, "MEDIA_INFO_VIDEO_RENDERING_START")
                         // 播放器开始渲染
                         mPlayState = PlayState.STATE_PLAYING
                     }
                     MediaPlayer.MEDIA_INFO_BUFFERING_START -> {
                         bufferStart()
-                        Log.d("pipa", "MEDIA_INFO_BUFFERING_START")
+                        Log.d(JVideoCommon.TAG, "MEDIA_INFO_BUFFERING_START")
 
                     }
                     IMediaPlayer.MEDIA_INFO_BUFFERING_END -> {
@@ -214,7 +214,7 @@ class JVideoViewPresenter(
             //播放尺寸
             it.setOnVideoSizeChangedListener { _, _, _, _, _ ->
                 //这里是视频的原始尺寸大小
-                Log.d("pipa", "setOnVideoSizeChangedListener")
+                Log.d(JVideoCommon.TAG, "setOnVideoSizeChangedListener")
                 changeVideoSize((mView as View).width, (mView as View).height)
             }
             //设置Option
@@ -247,7 +247,7 @@ class JVideoViewPresenter(
     //开始播放
     override fun startPlay(position: Int) {
         if (mPlayState == PlayState.STATE_PREPARED) {
-            Log.d("pipa", "startPlay:$position")
+            Log.d(JVideoCommon.TAG, "startPlay:$position")
             mPlayer.let {
                 //如果不在播放中，指定视频播放位置并开始播放
                 it.seekTo(position.toLong())
@@ -260,7 +260,7 @@ class JVideoViewPresenter(
     }
 
     override fun continuePlay() {
-        Log.d("pipa", "continuePlay")
+        Log.d(JVideoCommon.TAG, "continuePlay")
         when (mPlayState) {
             PlayState.STATE_PAUSED, PlayState.STATE_BUFFERING_PLAYING -> {
                 mPlayer.start()
@@ -284,23 +284,23 @@ class JVideoViewPresenter(
     }
 
     private fun bufferStart() {
-        Log.d("pipa", "bufferStart")
+        Log.d(JVideoCommon.TAG, "bufferStart")
         // MediaPlayer暂时不播放，以缓冲更多的数据
         mPlayState =
             if (mPlayState == PlayState.STATE_PAUSED || mPlayState == PlayState.STATE_BUFFERING_PAUSED) {
                 PlayState.STATE_BUFFERING_PAUSED
-            } else if(mPlayState == PlayState.STATE_IDLE || mPlayState == PlayState.STATE_PREPARING){
+            } else if (mPlayState == PlayState.STATE_IDLE || mPlayState == PlayState.STATE_PREPARING) {
                 return
-            }else {
+            } else {
                 PlayState.STATE_BUFFERING_PLAYING
             }
-        Log.d("pipa", "mPlayState:${mPlayState}")
+        Log.d(JVideoCommon.TAG, "mPlayState:${mPlayState}")
         //loading
         toLoading(true, "缓冲中....", 3)
     }
 
     private fun buffering(percent: Int) {
-        Log.d("pipa", "buffering$percent")
+//        Log.d(JVideoCommon.TAG, "buffering$percent")
         if (percent != 0) {
             mBufferPercent = percent
         }
@@ -313,7 +313,7 @@ class JVideoViewPresenter(
     }
 
     private fun buffered() {
-        Log.d("pipa", "buffered")
+        Log.d(JVideoCommon.TAG, "buffered")
         // 填充缓冲区后，MediaPlayer恢复播放/暂停
         if (mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
             continuePlay()
@@ -327,7 +327,7 @@ class JVideoViewPresenter(
     }
 
     override fun seekCompletePlay(position: Int) {
-        Log.d("pipa", "seekToPlay:$position")
+        Log.d(JVideoCommon.TAG, "seekToPlay:$position")
         mPosition = position
         mPlayer.let {
             if (mPlayState == PlayState.STATE_PAUSED || mPlayState == PlayState.STATE_BUFFERING_PAUSED) {
@@ -348,7 +348,7 @@ class JVideoViewPresenter(
 
     //暂停播放
     override fun pausePlay() {
-        Log.d("pipa", "pausePlay")
+        Log.d(JVideoCommon.TAG, "pausePlay")
         if (mPlayState == PlayState.STATE_PLAYING || mPlayState == PlayState.STATE_PREPARED) {
             mPlayState = PlayState.STATE_PAUSED
         } else if (mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
@@ -363,13 +363,13 @@ class JVideoViewPresenter(
     }
 
     override fun completedPlay(videoUrl: String?) {
-        Log.d("pipa", "completedPlay")
-        mPlayer.let {
-            if (it.duration != it.currentPosition) {
-                errorPlay(0, 0, "网络错误或者视频地址已失效~")
-                return
-            }
-        }
+        Log.d(JVideoCommon.TAG, "completedPlay")
+//        mPlayer.let {
+//            if (it.duration != it.currentPosition) {
+//                errorPlay(0, 0, "网络错误或者视频地址已失效~")
+//                return
+//            }
+//        }
 
         mPlayState = PlayState.STATE_COMPLETED
         when (mPlayForm) {
@@ -406,7 +406,7 @@ class JVideoViewPresenter(
 
     override fun preparedPlay() {
         toLoading(false, "预加载完成", 4)
-        Log.d("pipa", "setOnPreparedListener")
+        Log.d(JVideoCommon.TAG, "setOnPreparedListener")
         mPlayer.let {
             mPlayState = PlayState.STATE_PREPARED
             //预加载后先播放再暂停，1：防止播放错误-38(未开始就停止) 2：可以显示第一帧画面
@@ -426,7 +426,7 @@ class JVideoViewPresenter(
     }
 
     override fun errorPlay(what: Int, extra: Int, message: String) {
-        Log.d("pipa", "setOnErrorListener:$what")
+        Log.d(JVideoCommon.TAG, "setOnErrorListener:$what")
         mPlayState = PlayState.STATE_ERROR
         mView.showMessagePrompt(message)
     }
@@ -459,17 +459,17 @@ class JVideoViewPresenter(
     // 1.创建一个手势监听回调
     private val listener: SimpleOnGestureListener = object : SimpleOnGestureListener() {
         override fun onDown(e: MotionEvent): Boolean {
-            Log.d("pipa", "onDown")
+            Log.d(JVideoCommon.TAG, "onDown")
             return super.onDown(e)
         }
 
         override fun onShowPress(e: MotionEvent) {
-            Log.d("pipa", "onShowPress")
+            Log.d(JVideoCommon.TAG, "onShowPress")
             super.onShowPress(e)
         }
 
         override fun onDoubleTap(e: MotionEvent): Boolean {
-            Log.d("pipa", "onDoubleTap")
+            Log.d(JVideoCommon.TAG, "onDoubleTap")
             mPlayer.let {
                 if (it.isPlaying) {
                     pausePlay()
@@ -483,7 +483,7 @@ class JVideoViewPresenter(
         }
 
         override fun onSingleTapConfirmed(e: MotionEvent?): Boolean {
-            Log.d("pipa", "onSingleTapConfirmed")
+            Log.d(JVideoCommon.TAG, "onSingleTapConfirmed")
             mIsShowControllerView = !mIsShowControllerView
             showOrHideControlDelay(isShow = mIsShowControllerView, isClick = true)
             return true
@@ -536,7 +536,7 @@ class JVideoViewPresenter(
 
     private fun getAdjustMode(event: MotionEvent): Int {
         //调整前获取调整的模式
-        Log.d("pipa", "getAdjustMode")
+        Log.d(JVideoCommon.TAG, "getAdjustMode")
         val width = (mView as LinearLayout).width
         return when {
             //通过起始点坐标判断滑动是 快进/后退、亮度调节、音量调节
@@ -556,7 +556,7 @@ class JVideoViewPresenter(
     }
 
     override fun setPlayForm(playForm: Int) {
-        Log.d("pipa", "setPlayForm:$playForm")
+        Log.d(JVideoCommon.TAG, "setPlayForm:$playForm")
         mPlayForm = playForm
     }
 
@@ -573,7 +573,7 @@ class JVideoViewPresenter(
 
     private fun endAdjust() {
         //调整结束后保存结果
-        Log.d("pipa", "endAdjust")
+        Log.d(JVideoCommon.TAG, "endAdjust")
         mIsFirstDown = true
         when (mAdjustWay) {
             PlayAdjust.ADJUST_LIGHT -> {
@@ -594,7 +594,7 @@ class JVideoViewPresenter(
     }
 
     override fun switchSpecialMode(switchMode: Int) {
-        Log.d("pipa", "playMode$mPlayMode")
+        Log.d(JVideoCommon.TAG, "playMode$mPlayMode")
         when (mPlayMode) {
             PlayMode.MODE_NORMAL -> {
                 if (switchMode == SwitchMode.SWITCH_TO_FULL) {
@@ -633,7 +633,7 @@ class JVideoViewPresenter(
     }
 
     override fun exitMode(isBackNormal: Boolean) {
-        Log.d("pipa", "exitMode")
+        Log.d(JVideoCommon.TAG, "exitMode")
         if (getPlayMode() != PlayMode.MODE_NORMAL && isBackNormal) {
             //进入普通模式
             mParams?.let {
@@ -652,7 +652,7 @@ class JVideoViewPresenter(
     }
 
     private fun showOrHideControlDelay(isShow: Boolean, isClick: Boolean) {
-        Log.d("pipa", "showOrHideControlDelay:show:$isShow, mIsShowControllerView:$mIsShowControllerView")
+        Log.d(JVideoCommon.TAG, "showOrHideControlDelay:show:$isShow, mIsShowControllerView:$mIsShowControllerView")
         if (isShow) {
             mView.hideOrShowController(true)
             mIsShowControllerView = true
@@ -692,26 +692,28 @@ class JVideoViewPresenter(
     private fun toLoading(isLoading: Boolean, content: String, loadingNum: Int) {
         mLoadingNum = if (isLoading) {
             if (mIsLoading) {
-                Log.e("pipa", "not to close loading view:$mLoadingNum.")
+                Log.e(JVideoCommon.TAG, "not to close loading view:$mLoadingNum.")
             }
             mIsLoading = true
             loadingNum
         } else {
             if (!mIsLoading) {
-                Log.e("pipa", "not to open loading view:$mLoadingNum.")
+                Log.e(JVideoCommon.TAG, "not to open loading view:$mLoadingNum.")
             } else if (mLoadingNum != loadingNum && mLoadingNum != -1) {
-                Log.e("pipa", "no num for loading view:$loadingNum.")
+                Log.e(JVideoCommon.TAG, "no num for loading view:$loadingNum.")
             }
             mIsLoading = false
             -1
         }
-        Log.d("pipa", "showLoading:$isLoading,mLoadingNum:$mLoadingNum")
+        Log.d(JVideoCommon.TAG, "showLoading:$isLoading,mLoadingNum:$mLoadingNum")
         mView.showLoading(isLoading, content)
     }
 
     override fun textureReady(surface: SurfaceTexture, textureView: TextureView) {
-        Log.d("pipa", "textureReady")
-        mSurface = mSurface ?: Surface(surface)
+        Log.d(JVideoCommon.TAG, "textureReady")
+        if (mSurface == null) {
+            mSurface = Surface(surface)
+        }
         mTextureView = mTextureView ?: textureView
         mPlayState = PlayState.STATE_PREPARING
         loadVideosData()
@@ -719,11 +721,11 @@ class JVideoViewPresenter(
 
     //获取数据源
     override fun loadVideosData() {
-        Log.d("pipa", "loadVideosData")
+        Log.d(JVideoCommon.TAG, "loadVideosData")
         toLoading(true, "数据源获取中...", 5)
         mVideoRepository.getVideos(object : VideoDataSource.LoadVideosCallback {
             override fun onVideosLoaded(videos: List<Video>) {
-                Log.d("pipa", " videos:${videos.size}")
+                Log.d(JVideoCommon.TAG, " videos:${videos.size}")
                 mVideoList.addAll(videos)
                 if (mVideoList.isEmpty()) {
                     mView.showMessagePrompt("数据源获取为空~")
@@ -743,7 +745,7 @@ class JVideoViewPresenter(
     override fun entryVideoLoop() {
         //播放后如果有顺序播放，则重新开始播放列表
         mSurface?.let {
-            Log.d("pipa", "mVideoIndex:$mVideoIndex")
+            Log.d(JVideoCommon.TAG, "mVideoIndex:$mVideoIndex")
             mView.buffering(0) //清空前一集的缓存进度条
             entryVideo(it, mVideoList[mVideoIndex])
         }
@@ -815,7 +817,7 @@ class JVideoViewPresenter(
     }
 
     private fun setLight(startLight: Int, distance: Float) {
-        Log.d("pipa", "startLight:$startLight, distance$distance")
+        Log.d(JVideoCommon.TAG, "startLight:$startLight, distance$distance")
         var light = startLight + floor(dt2progress(distance, 255, (mView as LinearLayout).height, 1.0)).toInt()
         when {
             light in 0..255 -> {
@@ -849,7 +851,7 @@ class JVideoViewPresenter(
     //进入视频播放准备
     private fun entryVideo(surface: Surface, video: Video) {
         toLoading(true, "预加载...", 4)
-        Log.d("pipa", "entryVideo:${video.videoUrl}")
+        Log.d(JVideoCommon.TAG, "entryVideo:${video.videoUrl}")
         //设置title
         mView.setTitle(video.videoName ?: "未知视频")
         mPlayer.let {
@@ -890,7 +892,7 @@ class JVideoViewPresenter(
             val videoWidth2 = ceil(videoWidth * 1.0 / max).toInt()
             val videoHeight2 = ceil(videoHeight * 1.0 / max).toInt()
             Log.d(
-                "pipa",
+                JVideoCommon.TAG,
                 "mPlayer:$videoWidth - $videoHeight， jvideo：$jWidth- $mJVideoHeight, changed:$videoWidth2-$videoHeight2"
             )
             //无法直接设置视频尺寸，将计算出的视频尺寸设置到surfaceView 让视频自动填充。
@@ -901,7 +903,7 @@ class JVideoViewPresenter(
 
 
     private fun getVideoTimeStr(position: Int?): String {
-        return JVideoUtil.progress2Time(position) + "/" + JVideoUtil.progress2Time(getDuration())
+        return JVideoUtil.progress2Time(position) + "&" + JVideoUtil.progress2Time(getDuration())
     }
 
 }

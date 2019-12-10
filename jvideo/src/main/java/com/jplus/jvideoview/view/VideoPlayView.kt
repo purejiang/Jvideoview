@@ -1,13 +1,14 @@
 package com.jplus.jvideoview.view
 
+import android.annotation.SuppressLint
 import android.content.Context
+import android.content.res.TypedArray
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
 import android.util.AttributeSet
 import android.util.Log
-import android.view.MotionEvent
 import android.view.View
 import androidx.core.content.ContextCompat
 import com.jplus.jvideoview.R
@@ -37,8 +38,15 @@ class VideoPlayView(context: Context, attrs: AttributeSet) : View(context, attrs
     init {
         initPlayView(context, attrs)
     }
+
+    @SuppressLint("Recycle")
     private fun initPlayView(context: Context, attrs: AttributeSet) {
         val typeArray = context.obtainStyledAttributes(attrs, R.styleable.VideoPlayView)
+        mStrokeWidth = typeArray.getFloat(R.styleable.VideoPlayView_stroke_width, 0f)
+        initPaint(context, typeArray)
+    }
+
+    private fun initPaint(context: Context, typeArray:TypedArray) {
         val circleColor = typeArray.getColor(
             R.styleable.VideoPlayView_circle_color,
             ContextCompat.getColor(context, R.color.video_play_color)
@@ -47,59 +55,62 @@ class VideoPlayView(context: Context, attrs: AttributeSet) : View(context, attrs
             R.styleable.VideoPlayView_play_color,
             ContextCompat.getColor(context, R.color.video_play_color)
         )
-        val strokeWidth = typeArray.getFloat(R.styleable.VideoPlayView_stroke_width, 0f)
-        mStrokeWidth = strokeWidth
-        mPlayPaint = Paint()
-        mPlayPaint?.let {
-            it.isAntiAlias = true
-            it.style = Paint.Style.STROKE
-            it.strokeWidth = strokeWidth
-            it.strokeJoin = Paint.Join.ROUND
-            it.strokeCap = Paint.Cap.ROUND
-            it.color = playColor
-            it.strokeJoin = Paint.Join.ROUND //结合处为圆角
-            it.strokeCap = Paint.Cap.ROUND  // 设置转弯处为圆角
+        setColor(playColor, circleColor)
+    }
+
+    fun setColor(playColor: Int?, circleColor:Int?) {
+        playColor?.let{
+            mPlayPaint = mPlayPaint?:Paint()
+            mPlayPaint?.init(it)
         }
-        mCirclePaint = Paint()
-        mCirclePaint?.let {
-            it.isAntiAlias = true
-            it.style = Paint.Style.STROKE
-            it.strokeWidth = strokeWidth
-            it.strokeJoin = Paint.Join.ROUND
-            it.strokeCap = Paint.Cap.ROUND
-            it.color = circleColor
-            it.strokeJoin = Paint.Join.ROUND //结合处为圆角
-            it.strokeCap = Paint.Cap.ROUND  // 设置转弯处为圆角
+
+        circleColor?.let{
+            mCirclePaint = mCirclePaint?:Paint()
+            mCirclePaint?.init(it)
         }
 
     }
 
+    private fun Paint.init(color: Int) {
+        this.let {
+            it.isAntiAlias = true
+            it.style = Paint.Style.STROKE
+            it.strokeWidth = strokeWidth
+            it.strokeJoin = Paint.Join.ROUND
+            it.strokeCap = Paint.Cap.ROUND
+            it.color = color
+            it.strokeJoin = Paint.Join.ROUND //结合处为圆角
+            it.strokeCap = Paint.Cap.ROUND  // 设置转弯处为圆角
+        }
+    }
+
     private fun initDrawView(r: Float) {
         if (mStrokeWidth == 0f) {
-            mStrokeWidth = r/10
+            mStrokeWidth = r / 10
             mCirclePaint?.strokeWidth = r / 10f
             mPlayPaint?.strokeWidth = r / 10f
         }
         setDrawCircle(r, 120f, 300f)
     }
 
-    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
-        super.onLayout(changed, left, top, right, bottom)
-    }
 
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
-        if(mIsPause){
+        if (mIsPause) {
             setDrawPlay(getRealWidthAndHeight(mWidth, mHeight) * 1f)
-        }else{
+        } else {
             setDrawPause(getRealWidthAndHeight(mWidth, mHeight) * 1f)
         }
-        canvas?.drawPath(mCirclePath!!, mPlayPaint!!)
-        canvas?.drawPath(mPlayPath!!, mPlayPaint!!)
-    }
-
-    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
-        super.onSizeChanged(w, h, oldw, oldh)
+        mCirclePath?.let {
+            mCirclePaint?.let{paint->
+                canvas?.drawPath(it, paint)
+            }
+        }
+        mPlayPath?.let {
+            mPlayPaint?.let{paint->
+                canvas?.drawPath(it, paint)
+            }
+        }
     }
 
     private fun setDrawPlay(r: Float) {
@@ -114,7 +125,6 @@ class VideoPlayView(context: Context, attrs: AttributeSet) : View(context, attrs
     }
 
     private fun setDrawPause(r: Float) {
-        Log.d("pipa", "setDrawPause:$r")
         mPlayPath = Path()
         mPlayPath?.let {
             //暂停
@@ -132,7 +142,6 @@ class VideoPlayView(context: Context, attrs: AttributeSet) : View(context, attrs
     }
 
     private fun setDrawCircle(r: Float, start: Float, sweep: Float) {
-        Log.d("pipa", "setDrawCircle:$r")
         mCirclePath = Path()
         val rectF1 =
             RectF(
@@ -173,11 +182,10 @@ class VideoPlayView(context: Context, attrs: AttributeSet) : View(context, attrs
             mWidth = widthSize
             mHeight = mMinHeight
             setMeasuredDimension(widthSize, mMinHeight)
-        }else{
+        } else {
             mWidth = widthSize
             mHeight = heightSize
         }
-        Log.d("pipa", "mWidth:$mWidth, mHeight:$mHeight")
         initDrawView(getRealWidthAndHeight(mWidth, mHeight) * 1f)
     }
 
@@ -190,7 +198,6 @@ class VideoPlayView(context: Context, attrs: AttributeSet) : View(context, attrs
         mIsPause = true
         invalidate()
     }
-
 
 
 }

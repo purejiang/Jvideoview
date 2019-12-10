@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <declare-styleable name="JVideoView">
-        <attr name="circleColor" format="reference|color" />
-        <attr name="progressColor" format="reference|color"/>
+        <attr name="play_btn_color" format="reference|color" />
+        <attr name="progress_drawer" format="reference"/>
+        <attr name="thumb_color" format="reference|color"/>
+        <attr name="lines_drawer" format="reference"/>
+        <attr name="loading_color" format="reference|color"/>
         <attr name="textColor" format="reference|color"/>
         <attr name="textSize" format="float"/>
         <attr name="startText" format="string"/>
@@ -11,7 +14,12 @@
         <attr name="failedText" format="string"/>
         <attr name="cancelText" format="string"/>
         <attr name="pauseText" format="string"/>
-        <attr name="showNumProgress" format="boolean"/>
+        <attr name="num_progress_mode">
+            <enum name="both_sides" value="0"/>
+            <enum name="left_sides" value="1"/>
+            <enum name="right_sides" value="2"/>
+            <enum name="no_sides" value="3"/>
+        </attr>
         <attr name="isNoProgress" format="boolean"/>
     </declare-styleable>
 
@@ -19,5 +27,10 @@
         <attr name="circle_color" format="reference|color" />
         <attr name="play_color" format="reference|color" />
         <attr name="stroke_width" format="float"/>
+    </declare-styleable>
+
+    <declare-styleable name="VideoLoadingView">
+        <attr name="lines_color" format="color" />
+        <attr name="rate" format="float" />
     </declare-styleable>
 </resources>

@@ -34,8 +34,8 @@
                 android:visibility="gone"
                 android:orientation="vertical"
         >
-            <com.jplus.jvideoview.view.CircleLoadingView
-                    android:id="@+id/ldv_video_loading"
+            <com.jplus.jvideoview.view.VideoLoadingView
+                    android:id="@+id/vlv_video_loading"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
 
@@ -70,7 +70,7 @@
                     android:layout_margin="@dimen/view_margin_normal"
                     android:layout_toRightOf="@id/tv_video_hint1"
                     android:text="请点击重试~"
-                    android:textColor="@color/seek_bar_progress_thumb"
+                    android:textColor="@color/video_text_color"
             />
         </LinearLayout>
     </RelativeLayout>

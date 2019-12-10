@@ -25,7 +25,7 @@
             <shape>
                 <corners android:radius="2.5dp"/>
                 <size android:height="5dp"/>
-                <solid android:color="@color/seek_bar_progress" />
+                <solid android:color="@color/video_play_color" />
             </shape>
         </clip>
     </item>

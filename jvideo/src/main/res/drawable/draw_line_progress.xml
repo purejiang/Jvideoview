@@ -23,9 +23,7 @@
             <shape>
                 <corners android:radius="1.5dp"/>
                 <size android:height="3dp"/>
-                <gradient android:startColor="@color/video_line_progress_start"
-                          android:centerColor="@color/video_line_progress_center"
-                          android:endColor="@color/video_line_progress_end"/>
+                <gradient android:centerColor="@color/seek_bar_progress"/>
             </shape>
         </clip>
     </item>

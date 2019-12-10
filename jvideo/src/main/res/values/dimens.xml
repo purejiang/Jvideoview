@@ -2,6 +2,7 @@
 <resources>
     <dimen name="controller_height">50dp</dimen>
     <dimen name="view_margin_small">5dp</dimen>
+    <dimen name="view_margin_smaller">3dp</dimen>
     <dimen name="view_margin_normal">8dp</dimen>
     <dimen name="view_margin_big">12dp</dimen>
     <dimen name="view_slide_margin_top">60dp</dimen>
