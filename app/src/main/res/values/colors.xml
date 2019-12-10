@@ -3,4 +3,10 @@
     <color name="colorPrimary">#008577</color>
     <color name="colorPrimaryDark">#00574B</color>
     <color name="colorAccent">#D81B60</color>
+    <color name="video_line_progress_start">#9661FA</color>
+    <color name="video_line_progress_center">#7B3AF7</color>
+    <color name="video_line_progress_end">#6617FA</color>
+    <color name="video_seek_bar_progress">#D1B8FF</color>
+    <color name="video_seek_bar_progress_second">#DFFFFFFF</color>
+    <color name="video_seek_bar_progress_thumb">#7E57CA</color>
 </resources>
