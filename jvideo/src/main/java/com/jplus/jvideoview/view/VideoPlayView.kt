@@ -39,11 +39,12 @@ class VideoPlayView(context: Context, attrs: AttributeSet) : View(context, attrs
         initPlayView(context, attrs)
     }
 
-    @SuppressLint("Recycle")
     private fun initPlayView(context: Context, attrs: AttributeSet) {
         val typeArray = context.obtainStyledAttributes(attrs, R.styleable.VideoPlayView)
         mStrokeWidth = typeArray.getFloat(R.styleable.VideoPlayView_stroke_width, 0f)
         initPaint(context, typeArray)
+        //释放资源
+        typeArray.recycle()
     }
 
     private fun initPaint(context: Context, typeArray:TypedArray) {

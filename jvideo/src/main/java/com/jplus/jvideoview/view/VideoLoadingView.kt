@@ -42,7 +42,6 @@ class VideoLoadingView(context: Context, attrs: AttributeSet) : View(context, at
         initLoadingView(context, attrs)
     }
 
-    @SuppressLint("CustomViewStyleable", "Recycle")
     private fun initLoadingView(context: Context, attrs: AttributeSet) {
         val typeArray = context.obtainStyledAttributes(attrs, R.styleable.VideoLoadingView)
         val color = typeArray.getColor(
@@ -54,6 +53,9 @@ class VideoLoadingView(context: Context, attrs: AttributeSet) : View(context, at
         mPaint = Paint()
         //第一个进度条画笔
         mPaint?.initPaint(color)
+
+        //释放资源
+        typeArray.recycle()
     }
 
     fun setColor(color: Int) {
@@ -70,7 +72,7 @@ class VideoLoadingView(context: Context, attrs: AttributeSet) : View(context, at
         }
     }
 
-    @SuppressLint("DrawAllocation")
+
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
         val widthSize = MeasureSpec.getSize(widthMeasureSpec)
@@ -99,6 +101,10 @@ class VideoLoadingView(context: Context, attrs: AttributeSet) : View(context, at
             mStrokeWidth = mWidth / 9f
             mPaint?.strokeWidth = mStrokeWidth
         }
+        start()
+    }
+
+    private fun start(){
         val oneHeight = mHeight * 3f / 7f
 
         val valueAnimator = ValueAnimator.ofFloat(0f, oneHeight - mStrokeWidth)
