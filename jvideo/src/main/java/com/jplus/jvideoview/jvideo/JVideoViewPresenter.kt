@@ -1,7 +1,9 @@
 package com.jplus.jvideoview.jvideo
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.ActivityInfo
+import android.content.res.Configuration
 import android.graphics.SurfaceTexture
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
@@ -307,7 +309,7 @@ class JVideoViewPresenter(
         mView.buffering(mBufferPercent)
         mPlayer.let {
             if (it is IjkMediaPlayer) {
-                mView.showNetSpeed("" + it.tcpSpeed / 1024 + "K/s")
+                mView.showNetSpeed("" + it.tcpSpeed / 1024 + "K/s")//缓冲时显示网速
             }
         }
     }
@@ -593,12 +595,23 @@ class JVideoViewPresenter(
         mAdjustWay = 0
     }
 
+    override fun onConfigChanged(newConfig: Configuration) {
+        if(newConfig.orientation== Configuration.ORIENTATION_PORTRAIT){
+            switchSpecialMode(SwitchMode.SWITCH_TO_WINDOW)
+            Log.d(JVideoCommon.TAG, "Configuration.ORIENTATION_PORTRAIT")
+        }
+        if(newConfig.orientation== Configuration.ORIENTATION_LANDSCAPE){
+            switchSpecialMode(SwitchMode.SWITCH_TO_FULL)
+            Log.d(JVideoCommon.TAG, "Configuration.ORIENTATION_LANDSCAPE")
+        }
+    }
+    @SuppressLint("SourceLockedOrientationActivity")
     override fun switchSpecialMode(switchMode: Int) {
         Log.d(JVideoCommon.TAG, "playMode$mPlayMode")
         when (mPlayMode) {
             PlayMode.MODE_NORMAL -> {
                 if (switchMode == SwitchMode.SWITCH_TO_FULL) {
-                    //进入全屏模式
+                    //进入全屏模式（在dialog的模式下似乎会有适配问题）
                     mPlayMode = PlayMode.MODE_FULL_SCREEN
                     // 隐藏ActionBar、状态栏，并横屏
                     (mContext as AppCompatActivity).supportActionBar?.hide()
@@ -606,7 +619,8 @@ class JVideoViewPresenter(
                         WindowManager.LayoutParams.FLAG_FULLSCREEN,
                         WindowManager.LayoutParams.FLAG_FULLSCREEN
                     )
-                    mContext.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+                    //屏幕旋转时不会指定屏幕方向不然会转不过来...
+//                    mContext.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
                     //设置为充满父布局
                     val params = LinearLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
@@ -632,6 +646,7 @@ class JVideoViewPresenter(
         }
     }
 
+    @SuppressLint("SourceLockedOrientationActivity")
     override fun exitMode(isBackNormal: Boolean) {
         Log.d(JVideoCommon.TAG, "exitMode")
         if (getPlayMode() != PlayMode.MODE_NORMAL && isBackNormal) {
@@ -642,7 +657,7 @@ class JVideoViewPresenter(
                 mContext.window.clearFlags(
                     WindowManager.LayoutParams.FLAG_FULLSCREEN
                 )
-                mContext.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+//                mContext.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
                 mContext.window.decorView.systemUiVisibility = View.VISIBLE
                 (mView as LinearLayout).layoutParams = it
                 changeVideoSize(it.width, it.height)

@@ -2,6 +2,7 @@ package com.jplus.jvideoview.jvideo
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.PorterDuff
 import android.graphics.SurfaceTexture
@@ -422,6 +423,10 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
             hideControlUi()
             showBottomLineUi()
         }
+    }
+
+    override fun onConfigChanged() {
+
     }
 
     override fun hideOrShowCenterPlay(isShow: Boolean) {

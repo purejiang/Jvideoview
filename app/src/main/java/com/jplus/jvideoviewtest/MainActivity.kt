@@ -1,11 +1,8 @@
 package com.jplus.jvideoviewtest
 
-import android.content.DialogInterface
+import android.content.res.Configuration
 import android.os.Bundle
 import android.util.Log
-import android.view.LayoutInflater
-import android.widget.EditText
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.jplus.jvideoview.data.Video
 import com.jplus.jvideoview.data.source.VideoRepository
@@ -14,7 +11,6 @@ import com.jplus.jvideoview.data.source.remote.RemoteVideoDataSource
 import com.jplus.jvideoview.jvideo.JVideoState
 import com.jplus.jvideoview.jvideo.JVideoViewPresenter
 import kotlinx.android.synthetic.main.activity_main.*
-
 
 
 class MainActivity : AppCompatActivity() {
@@ -42,8 +38,9 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    override fun onWindowFocusChanged(hasFocus: Boolean) {
-        super.onWindowFocusChanged(hasFocus)
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        presenter?.onConfigChanged(newConfig)
     }
     override fun onResume() {
         super.onResume()

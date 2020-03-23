@@ -1,5 +1,6 @@
 package com.jplus.jvideoview.jvideo
 
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.SurfaceTexture
 import android.view.MotionEvent
@@ -89,6 +90,10 @@ interface JVideoViewContract {
          * 进入全屏模式
          */
         fun entryFullMode()
+        /**
+         * 屏幕旋转处理
+         */
+        fun onConfigChanged()
         /**
          * 退出当前模式，恢复普通模式
          */
@@ -228,6 +233,10 @@ interface JVideoViewContract {
          * 生命周期onResume()
          */
         fun onResume()
+        /**
+         * 屏幕旋转处理
+         */
+        fun onConfigChanged(newConfig: Configuration)
         /**
          * 获取视频总时长
          * @return 视频时长
