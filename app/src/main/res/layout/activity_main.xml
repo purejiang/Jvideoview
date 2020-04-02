@@ -7,7 +7,7 @@
         xmlns:app="http://schemas.android.com/apk/res-auto"
         tools:context=".MainActivity">
 
-    <com.jplus.jvideoview.jvideo.JVideoView
+    <com.jplus.jvideoview.jvideo.JvView
             android:id="@+id/jv_video_main2"
             android:layout_width="match_parent"
             android:layout_height="300dp"

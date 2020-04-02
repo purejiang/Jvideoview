@@ -1,6 +1,7 @@
 package com.jplus.jvideoview.jvideo
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
@@ -16,11 +17,8 @@ import android.util.Log
 import android.view.*
 import android.view.GestureDetector.SimpleOnGestureListener
 import android.widget.LinearLayout
-import androidx.appcompat.app.AppCompatActivity
 import com.jplus.jvideoview.data.Video
-import com.jplus.jvideoview.data.source.VideoDataSource
-import com.jplus.jvideoview.data.source.VideoRepository
-import com.jplus.jvideoview.jvideo.JVideoState.*
+import com.jplus.jvideoview.jvideo.JvState.*
 import com.jplus.jvideoview.utils.JVideoUtil
 import com.jplus.jvideoview.utils.JVideoUtil.dt2progress
 import tv.danmaku.ijk.media.player.AndroidMediaPlayer
@@ -36,13 +34,17 @@ import kotlin.math.max
  * @author JPlus
  * @date 2019/8/30.
  */
-class JVideoViewPresenter(
-    private val mContext: Context,
-    private val mView: JVideoViewContract.Views,
-    private val mVideoRepository: VideoRepository,
-    private val mPlayerType: Int
+class JvPresenter(
+    //所在的上下文
+    private val mActivity: Activity,
+    //播放器view
+    private val mView: JvView,
+    //播放器引擎,默认使用系统自带的
+    private val mPlayerType: Int = PlayBackEngine.PLAYBACK_MEDIA_PLAYER,
+    //播放器状态回调
+    private val mCallback: JVideoCallBack
 ) :
-    JVideoViewContract.Presenter {
+    JvContract.Presenter {
     private var mSurface: Surface? = null
     private var mTextureView: TextureView? = null
     private var mParams: LinearLayout.LayoutParams? = null
@@ -66,10 +68,16 @@ class JVideoViewPresenter(
     private var mLoadingNum = -1
     private var mAdjustWay = 0
 
+    //是否第一次按下，用于滑动判断
     private var mIsFirstDown = true
+    //是否显示中间的控制view
     private var mIsShowControllerView = false
+    //是否加载中
     private var mIsLoading = false
-    private var mVolumeMute = false
+    //是否静音
+    private var mIsVolumeMute = false
+    //是否强制翻转屏幕
+    private var mIsForceScreen = false
 
     private val mHandler by lazy {
         Handler()
@@ -86,7 +94,9 @@ class JVideoViewPresenter(
     }
     private val mPlayer: IMediaPlayer by lazy {
         when (mPlayerType) {
+            //使用ijkplayer播放引擎
             PlayBackEngine.PLAYBACK_IJK_PLAYER -> IjkMediaPlayer()
+            //使用android自带的播放引擎
             PlayBackEngine.PLAYBACK_MEDIA_PLAYER -> AndroidMediaPlayer()
             else -> AndroidMediaPlayer()
         }
@@ -96,13 +106,13 @@ class JVideoViewPresenter(
         mView.setPresenter(this)
         //保存普通状态下的布局参数
         mParams = LinearLayout.LayoutParams((mView as View).layoutParams)
-        //延时后执行
+        Log.d("pipap", "orientation:" + mActivity.requestedOrientation)
     }
 
     override fun subscribe() {
         toLoading(true, "播放器初始化中...", 1)
         initAudio()
-        toLoading(false, "初始化完成", 1)
+        toLoading(false, "播放器初始化完成", 1)
     }
 
     override fun unSubscribe() {
@@ -111,7 +121,7 @@ class JVideoViewPresenter(
 
     //初始化Media和volume
     private fun initAudio() {
-        mAudioManager = mContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        mAudioManager = mActivity.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             //8.0以上需要响应音频焦点的状态改变
@@ -133,7 +143,11 @@ class JVideoViewPresenter(
                 .build()
             mAudioManager?.requestAudioFocus(audioFocusRequest)
         } else {
-            mAudioManager?.requestAudioFocus(null, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
+            mAudioManager?.requestAudioFocus(
+                null,
+                AudioManager.STREAM_MUSIC,
+                AudioManager.AUDIOFOCUS_GAIN
+            )
         }
         //初始音量值
         mStartVolume = getVolume(false)
@@ -148,7 +162,7 @@ class JVideoViewPresenter(
             it.isLooping = false
             //设置播放类型
             if (mPlayer is AndroidMediaPlayer) {
-                Log.d(JVideoCommon.TAG, "AndroidMediaPlayer")
+                Log.d(JvCommon.TAG, "AndroidMediaPlayer")
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     val attributes = AudioAttributes.Builder()
                         .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
@@ -172,7 +186,7 @@ class JVideoViewPresenter(
             //seekTo()调用并实际查找完成之后
             it.setOnSeekCompleteListener {
                 // mPlayState = PlayState.STATE_IDLE
-                Log.d(JVideoCommon.TAG, "setOnSeekCompleteListener")
+                Log.d(JvCommon.TAG, "setOnSeekCompleteListener")
             }
 
             //预加载监听
@@ -181,12 +195,12 @@ class JVideoViewPresenter(
             }
 
             //相当于缓存进度条
-            it.setOnBufferingUpdateListener { mp, percent ->
+            it.setOnBufferingUpdateListener { _, percent ->
                 buffering(percent)
             }
 
             //播放错误监听
-            it.setOnErrorListener { mp, what, extra ->
+            it.setOnErrorListener { _, what, extra ->
                 errorPlay(what, extra, "播放错误，请重试~")
                 true
             }
@@ -195,13 +209,13 @@ class JVideoViewPresenter(
             it.setOnInfoListener { _, what, _ ->
                 when (what) {
                     MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START -> {
-                        Log.d(JVideoCommon.TAG, "MEDIA_INFO_VIDEO_RENDERING_START")
+                        Log.d(JvCommon.TAG, "MEDIA_INFO_VIDEO_RENDERING_START")
                         // 播放器开始渲染
                         mPlayState = PlayState.STATE_PLAYING
                     }
                     MediaPlayer.MEDIA_INFO_BUFFERING_START -> {
                         bufferStart()
-                        Log.d(JVideoCommon.TAG, "MEDIA_INFO_BUFFERING_START")
+                        Log.d(JvCommon.TAG, "MEDIA_INFO_BUFFERING_START")
 
                     }
                     IMediaPlayer.MEDIA_INFO_BUFFERING_END -> {
@@ -216,12 +230,16 @@ class JVideoViewPresenter(
             //播放尺寸
             it.setOnVideoSizeChangedListener { _, _, _, _, _ ->
                 //这里是视频的原始尺寸大小
-                Log.d(JVideoCommon.TAG, "setOnVideoSizeChangedListener")
+                Log.d(JvCommon.TAG, "setOnVideoSizeChangedListener")
                 changeVideoSize((mView as View).width, (mView as View).height)
             }
             //设置Option
             if (mPlayerType == PlayBackEngine.PLAYBACK_IJK_PLAYER) {
-                (it as IjkMediaPlayer).setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "start-on-prepared", 0)
+                (it as IjkMediaPlayer).setOption(
+                    IjkMediaPlayer.OPT_CATEGORY_PLAYER,
+                    "start-on-prepared",
+                    0
+                )
                 it.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "analyzeduration", 1)
                 it.setOption(IjkMediaPlayer.OPT_CATEGORY_CODEC, "skip_loop_filter", 0)
             }
@@ -249,7 +267,7 @@ class JVideoViewPresenter(
     //开始播放
     override fun startPlay(position: Int) {
         if (mPlayState == PlayState.STATE_PREPARED) {
-            Log.d(JVideoCommon.TAG, "startPlay:$position")
+            Log.d(JvCommon.TAG, "startPlay:$position")
             mPlayer.let {
                 //如果不在播放中，指定视频播放位置并开始播放
                 it.seekTo(position.toLong())
@@ -262,7 +280,7 @@ class JVideoViewPresenter(
     }
 
     override fun continuePlay() {
-        Log.d(JVideoCommon.TAG, "continuePlay")
+        Log.d(JvCommon.TAG, "continuePlay")
         when (mPlayState) {
             PlayState.STATE_PAUSED, PlayState.STATE_BUFFERING_PLAYING -> {
                 mPlayer.start()
@@ -286,7 +304,7 @@ class JVideoViewPresenter(
     }
 
     private fun bufferStart() {
-        Log.d(JVideoCommon.TAG, "bufferStart")
+        Log.d(JvCommon.TAG, "bufferStart")
         // MediaPlayer暂时不播放，以缓冲更多的数据
         mPlayState =
             if (mPlayState == PlayState.STATE_PAUSED || mPlayState == PlayState.STATE_BUFFERING_PAUSED) {
@@ -296,7 +314,7 @@ class JVideoViewPresenter(
             } else {
                 PlayState.STATE_BUFFERING_PLAYING
             }
-        Log.d(JVideoCommon.TAG, "mPlayState:${mPlayState}")
+        Log.d(JvCommon.TAG, "mPlayState:${mPlayState}")
         //loading
         toLoading(true, "缓冲中....", 3)
     }
@@ -315,7 +333,7 @@ class JVideoViewPresenter(
     }
 
     private fun buffered() {
-        Log.d(JVideoCommon.TAG, "buffered")
+        Log.d(JvCommon.TAG, "buffered")
         // 填充缓冲区后，MediaPlayer恢复播放/暂停
         if (mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
             continuePlay()
@@ -329,7 +347,7 @@ class JVideoViewPresenter(
     }
 
     override fun seekCompletePlay(position: Int) {
-        Log.d(JVideoCommon.TAG, "seekToPlay:$position")
+        Log.d(JvCommon.TAG, "seekToPlay:$position")
         mPosition = position
         mPlayer.let {
             if (mPlayState == PlayState.STATE_PAUSED || mPlayState == PlayState.STATE_BUFFERING_PAUSED) {
@@ -350,7 +368,7 @@ class JVideoViewPresenter(
 
     //暂停播放
     override fun pausePlay() {
-        Log.d(JVideoCommon.TAG, "pausePlay")
+        Log.d(JvCommon.TAG, "pausePlay")
         if (mPlayState == PlayState.STATE_PLAYING || mPlayState == PlayState.STATE_PREPARED) {
             mPlayState = PlayState.STATE_PAUSED
         } else if (mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
@@ -365,7 +383,7 @@ class JVideoViewPresenter(
     }
 
     override fun completedPlay(videoUrl: String?) {
-        Log.d(JVideoCommon.TAG, "completedPlay")
+        Log.d(JvCommon.TAG, "completedPlay")
 //        mPlayer.let {
 //            if (it.duration != it.currentPosition) {
 //                errorPlay(0, 0, "网络错误或者视频地址已失效~")
@@ -376,13 +394,6 @@ class JVideoViewPresenter(
         mPlayState = PlayState.STATE_COMPLETED
         when (mPlayForm) {
             PlayForm.PLAYFORM_TURN -> {
-                //播放结束后的显示,如果播放完成则显示
-                if (mVideoIndex >= mVideoList.size) {
-                    mView.showMessagePrompt("视频已播放结束~")
-                    mPlayer.stop()
-                    return
-                }
-
                 mView.showMessagePrompt("即将播放下个视频~")
                 //播放结束后，重新设置播放器，避免再次调用setDataSource()时出现IllegalStateException
                 mHandler.postDelayed(
@@ -408,7 +419,7 @@ class JVideoViewPresenter(
 
     override fun preparedPlay() {
         toLoading(false, "预加载完成", 4)
-        Log.d(JVideoCommon.TAG, "setOnPreparedListener")
+        Log.d(JvCommon.TAG, "setOnPreparedListener")
         mPlayer.let {
             mPlayState = PlayState.STATE_PREPARED
             //预加载后先播放再暂停，1：防止播放错误-38(未开始就停止) 2：可以显示第一帧画面
@@ -428,25 +439,30 @@ class JVideoViewPresenter(
     }
 
     override fun errorPlay(what: Int, extra: Int, message: String) {
-        Log.d(JVideoCommon.TAG, "setOnErrorListener:$what")
+        Log.d(JvCommon.TAG, "setOnErrorListener:$what")
         mPlayState = PlayState.STATE_ERROR
         mView.showMessagePrompt(message)
     }
 
     override fun onPause() {
-        mIsBackContinue = if (mPlayState == PlayState.STATE_PAUSED || mPlayState == PlayState.STATE_BUFFERING_PAUSED) {
-            false
-        } else if (mPlayState == PlayState.STATE_PLAYING || mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
-            true
-        } else {
-            //播放器初始化或者播放完成、播放错误时中不做任何操作
-            mIsBackContinue = null
-            return
-        }
+        //取消屏幕常亮
+        mActivity.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        mIsBackContinue =
+            if (mPlayState == PlayState.STATE_PAUSED || mPlayState == PlayState.STATE_BUFFERING_PAUSED) {
+                false
+            } else if (mPlayState == PlayState.STATE_PLAYING || mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
+                true
+            } else {
+                //播放器初始化或者播放完成、播放错误时中不做任何操作
+                mIsBackContinue = null
+                return
+            }
         pausePlay()
     }
 
     override fun onResume() {
+        //设置屏幕常亮
+        mActivity.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         //播放器初始化中不做任何操作
         mIsBackContinue?.let {
             if (!it) {
@@ -461,17 +477,17 @@ class JVideoViewPresenter(
     // 1.创建一个手势监听回调
     private val listener: SimpleOnGestureListener = object : SimpleOnGestureListener() {
         override fun onDown(e: MotionEvent): Boolean {
-            Log.d(JVideoCommon.TAG, "onDown")
+            Log.d(JvCommon.TAG, "onDown")
             return super.onDown(e)
         }
 
         override fun onShowPress(e: MotionEvent) {
-            Log.d(JVideoCommon.TAG, "onShowPress")
+            Log.d(JvCommon.TAG, "onShowPress")
             super.onShowPress(e)
         }
 
         override fun onDoubleTap(e: MotionEvent): Boolean {
-            Log.d(JVideoCommon.TAG, "onDoubleTap")
+            Log.d(JvCommon.TAG, "onDoubleTap")
             mPlayer.let {
                 if (it.isPlaying) {
                     pausePlay()
@@ -485,13 +501,18 @@ class JVideoViewPresenter(
         }
 
         override fun onSingleTapConfirmed(e: MotionEvent?): Boolean {
-            Log.d(JVideoCommon.TAG, "onSingleTapConfirmed")
+            Log.d(JvCommon.TAG, "onSingleTapConfirmed")
             mIsShowControllerView = !mIsShowControllerView
             showOrHideControlDelay(isShow = mIsShowControllerView, isClick = true)
             return true
         }
 
-        override fun onScroll(e1: MotionEvent, e2: MotionEvent, distanceX: Float, distanceY: Float): Boolean {
+        override fun onScroll(
+            e1: MotionEvent,
+            e2: MotionEvent,
+            distanceX: Float,
+            distanceY: Float
+        ): Boolean {
             if (mIsFirstDown) {
                 //从手指落下时判断滑动时改变的模式
                 mAdjustWay = getAdjustMode(e1)
@@ -504,7 +525,7 @@ class JVideoViewPresenter(
             when (mAdjustWay) {
                 PlayAdjust.ADJUST_VOLUME -> {
                     //音量调节，从下往上为加，所以需要加上负号
-                    if (!mVolumeMute) {
+                    if (!mIsVolumeMute) {
                         setVolume(mStartVolume, -distY)
                     }
                 }
@@ -521,7 +542,7 @@ class JVideoViewPresenter(
         }
     }
     // 2.创建一个检测器
-    private val detector = GestureDetector(mContext, listener)
+    private val detector = GestureDetector(mActivity, listener)
     //====================================================================================
 
     override fun slideJudge(view: View, event: MotionEvent) {
@@ -538,7 +559,7 @@ class JVideoViewPresenter(
 
     private fun getAdjustMode(event: MotionEvent): Int {
         //调整前获取调整的模式
-        Log.d(JVideoCommon.TAG, "getAdjustMode")
+        Log.d(JvCommon.TAG, "getAdjustMode")
         val width = (mView as LinearLayout).width
         return when {
             //通过起始点坐标判断滑动是 快进/后退、亮度调节、音量调节
@@ -558,7 +579,7 @@ class JVideoViewPresenter(
     }
 
     override fun setPlayForm(playForm: Int) {
-        Log.d(JVideoCommon.TAG, "setPlayForm:$playForm")
+        Log.d(JvCommon.TAG, "setPlayForm:$playForm")
         mPlayForm = playForm
     }
 
@@ -570,12 +591,12 @@ class JVideoViewPresenter(
             //恢复静音前音量
             mAudioManager?.setStreamVolume(AudioManager.STREAM_MUSIC, mVolume, 0)
         }
-        mVolumeMute = isMute
+        mIsVolumeMute = isMute
     }
 
     private fun endAdjust() {
         //调整结束后保存结果
-        Log.d(JVideoCommon.TAG, "endAdjust")
+        Log.d(JvCommon.TAG, "endAdjust")
         mIsFirstDown = true
         when (mAdjustWay) {
             PlayAdjust.ADJUST_LIGHT -> {
@@ -596,78 +617,96 @@ class JVideoViewPresenter(
     }
 
     override fun onConfigChanged(newConfig: Configuration) {
-        if(newConfig.orientation== Configuration.ORIENTATION_PORTRAIT){
-            switchSpecialMode(SwitchMode.SWITCH_TO_WINDOW)
-            Log.d(JVideoCommon.TAG, "Configuration.ORIENTATION_PORTRAIT")
+        if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) {
+            entryPortraitScreen()
+            Log.d(JvCommon.TAG, "Configuration.ORIENTATION_PORTRAIT")
         }
-        if(newConfig.orientation== Configuration.ORIENTATION_LANDSCAPE){
-            switchSpecialMode(SwitchMode.SWITCH_TO_FULL)
-            Log.d(JVideoCommon.TAG, "Configuration.ORIENTATION_LANDSCAPE")
+        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            entryFullScreen()
+            Log.d(JvCommon.TAG, "Configuration.ORIENTATION_LANDSCAPE")
         }
     }
+
     @SuppressLint("SourceLockedOrientationActivity")
-    override fun switchSpecialMode(switchMode: Int) {
-        Log.d(JVideoCommon.TAG, "playMode$mPlayMode")
+    override fun switchSpecialMode(switchMode: Int, isRotateScreen: Boolean) {
+        Log.d(JvCommon.TAG, "playMode$mPlayMode")
         when (mPlayMode) {
             PlayMode.MODE_NORMAL -> {
                 if (switchMode == SwitchMode.SWITCH_TO_FULL) {
                     //进入全屏模式（在dialog的模式下似乎会有适配问题）
                     mPlayMode = PlayMode.MODE_FULL_SCREEN
-                    // 隐藏ActionBar、状态栏，并横屏
-                    (mContext as AppCompatActivity).supportActionBar?.hide()
-                    mContext.window.setFlags(
-                        WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                        WindowManager.LayoutParams.FLAG_FULLSCREEN
-                    )
-                    //屏幕旋转时不会指定屏幕方向不然会转不过来...
-//                    mContext.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-                    //设置为充满父布局
-                    val params = LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT
-                    )
-                    //隐藏虚拟按键，并且全屏
-                    mContext.window.decorView.systemUiVisibility =
-                        View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or View.SYSTEM_UI_FLAG_FULLSCREEN
-                    (mView as LinearLayout).layoutParams = params
-                    //全屏直接使用手机大小,此时未翻转的话，高宽对调
-                    val phoneWidth = JVideoUtil.getPhoneDisplayWidth(mContext)
-                    val phoneHeight = JVideoUtil.getPhoneDisplayHeight(mContext)
-                    changeVideoSize(
-                        if (phoneHeight > phoneWidth) phoneHeight else phoneWidth,
-                        if (phoneHeight > phoneWidth) phoneWidth else phoneHeight
-                    )
-                    mView.entryFullMode()
+                    //屏幕旋转时指定带重力感应的屏幕方向不然会转不过来...，但是没有开启旋转的情况下要强制转屏来达到全屏效果
+                    mActivity.requestedOrientation =
+                        ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                    //屏幕方向改为未知，保证下次能够旋转屏幕
+//                    mActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
                 }
             }
             PlayMode.MODE_FULL_SCREEN -> {
-                exitMode(true)
+                exitMode(true, isRotateScreen)
             }
         }
     }
 
-    @SuppressLint("SourceLockedOrientationActivity")
-    override fun exitMode(isBackNormal: Boolean) {
-        Log.d(JVideoCommon.TAG, "exitMode")
-        if (getPlayMode() != PlayMode.MODE_NORMAL && isBackNormal) {
-            //进入普通模式
-            mParams?.let {
-                mPlayMode = PlayMode.MODE_NORMAL
-                (mContext as AppCompatActivity).supportActionBar?.show()
-                mContext.window.clearFlags(
-                    WindowManager.LayoutParams.FLAG_FULLSCREEN
-                )
-//                mContext.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-                mContext.window.decorView.systemUiVisibility = View.VISIBLE
-                (mView as LinearLayout).layoutParams = it
-                changeVideoSize(it.width, it.height)
-            }
+    private fun entryFullScreen() {
+        // 隐藏ActionBar、状态栏
+        mActivity.actionBar?.hide()
+
+        mActivity.window.setFlags(
+            WindowManager.LayoutParams.FLAG_FULLSCREEN,
+            WindowManager.LayoutParams.FLAG_FULLSCREEN
+        )
+        //设置为充满父布局
+        val params = LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT
+        )
+        //隐藏虚拟按键，并且全屏
+        mActivity.window.decorView.systemUiVisibility =
+            View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or View.SYSTEM_UI_FLAG_FULLSCREEN
+        (mView as LinearLayout).layoutParams = params
+
+        //全屏直接使用手机大小,此时未翻转的话，高宽对调
+        val phoneWidth = JVideoUtil.getPhoneDisplayWidth(mActivity)
+        val phoneHeight = JVideoUtil.getPhoneDisplayHeight(mActivity)
+        changeVideoSize(
+            if (phoneHeight > phoneWidth) phoneHeight else phoneWidth,
+            if (phoneHeight > phoneWidth) phoneWidth else phoneHeight
+        )
+
+        mView.entryFullMode()
+    }
+
+    private fun entryPortraitScreen() {
+        //进入普通模式
+        mParams?.let {
+            mPlayMode = PlayMode.MODE_NORMAL
+            mActivity.actionBar?.show()
+            mActivity.window.clearFlags(
+                WindowManager.LayoutParams.FLAG_FULLSCREEN
+            )
+            mActivity.window.decorView.systemUiVisibility = View.VISIBLE
+            (mView as LinearLayout).layoutParams = it
+            changeVideoSize(it.width, it.height)
         }
+        //屏幕方向改为未知，保证下次能够旋转屏幕
+//        mActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         mView.exitMode()
     }
 
+    @SuppressLint("SourceLockedOrientationActivity")
+    override fun exitMode(isBackNormal: Boolean, isRotateScreen: Boolean) {
+        Log.d(JvCommon.TAG, "exitMode")
+        if (getPlayMode() != PlayMode.MODE_NORMAL && isBackNormal) {
+            mActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
+        }
+    }
+
     private fun showOrHideControlDelay(isShow: Boolean, isClick: Boolean) {
-        Log.d(JVideoCommon.TAG, "showOrHideControlDelay:show:$isShow, mIsShowControllerView:$mIsShowControllerView")
+        Log.d(
+            JvCommon.TAG,
+            "showOrHideControlDelay:show:$isShow, mIsShowControllerView:$mIsShowControllerView"
+        )
         if (isShow) {
             mView.hideOrShowController(true)
             mIsShowControllerView = true
@@ -689,7 +728,10 @@ class JVideoViewPresenter(
             mPlayer.let {
                 if (it.isPlaying) {
                     //更新播放进度
-                    mView.playing(getVideoTimeStr(it.currentPosition.toInt()), it.currentPosition.toInt())
+                    mView.playing(
+                        getVideoTimeStr(it.currentPosition.toInt()),
+                        it.currentPosition.toInt()
+                    )
                 }
             }
             //重复调起自身
@@ -707,60 +749,49 @@ class JVideoViewPresenter(
     private fun toLoading(isLoading: Boolean, content: String, loadingNum: Int) {
         mLoadingNum = if (isLoading) {
             if (mIsLoading) {
-                Log.e(JVideoCommon.TAG, "not to close loading view:$mLoadingNum.")
+                Log.e(JvCommon.TAG, "not to close loading view:$mLoadingNum.")
             }
             mIsLoading = true
             loadingNum
         } else {
             if (!mIsLoading) {
-                Log.e(JVideoCommon.TAG, "not to open loading view:$mLoadingNum.")
+                Log.e(JvCommon.TAG, "not to open loading view:$mLoadingNum.")
             } else if (mLoadingNum != loadingNum && mLoadingNum != -1) {
-                Log.e(JVideoCommon.TAG, "no num for loading view:$loadingNum.")
+                Log.e(JvCommon.TAG, "no num for loading view:$loadingNum.")
             }
             mIsLoading = false
             -1
         }
-        Log.d(JVideoCommon.TAG, "showLoading:$isLoading,mLoadingNum:$mLoadingNum")
+        Log.d(JvCommon.TAG, "showLoading:$isLoading,mLoadingNum:$mLoadingNum")
         mView.showLoading(isLoading, content)
     }
 
     override fun textureReady(surface: SurfaceTexture, textureView: TextureView) {
-        Log.d(JVideoCommon.TAG, "textureReady")
+        Log.d(JvCommon.TAG, "textureReady")
         if (mSurface == null) {
             mSurface = Surface(surface)
         }
         mTextureView = mTextureView ?: textureView
         mPlayState = PlayState.STATE_PREPARING
-        loadVideosData()
+        mCallback.initSuccess()
     }
 
     //获取数据源
-    override fun loadVideosData() {
-        Log.d(JVideoCommon.TAG, "loadVideosData")
-        toLoading(true, "数据源获取中...", 5)
-        mVideoRepository.getVideos(object : VideoDataSource.LoadVideosCallback {
-            override fun onVideosLoaded(videos: List<Video>) {
-                Log.d(JVideoCommon.TAG, " videos:${videos.size}")
-                mVideoList.addAll(videos)
-                if (mVideoList.isEmpty()) {
-                    mView.showMessagePrompt("数据源获取为空~")
-                    return
-                }
-                toLoading(false, "数据源获取完成", 5)
-                entryVideoLoop()
-            }
-
-            override fun onDataNotAvailable() {
-                toLoading(false, "数据源获取失败", 5)
-                mView.showMessagePrompt("数据源获取失败~")
-            }
-        })
+    fun start(videos: List<Video>) {
+        Log.d(JvCommon.TAG, " videos:${videos.size}")
+        if (videos.isEmpty()) {
+            mView.showMessagePrompt("数据源为空~")
+            return
+        }
+        mVideoList.clear()
+        mVideoList.addAll(videos)
+        entryVideoLoop()
     }
 
     override fun entryVideoLoop() {
         //播放后如果有顺序播放，则重新开始播放列表
         mSurface?.let {
-            Log.d(JVideoCommon.TAG, "mVideoIndex:$mVideoIndex")
+            Log.d(JvCommon.TAG, "mVideoIndex:$mVideoIndex")
             mView.buffering(0) //清空前一集的缓存进度条
             entryVideo(it, mVideoList[mVideoIndex])
         }
@@ -777,7 +808,8 @@ class JVideoViewPresenter(
     override fun getLight(isMax: Boolean): Int {
         var nowBrightnessValue = 0
         try {
-            nowBrightnessValue = Settings.System.getInt(mContext.contentResolver, Settings.System.SCREEN_BRIGHTNESS)
+            nowBrightnessValue =
+                Settings.System.getInt(mActivity.contentResolver, Settings.System.SCREEN_BRIGHTNESS)
         } catch (e: Exception) {
 
         }
@@ -819,7 +851,14 @@ class JVideoViewPresenter(
      */
     private fun slidePlay(startProgress: Int, distance: Float) {
         var position =
-            startProgress + floor(dt2progress(distance, getDuration(), (mView as LinearLayout).width, 0.2)).toInt()
+            startProgress + floor(
+                dt2progress(
+                    distance,
+                    getDuration(),
+                    (mView as LinearLayout).width,
+                    0.2
+                )
+            ).toInt()
         when {
             position in 0..getDuration() -> {
 
@@ -832,17 +871,24 @@ class JVideoViewPresenter(
     }
 
     private fun setLight(startLight: Int, distance: Float) {
-        Log.d(JVideoCommon.TAG, "startLight:$startLight, distance$distance")
-        var light = startLight + floor(dt2progress(distance, 255, (mView as LinearLayout).height, 1.0)).toInt()
+        Log.d(JvCommon.TAG, "startLight:$startLight, distance$distance")
+        var light = startLight + floor(
+            dt2progress(
+                distance,
+                255,
+                (mView as LinearLayout).height,
+                1.0
+            )
+        ).toInt()
         when {
             light in 0..255 -> {
             }
             light <= 0 -> light = 0
             else -> light = 255
         }
-        val params = (mContext as AppCompatActivity).window.attributes
+        val params = mActivity.window.attributes
         params.screenBrightness = light / 255f
-        mContext.window.attributes = params
+        mActivity.window.attributes = params
         //保存亮度
         mLight = light
         mView.setLightUi(floor(light / 255f * 100).toInt())
@@ -850,7 +896,14 @@ class JVideoViewPresenter(
 
     private fun setVolume(startVolume: Int, distance: Float) {
         var volume =
-            startVolume + floor(dt2progress(distance, getVolume(true), (mView as LinearLayout).height, 1.0)).toInt()
+            startVolume + floor(
+                dt2progress(
+                    distance,
+                    getVolume(true),
+                    (mView as LinearLayout).height,
+                    1.0
+                )
+            ).toInt()
         when {
             volume in 0..getVolume(true) -> {
 
@@ -865,8 +918,8 @@ class JVideoViewPresenter(
 
     //进入视频播放准备
     private fun entryVideo(surface: Surface, video: Video) {
-        toLoading(true, "预加载...", 4)
-        Log.d(JVideoCommon.TAG, "entryVideo:${video.videoUrl}")
+        toLoading(true, "视频预加载...", 4)
+        Log.d(JvCommon.TAG, "entryVideo:${video.videoUrl}")
         //设置title
         mView.setTitle(video.videoName ?: "未知视频")
         mPlayer.let {
@@ -907,7 +960,7 @@ class JVideoViewPresenter(
             val videoWidth2 = ceil(videoWidth * 1.0 / max).toInt()
             val videoHeight2 = ceil(videoHeight * 1.0 / max).toInt()
             Log.d(
-                JVideoCommon.TAG,
+                JvCommon.TAG,
                 "mPlayer:$videoWidth - $videoHeight， jvideo：$jWidth- $mJVideoHeight, changed:$videoWidth2-$videoHeight2"
             )
             //无法直接设置视频尺寸，将计算出的视频尺寸设置到surfaceView 让视频自动填充。
@@ -919,6 +972,13 @@ class JVideoViewPresenter(
 
     private fun getVideoTimeStr(position: Int?): String {
         return JVideoUtil.progress2Time(position) + "&" + JVideoUtil.progress2Time(getDuration())
+    }
+
+    interface JVideoCallBack {
+        /**
+         * 播放器初始化完成
+         */
+        fun initSuccess()
     }
 
 }

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <declare-styleable name="JVideoView">
+    <declare-styleable name="JvView">
         <attr name="play_btn_color" format="reference|color" />
         <attr name="progress_drawer" format="reference"/>
         <attr name="thumb_color" format="reference|color"/>

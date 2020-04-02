@@ -3,6 +3,7 @@ package com.jplus.jvideoview.utils
 import android.content.Context
 import android.graphics.Bitmap
 import android.media.MediaMetadataRetriever
+import android.provider.Settings
 import android.view.WindowManager
 import java.text.SimpleDateFormat
 import java.util.*
@@ -71,4 +72,12 @@ object JVideoUtil {
             }
             return bitmap
         }
+
+    /**
+     * 获取手机是否开启重力感应
+     * @param context 上下文
+     */
+    fun getIsOpenRotate(context: Context):Boolean{
+        return Settings.System.getInt(context.contentResolver, Settings.System.ACCELEROMETER_ROTATION)==1
+    }
 }

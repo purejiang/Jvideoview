@@ -2,7 +2,6 @@ package com.jplus.jvideoview.view
 
 import android.animation.AnimatorSet
 import android.animation.ValueAnimator
-import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
@@ -12,7 +11,7 @@ import android.view.View
 import android.view.animation.LinearInterpolator
 import androidx.core.content.ContextCompat
 import com.jplus.jvideoview.R
-import com.jplus.jvideoview.jvideo.JVideoCommon
+import com.jplus.jvideoview.jvideo.JvCommon
 
 
 /**
@@ -96,7 +95,7 @@ class VideoLoadingView(context: Context, attrs: AttributeSet) : View(context, at
             mWidth = widthSize
             mHeight = heightSize
         }
-        Log.d(JVideoCommon.TAG, "mWidth:$mWidth, mHeight:$mHeight,mRate$mRate")
+        Log.d(JvCommon.TAG, "mWidth:$mWidth, mHeight:$mHeight,mRate$mRate")
         if (mStrokeWidth == 0f) {
             mStrokeWidth = mWidth / 9f
             mPaint?.strokeWidth = mStrokeWidth

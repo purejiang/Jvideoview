@@ -4,7 +4,7 @@ package com.jplus.jvideoview.jvideo
  * @author JPlus
  * @date 2019/8/30.
  */
-class JVideoState {
+class JvState {
     /**
      * 播放器状态
      */

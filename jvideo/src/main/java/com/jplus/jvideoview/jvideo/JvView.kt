@@ -2,7 +2,6 @@ package com.jplus.jvideoview.jvideo
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.PorterDuff
 import android.graphics.SurfaceTexture
@@ -19,7 +18,7 @@ import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import com.jplus.jvideoview.R
-import com.jplus.jvideoview.jvideo.JVideoState.SwitchMode
+import com.jplus.jvideoview.jvideo.JvState.SwitchMode
 import kotlinx.android.synthetic.main.layout_control_bottom.view.*
 import kotlinx.android.synthetic.main.layout_control_center.view.*
 import kotlinx.android.synthetic.main.layout_control_slide.view.*
@@ -27,7 +26,6 @@ import kotlinx.android.synthetic.main.layout_controller.view.*
 import kotlinx.android.synthetic.main.layout_controller_top.view.*
 import kotlinx.android.synthetic.main.layout_jvideo.view.*
 import kotlinx.android.synthetic.main.layout_line_progress.view.*
-import kotlinx.android.synthetic.main.layout_tv_progress.view.*
 
 
 /**
@@ -35,7 +33,7 @@ import kotlinx.android.synthetic.main.layout_tv_progress.view.*
  * @date 2019/8/30.
  */
 @RequiresApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
-class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTextureListener {
+class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListener {
     companion object {
         private const val BOTH_SIDES_MODE = 0
         private const val LEFT_SIDES_MODE = 1
@@ -44,7 +42,7 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
     }
 
 
-    private var mPresenter: JVideoViewContract.Presenter? = null
+    private var mPresenter: JvContract.Presenter? = null
     private var mView: View? = null
     private lateinit var mContext: Context
 
@@ -65,29 +63,29 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
         mContext = context
         mView = LayoutInflater.from(context).inflate(R.layout.layout_jvideo, this)
 
-        val typeArray = context.obtainStyledAttributes(attrs, R.styleable.JVideoView)
+        val typeArray = context.obtainStyledAttributes(attrs, R.styleable.JvView)
         val playColor = typeArray.getColor(
-            R.styleable.JVideoView_play_btn_color,
+            R.styleable.JvView_play_btn_color,
             ContextCompat.getColor(context, R.color.video_play_color)
         )
         val progressBackground =
-            typeArray.getDrawable(R.styleable.JVideoView_progress_drawer) ?: ContextCompat.getDrawable(
+            typeArray.getDrawable(R.styleable.JvView_progress_drawer) ?: ContextCompat.getDrawable(
                 context,
                 R.drawable.draw_seek_bar
             )
 
-        val lineBackground = typeArray.getDrawable(R.styleable.JVideoView_lines_drawer) ?: ContextCompat.getDrawable(
+        val lineBackground = typeArray.getDrawable(R.styleable.JvView_lines_drawer) ?: ContextCompat.getDrawable(
             context,
             R.drawable.draw_line_progress
         )
 
         val thumbColor = typeArray.getColor(
-            R.styleable.JVideoView_thumb_color, ContextCompat.getColor(context, R.color.video_play_color)
+            R.styleable.JvView_thumb_color, ContextCompat.getColor(context, R.color.video_play_color)
         )
         val loadingColor = typeArray.getColor(
-            R.styleable.JVideoView_loading_color, ContextCompat.getColor(context, R.color.video_play_color)
+            R.styleable.JvView_loading_color, ContextCompat.getColor(context, R.color.video_play_color)
         )
-        val numMode = typeArray.getInt(R.styleable.JVideoView_num_progress_mode, 0)
+        val numMode = typeArray.getInt(R.styleable.JvView_num_progress_mode, 0)
 
         //设置两个播放按钮的颜色
         vpv_video_center_play.setColor(playColor, playColor)
@@ -127,7 +125,7 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
     }
 
     private fun initListener() {
-        mPresenter?.setPlayForm(JVideoState.PlayForm.PLAYFORM_TURN)
+        mPresenter?.setPlayForm(JvState.PlayForm.PLAYFORM_TURN)
         //设置Texture监听
         ttv_video_player.surfaceTextureListener = this
 
@@ -166,7 +164,7 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
             true
         }
         img_screen_change.setOnClickListener {
-            mPresenter?.switchSpecialMode(SwitchMode.SWITCH_TO_FULL)
+            mPresenter?.switchSpecialMode(SwitchMode.SWITCH_TO_FULL, false)
         }
         tv_video_refresh.setOnClickListener {
             //重新播放
@@ -186,7 +184,7 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
             }
         }
         imb_video_back.setOnClickListener {
-            mPresenter?.exitMode(true)
+            mPresenter?.exitMode(true, false)
         }
     }
 
@@ -201,7 +199,7 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
         }
     }
 
-    override fun setPresenter(t: JVideoViewContract.Presenter) {
+    override fun setPresenter(t: JvContract.Presenter) {
         mPresenter = t
         initListener()
     }
@@ -323,10 +321,10 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
     }
 
     private fun showLoadingUi(text: String) {
-        if (ly_video_loading.visibility == GONE) {
+//        if (ly_video_loading.visibility == GONE) {
             tv_video_loading.text = text
             ly_video_loading.visibility = VISIBLE
-        }
+//        }
     }
 
     private fun hideLoadingUi() {
@@ -439,7 +437,7 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
 
     override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture?, width: Int, height: Int) {
         //这里是改变后的画布大小
-        Log.d(JVideoCommon.TAG, "onSurfaceTextureSizeChanged:$width - $height")
+        Log.d(JvCommon.TAG, "onSurfaceTextureSizeChanged:$width - $height")
     }
 
     override fun onSurfaceTextureUpdated(surface: SurfaceTexture?) {
@@ -447,7 +445,7 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
     }
 
     override fun onSurfaceTextureDestroyed(surface: SurfaceTexture?): Boolean {
-        Log.d(JVideoCommon.TAG, "onSurfaceTextureDestroyed")
+        Log.d(JvCommon.TAG, "onSurfaceTextureDestroyed")
         mPresenter?.releasePlay(false)
         vlv_video_loading.close()
         return false
@@ -455,7 +453,7 @@ class JVideoView : LinearLayout, JVideoViewContract.Views, TextureView.SurfaceTe
 
     override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
         //这里是原始画布大小
-        Log.d(JVideoCommon.TAG, "onSurfaceTextureAvailable:$width - $height")
+        Log.d(JvCommon.TAG, "onSurfaceTextureAvailable:$width - $height")
         mPresenter?.textureReady(surface, ttv_video_player)
     }
 }

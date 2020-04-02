@@ -13,7 +13,7 @@ import com.jplus.jvideoview.BaseView
  * @author JPlus
  * @date 2019/8/30.
  */
-interface JVideoViewContract {
+interface JvContract {
 
     interface Views :BaseView<Presenter>{
         /**
@@ -168,22 +168,21 @@ interface JVideoViewContract {
         /**
          * 切换播放模式（全屏与普通模式）
          * @param switchMode 切换的模式
+         * @param isRotateScreen 是否旋转屏幕
          */
-        fun switchSpecialMode(switchMode:Int)
+        fun switchSpecialMode(switchMode:Int, isRotateScreen:Boolean)
         /**
          * 退出当前模式
          * @param isBackNormal  是否恢复普通模式
+         * @param isRotateScreen 是否旋转屏幕
          */
-        fun exitMode(isBackNormal:Boolean)
+        fun exitMode(isBackNormal:Boolean, isRotateScreen: Boolean)
         /**
          * 设置播放顺序
          * @param playForm
          */
         fun setPlayForm(playForm:Int)
-        /**
-         * 获取播放源
-         */
-        fun loadVideosData()
+
         /**
          * 幕布准备就绪
          * @param surface 表面
