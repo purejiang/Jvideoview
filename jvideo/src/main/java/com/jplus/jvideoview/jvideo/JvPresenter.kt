@@ -17,6 +17,7 @@ import android.util.Log
 import android.view.*
 import android.view.GestureDetector.SimpleOnGestureListener
 import android.widget.LinearLayout
+import com.jplus.jvideoview.JvController
 import com.jplus.jvideoview.data.Video
 import com.jplus.jvideoview.jvideo.JvState.*
 import com.jplus.jvideoview.utils.JVideoUtil
@@ -42,7 +43,7 @@ class JvPresenter(
     //播放器引擎,默认使用系统自带的
     private val mPlayerType: Int = PlayBackEngine.PLAYBACK_MEDIA_PLAYER,
     //播放器状态回调
-    private val mCallback: JVideoCallBack
+    private val mCallback: JvController.JvCallBack
 ) :
     JvContract.Presenter {
     private var mSurface: Surface? = null
@@ -181,6 +182,7 @@ class JvPresenter(
             //播放完成监听
             it.setOnCompletionListener {
                 completedPlay(null)
+                mCallback.endPlay()
             }
 
             //seekTo()调用并实际查找完成之后
@@ -209,14 +211,13 @@ class JvPresenter(
             it.setOnInfoListener { _, what, _ ->
                 when (what) {
                     MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START -> {
-                        Log.d(JvCommon.TAG, "MEDIA_INFO_VIDEO_RENDERING_START")
                         // 播放器开始渲染
                         mPlayState = PlayState.STATE_PLAYING
+                        Log.d(JvCommon.TAG, "MEDIA_INFO_VIDEO_RENDERING_START")
                     }
                     MediaPlayer.MEDIA_INFO_BUFFERING_START -> {
                         bufferStart()
                         Log.d(JvCommon.TAG, "MEDIA_INFO_BUFFERING_START")
-
                     }
                     IMediaPlayer.MEDIA_INFO_BUFFERING_END -> {
                         buffered()
@@ -293,7 +294,7 @@ class JvPresenter(
             PlayState.STATE_ERROR -> {
                 toLoading(true, "重新播放...", 2)
                 entryVideoLoop()
-                toLoading(false, "重新播放", 2)
+                toLoading(false, "重新播放完成", 2)
             }
             PlayState.STATE_COMPLETED -> {
                 entryVideoLoop()
@@ -390,7 +391,6 @@ class JvPresenter(
 //                return
 //            }
 //        }
-
         mPlayState = PlayState.STATE_COMPLETED
         when (mPlayForm) {
             PlayForm.PLAYFORM_TURN -> {
@@ -447,6 +447,7 @@ class JvPresenter(
     override fun onPause() {
         //取消屏幕常亮
         mActivity.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
         mIsBackContinue =
             if (mPlayState == PlayState.STATE_PAUSED || mPlayState == PlayState.STATE_BUFFERING_PAUSED) {
                 false
@@ -793,7 +794,7 @@ class JvPresenter(
         mSurface?.let {
             Log.d(JvCommon.TAG, "mVideoIndex:$mVideoIndex")
             mView.buffering(0) //清空前一集的缓存进度条
-            entryVideo(it, mVideoList[mVideoIndex])
+            loadVideo(it, mVideoList[mVideoIndex])
         }
     }
 
@@ -916,9 +917,12 @@ class JvPresenter(
         mView.setVolumeUi(volume * 100 / getVolume(true))
     }
 
-    //进入视频播放准备
-    private fun entryVideo(surface: Surface, video: Video) {
+    //视频播放准备
+    private fun loadVideo(surface: Surface, video: Video) {
+
         toLoading(true, "视频预加载...", 4)
+        mCallback.startPlay()
+
         Log.d(JvCommon.TAG, "entryVideo:${video.videoUrl}")
         //设置title
         mView.setTitle(video.videoName ?: "未知视频")
@@ -972,13 +976,6 @@ class JvPresenter(
 
     private fun getVideoTimeStr(position: Int?): String {
         return JVideoUtil.progress2Time(position) + "&" + JVideoUtil.progress2Time(getDuration())
-    }
-
-    interface JVideoCallBack {
-        /**
-         * 播放器初始化完成
-         */
-        fun initSuccess()
     }
 
 }

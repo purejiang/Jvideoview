@@ -19,35 +19,34 @@ class JvController(private val activity: Activity, private val jvView: JvView) {
 
 
 
-//    private fun loadVideos(videos: Collection<Video>){
+
+    fun setCallBack(){
+
+    }
+
+    interface JvCallBack {
+        /**
+         * 播放器初始化完成
+         */
+        fun initSuccess()
+        /**
+         * 开始播放
+         */
+        fun startPlay()
+        /**
+         * 播放结束
+         */
+        fun endPlay()
+    }
+//    companion object {
+//        private var INSTANCE: JvController? = null
 //
-//    }
-//
-//
-//    private fun startVideoLoop() {
-//        //播放后如果有顺序播放，则重新开始播放列表
-//
-//        mSurface?.let {
-//            Log.d(JvCommon.TAG, "mVideoIndex:$mVideoIndex")
-//            mView.buffering(0) //清空前一集的缓存进度条
-//            entryVideo(it, mVideoList[mVideoIndex])
+//        fun getInstance(activity: Activity, jvView: JvView): JvController {
+//            return INSTANCE ?: JvController(activity,jvView)
+//                .apply { INSTANCE = this }
+//        }
+//        fun destroyInstance() {
+//            INSTANCE = null
 //        }
 //    }
-//
-//
-//
-//
-
-
-    companion object {
-        private var INSTANCE: JvController? = null
-
-        fun getInstance(activity: Activity, jvView: JvView): JvController {
-            return INSTANCE ?: JvController(activity,jvView)
-                .apply { INSTANCE = this }
-        }
-        fun destroyInstance() {
-            INSTANCE = null
-        }
-    }
 }
