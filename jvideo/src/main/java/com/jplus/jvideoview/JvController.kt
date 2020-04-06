@@ -1,27 +1,56 @@
 package com.jplus.jvideoview
 
 import android.app.Activity
-import android.util.Log
+import android.content.res.Configuration
 import com.jplus.jvideoview.data.Video
-import com.jplus.jvideoview.jvideo.JvCommon
-import com.jplus.jvideoview.jvideo.JvPresenter
-import com.jplus.jvideoview.jvideo.JvView
+import com.jplus.jvideoview.jvideo.*
 
 /**
  * @author JPlus
  * @date 2019/10/24.
  */
 class JvController(private val activity: Activity, private val jvView: JvView) {
-    private val mVideos = mutableListOf<Video>()
+    private var mVideos = mutableListOf<Video>()
     private var presenter: JvPresenter? = null
+    private var mPlayForm = PlayForm.PLAYBACK_ONE_END
+    private var mPlayBackEngine = PlayBackEngine.PLAYBACK_MEDIA_PLAYER
 
+    init{
+        presenter = JvPresenter(activity, jvView, jvView.layoutParams, )
+    }
 
+    //设置播放引擎
+    fun setPlayBackEngine(playBackEngine: Int){
+        mPlayBackEngine = playBackEngine
+        presenter?.switchPlaybackEngine(mPlayBackEngine)
+    }
 
+    //设置播放循环
+    fun setPlayForm(playForm:Int){
+        mPlayForm = playForm
+    }
+    //设置播放队列
+    fun playVideos(videos:MutableList<Video>){
+        mVideos = videos
+    }
 
+    //播放队列
+    fun playLoop(){
+        presenter?.startVideo()
+    }
 
 
     fun setCallBack(){
 
+    }
+    fun onPause(){
+        presenter?.onPause()
+    }
+    fun onResume(){
+        presenter?.onResume()
+    }
+    fun onConfigChanged(newConfig: Configuration){
+        presenter?.onConfigChanged(newConfig)
     }
 
     interface JvCallBack {

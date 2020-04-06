@@ -19,7 +19,6 @@ import android.view.GestureDetector.SimpleOnGestureListener
 import android.widget.LinearLayout
 import com.jplus.jvideoview.JvController
 import com.jplus.jvideoview.data.Video
-import com.jplus.jvideoview.jvideo.JvState.*
 import com.jplus.jvideoview.utils.JVideoUtil
 import com.jplus.jvideoview.utils.JVideoUtil.dt2progress
 import tv.danmaku.ijk.media.player.AndroidMediaPlayer
@@ -40,15 +39,14 @@ class JvPresenter(
     private val mActivity: Activity,
     //播放器view
     private val mView: JvView,
-    //播放器引擎,默认使用系统自带的
-    private val mPlayerType: Int = PlayBackEngine.PLAYBACK_MEDIA_PLAYER,
+    //默认params
+    private val mDefaultParams: ViewGroup.LayoutParams,
     //播放器状态回调
     private val mCallback: JvController.JvCallBack
 ) :
     JvContract.Presenter {
     private var mSurface: Surface? = null
     private var mTextureView: TextureView? = null
-    private var mParams: LinearLayout.LayoutParams? = null
     private var mAudioManager: AudioManager? = null
     private var mRunnable: Runnable? = null
     private var mSpeedRunnable: Runnable? = null
@@ -56,16 +54,20 @@ class JvPresenter(
 
     private var mPlayState = PlayState.STATE_IDLE
     private var mPlayMode = PlayMode.MODE_NORMAL
-    private var mPlayForm = PlayForm.PLAYBACK_ONE_END
+    //初始音量
+    private var mDefaultVolume = 0
 
-    private var mStartVolume = 0
     private var mStartPosition = 0
+    //初始亮度
     private var mStartLight = 0
+    //播放进度
     private var mPosition = 0
+    //调节的音量
     private var mVolume = 0
+    //调节的亮度
     private var mLight = 0
     private var mBufferPercent = 0
-    private var mVideoIndex = 0
+    //    private var mVideoIndex = 0
     private var mLoadingNum = -1
     private var mAdjustWay = 0
 
@@ -83,9 +85,8 @@ class JvPresenter(
     private val mHandler by lazy {
         Handler()
     }
-    private val mVideoList by lazy {
-        ArrayList<Video>()
-    }
+    private var mVideo: Video? = null
+
     private val mHideRunnable: Runnable by lazy {
         //延时后执行
         Runnable {
@@ -94,26 +95,42 @@ class JvPresenter(
         }
     }
     private val mPlayer: IMediaPlayer by lazy {
-        when (mPlayerType) {
+        when (mPlayerEngine) {
             //使用ijkplayer播放引擎
             PlayBackEngine.PLAYBACK_IJK_PLAYER -> IjkMediaPlayer()
             //使用android自带的播放引擎
             PlayBackEngine.PLAYBACK_MEDIA_PLAYER -> AndroidMediaPlayer()
+            //使用exoplayer引擎
+//            PlayBackEngine.PLAYBACK_EXO_PLAYER ->Exo
             else -> AndroidMediaPlayer()
         }
     }
 
+
     init {
         mView.setPresenter(this)
         //保存普通状态下的布局参数
-        mParams = LinearLayout.LayoutParams((mView as View).layoutParams)
         Log.d("pipap", "orientation:" + mActivity.requestedOrientation)
     }
 
+
+    override fun switchPlaybackEngine(playerEngine: Int) {
+        mPlayer = when (playerEngine) {
+            //使用ijkplayer播放引擎
+            PlayBackEngine.PLAYBACK_IJK_PLAYER -> IjkMediaPlayer()
+            //使用android自带的播放引擎
+            PlayBackEngine.PLAYBACK_MEDIA_PLAYER -> AndroidMediaPlayer()
+            //使用exoplayer引擎
+//            PlayBackEngine.PLAYBACK_EXO_PLAYER ->Exo
+            else -> AndroidMediaPlayer()
+        }
+        reStartPlay()
+    }
+
     override fun subscribe() {
-        toLoading(true, "播放器初始化中...", 1)
+        toLoading(true, "音频初始化中...", 1)
         initAudio()
-        toLoading(false, "播放器初始化完成", 1)
+        toLoading(false, "音频初始化完成", 1)
     }
 
     override fun unSubscribe() {
@@ -151,7 +168,7 @@ class JvPresenter(
             )
         }
         //初始音量值
-        mStartVolume = getVolume(false)
+        mDefaultVolume = getVolume(false)
         //初始亮度值
         mStartLight = getLight(false)
     }
@@ -189,6 +206,7 @@ class JvPresenter(
             it.setOnSeekCompleteListener {
                 // mPlayState = PlayState.STATE_IDLE
                 Log.d(JvCommon.TAG, "setOnSeekCompleteListener")
+                seekCompleted(it.currentPosition)
             }
 
             //预加载监听
@@ -220,10 +238,11 @@ class JvPresenter(
                         Log.d(JvCommon.TAG, "MEDIA_INFO_BUFFERING_START")
                     }
                     IMediaPlayer.MEDIA_INFO_BUFFERING_END -> {
-                        buffered()
+                        bufferEnd()
                     }
                     MediaPlayer.MEDIA_INFO_NOT_SEEKABLE -> {
                         //无法seekTo
+                        notSeek()
                     }
                 }
                 true
@@ -235,8 +254,8 @@ class JvPresenter(
                 changeVideoSize((mView as View).width, (mView as View).height)
             }
             //设置Option
-            if (mPlayerType == PlayBackEngine.PLAYBACK_IJK_PLAYER) {
-                (it as IjkMediaPlayer).setOption(
+            if (it is IjkMediaPlayer) {
+                it.setOption(
                     IjkMediaPlayer.OPT_CATEGORY_PLAYER,
                     "start-on-prepared",
                     0
@@ -253,6 +272,39 @@ class JvPresenter(
                 })
                 it.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "reconnect", 5)
                 it.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "dns_cache_clear", 1)
+            }
+        }
+    }
+
+    //视频播放准备
+    private fun loadVideo(surface: Surface, video: Video) {
+
+        toLoading(true, "视频预加载...", 4)
+        mCallback.startPlay()
+
+        Log.d(JvCommon.TAG, "entryVideo:${video.videoUrl}")
+        //设置title
+        mView.setTitle(video.videoName ?: "未知视频")
+        mPlayer.let {
+
+            //如果不是IDLE状态就改变播放器状态
+            if (mPlayState != PlayState.STATE_IDLE) {
+                resetPlay()
+            }
+            try {
+                val url = video.videoUrl
+                it.dataSource = (url)
+                //加载url之后为播放器初始化完成状态
+                mPlayState = PlayState.STATE_INITLIZED
+                //设置渲染画板
+                it.setSurface(surface)
+                //初始化播放器监听
+                initPlayerListener()
+                //异步的方式装载流媒体文件
+                it.prepareAsync()
+            } catch (e: IOException) {
+                e.printStackTrace()
+                errorPlay(0, 0, "视频路径有误或者地址失效~")
             }
         }
     }
@@ -283,7 +335,7 @@ class JvPresenter(
     override fun continuePlay() {
         Log.d(JvCommon.TAG, "continuePlay")
         when (mPlayState) {
-            PlayState.STATE_PAUSED, PlayState.STATE_BUFFERING_PLAYING -> {
+            PlayState.STATE_PAUSED, PlayState.STATE_COMPLETED -> {
                 mPlayer.start()
                 mPlayState = PlayState.STATE_PLAYING
             }
@@ -292,12 +344,10 @@ class JvPresenter(
                 mPlayState = PlayState.STATE_BUFFERING_PLAYING
             }
             PlayState.STATE_ERROR -> {
-                toLoading(true, "重新播放...", 2)
-                entryVideoLoop()
-                toLoading(false, "重新播放完成", 2)
-            }
-            PlayState.STATE_COMPLETED -> {
-                entryVideoLoop()
+                reStartPlay()
+//                toLoading(true, "重新播放...", 2)
+//                entryVideoLoop()
+//                toLoading(false, "重新播放完成", 2)
             }
         }
         mView.continueVideo()
@@ -305,23 +355,27 @@ class JvPresenter(
     }
 
     private fun bufferStart() {
-        Log.d(JvCommon.TAG, "bufferStart")
+        //loading
+        toLoading(true, "缓冲中....", 3)
+
+        Log.d(JvCommon.TAG, "bufferStart:state$mPlayState")
         // MediaPlayer暂时不播放，以缓冲更多的数据
         mPlayState =
             if (mPlayState == PlayState.STATE_PAUSED || mPlayState == PlayState.STATE_BUFFERING_PAUSED) {
                 PlayState.STATE_BUFFERING_PAUSED
-            } else if (mPlayState == PlayState.STATE_IDLE || mPlayState == PlayState.STATE_PREPARING) {
-                return
-            } else {
+            } else if (mPlayState == PlayState.STATE_PLAYING || mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
                 PlayState.STATE_BUFFERING_PLAYING
+            } else {
+                return
             }
-        Log.d(JvCommon.TAG, "mPlayState:${mPlayState}")
-        //loading
-        toLoading(true, "缓冲中....", 3)
+    }
+
+    private fun seekCompleted(position: Long) {
+
     }
 
     private fun buffering(percent: Int) {
-//        Log.d(JVideoCommon.TAG, "buffering$percent")
+        Log.d(JvCommon.TAG, "buffering$percent")
         if (percent != 0) {
             mBufferPercent = percent
         }
@@ -333,7 +387,7 @@ class JvPresenter(
         }
     }
 
-    private fun buffered() {
+    private fun bufferEnd() {
         Log.d(JvCommon.TAG, "buffered")
         // 填充缓冲区后，MediaPlayer恢复播放/暂停
         if (mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
@@ -349,7 +403,6 @@ class JvPresenter(
 
     override fun seekCompletePlay(position: Int) {
         Log.d(JvCommon.TAG, "seekToPlay:$position")
-        mPosition = position
         mPlayer.let {
             if (mPlayState == PlayState.STATE_PAUSED || mPlayState == PlayState.STATE_BUFFERING_PAUSED) {
                 it.seekTo(position.toLong())
@@ -361,67 +414,69 @@ class JvPresenter(
                 startPlay(position)
             }
         }
+        mPosition = position
     }
 
     override fun seekingPlay(position: Int, isSlide: Boolean) {
         mView.seekingVideo(getVideoTimeStr(position), position, isSlide)
     }
 
+    private fun notSeek() {
+
+    }
+
     //暂停播放
     override fun pausePlay() {
         Log.d(JvCommon.TAG, "pausePlay")
-        if (mPlayState == PlayState.STATE_PLAYING || mPlayState == PlayState.STATE_PREPARED) {
-            mPlayState = PlayState.STATE_PAUSED
-        } else if (mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
-            mPlayState = PlayState.STATE_BUFFERING_PAUSED
-        } else if (mPlayState == PlayState.STATE_BUFFERING_PAUSED) {
-            mPlayState = PlayState.STATE_PAUSED
-        }
+        mPlayState =
+            if (mPlayState == PlayState.STATE_PLAYING || mPlayState == PlayState.STATE_PREPARED) {
+                PlayState.STATE_PAUSED
+            } else if (mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
+                PlayState.STATE_BUFFERING_PAUSED
+            } else if (mPlayState == PlayState.STATE_BUFFERING_PAUSED) {
+                PlayState.STATE_PAUSED
+            } else {
+                return
+            }
         mPlayer.pause()
         stopVideoTime()
         showOrHideControlDelay(isShow = false, isClick = false)
         mView.pauseVideo()
     }
 
+    fun setMessagePrompt(message: String) {
+        mView.showMessagePrompt(message)
+    }
+
     override fun completedPlay(videoUrl: String?) {
-        Log.d(JvCommon.TAG, "completedPlay")
-//        mPlayer.let {
-//            if (it.duration != it.currentPosition) {
-//                errorPlay(0, 0, "网络错误或者视频地址已失效~")
-//                return
-//            }
-//        }
+        //播放完成状态
         mPlayState = PlayState.STATE_COMPLETED
-        when (mPlayForm) {
-            PlayForm.PLAYFORM_TURN -> {
-                mView.showMessagePrompt("即将播放下个视频~")
-                //播放结束后，重新设置播放器，避免再次调用setDataSource()时出现IllegalStateException
-                mHandler.postDelayed(
-                    {
-                        mVideoIndex++
-                        entryVideoLoop()
-                    }, 3000
-                )
-            }
-            PlayForm.PLAYBACK_ONE_LOOP -> {
-                //播放结束后的显示
-                mView.showMessagePrompt("即将重新播放该视频~")
-                mHandler.postDelayed(
-                    {
-                        entryVideoLoop()
-                    }, 3000
-                )
-            }
-            else -> //播放结束后的显示
-                mView.showMessagePrompt("播放结束~")
-        }
+        Log.d(JvCommon.TAG, "completedPlay")
+        mCallback.endPlay()
+//        when (mPlayForm) {
+//            PlayForm.PLAYFORM_TURN -> {
+//                mView.showMessagePrompt("即将播放下个视频~")
+//                //播放结束后，重新设置播放器，避免再次调用setDataSource()时出现IllegalStateException
+//                mVideoIndex++
+//                entryVideoLoop()
+//            }
+//            PlayForm.PLAYBACK_ONE_LOOP -> {
+//                //播放结束后的显示
+//                mView.showMessagePrompt("即将重新播放该视频~")
+//                entryVideoLoop()
+//            }
+//            else -> //播放结束后的显示
+//                mView.showMessagePrompt("播放结束~")
+//        }
     }
 
     override fun preparedPlay() {
+        //预加载完成状态
+        mPlayState = PlayState.STATE_PREPARED
+
         toLoading(false, "预加载完成", 4)
         Log.d(JvCommon.TAG, "setOnPreparedListener")
         mPlayer.let {
-            mPlayState = PlayState.STATE_PREPARED
             //预加载后先播放再暂停，1：防止播放错误-38(未开始就停止) 2：可以显示第一帧画面
             mView.preparedVideo(getVideoTimeStr(null), it.duration.toInt())
         }
@@ -430,16 +485,20 @@ class JvPresenter(
 
     override fun resetPlay() {
         mPlayer.reset()
+        mView.
         mPlayState = PlayState.STATE_IDLE
     }
 
     override fun reStartPlay() {
         resetPlay()
-        entryVideoLoop()
+        mVideo?.let {
+            startVideo(it)
+        }
+//        entryVideoLoop()
     }
 
     override fun errorPlay(what: Int, extra: Int, message: String) {
-        Log.d(JvCommon.TAG, "setOnErrorListener:$what")
+        Log.d(JvCommon.TAG, "setOnErrorListener:$what,$message")
         mPlayState = PlayState.STATE_ERROR
         mView.showMessagePrompt(message)
     }
@@ -454,7 +513,7 @@ class JvPresenter(
             } else if (mPlayState == PlayState.STATE_PLAYING || mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
                 true
             } else {
-                //播放器初始化或者播放完成、播放错误时中不做任何操作
+                //播放器初始化前、初始化中、初始化后或者播放完成、播放错误时中不做任何操作
                 mIsBackContinue = null
                 return
             }
@@ -466,11 +525,7 @@ class JvPresenter(
         mActivity.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         //播放器初始化中不做任何操作
         mIsBackContinue?.let {
-            if (!it) {
-                pausePlay()
-            } else {
-                continuePlay()
-            }
+            if (it) continuePlay() else pausePlay()
         }
     }
 
@@ -490,12 +545,12 @@ class JvPresenter(
         override fun onDoubleTap(e: MotionEvent): Boolean {
             Log.d(JvCommon.TAG, "onDoubleTap")
             mPlayer.let {
-                if (it.isPlaying) {
+                if (mPlayState == PlayState.STATE_PLAYING||mPlayState==PlayState.STATE_BUFFERING_PLAYING) {
                     pausePlay()
-                } else if (mPlayState == PlayState.STATE_PREPARED) {
-                    startPlay()
-                } else if (!it.isPlaying) {
+                } else if (mPlayState==PlayState.STATE_BUFFERING_PAUSED||mPlayState==PlayState.STATE_PAUSED) {
                     continuePlay()
+                }else if (mPlayState == PlayState.STATE_PREPARED) {
+                    startPlay()
                 }
             }
             return super.onDoubleTap(e)
@@ -527,7 +582,7 @@ class JvPresenter(
                 PlayAdjust.ADJUST_VOLUME -> {
                     //音量调节，从下往上为加，所以需要加上负号
                     if (!mIsVolumeMute) {
-                        setVolume(mStartVolume, -distY)
+                        setVolume(mDefaultVolume, -distY)
                     }
                 }
                 PlayAdjust.ADJUST_LIGHT -> {
@@ -581,17 +636,12 @@ class JvPresenter(
 
     override fun setPlayForm(playForm: Int) {
         Log.d(JvCommon.TAG, "setPlayForm:$playForm")
-        mPlayForm = playForm
+//        mPlayForm = playForm
     }
 
     override fun setVolumeMute(isMute: Boolean) {
-        if (isMute) {
-            //静音
-            mAudioManager?.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0)
-        } else {
-            //恢复静音前音量
-            mAudioManager?.setStreamVolume(AudioManager.STREAM_MUSIC, mVolume, 0)
-        }
+        //设置静音和恢复静音前音量
+        mAudioManager?.setStreamVolume(AudioManager.STREAM_MUSIC, if (isMute) 0 else mVolume, 0)
         mIsVolumeMute = isMute
     }
 
@@ -606,7 +656,7 @@ class JvPresenter(
             }
             PlayAdjust.ADJUST_VOLUME -> {
                 //保存音量
-                mStartVolume = mVolume
+                mDefaultVolume = mVolume
             }
             PlayAdjust.ADJUST_VIDEO -> {
                 //保存并跳到指定位置播放
@@ -628,7 +678,6 @@ class JvPresenter(
         }
     }
 
-    @SuppressLint("SourceLockedOrientationActivity")
     override fun switchSpecialMode(switchMode: Int, isRotateScreen: Boolean) {
         Log.d(JvCommon.TAG, "playMode$mPlayMode")
         when (mPlayMode) {
@@ -680,7 +729,7 @@ class JvPresenter(
 
     private fun entryPortraitScreen() {
         //进入普通模式
-        mParams?.let {
+        mDefaultParams.let {
             mPlayMode = PlayMode.MODE_NORMAL
             mActivity.actionBar?.show()
             mActivity.window.clearFlags(
@@ -778,23 +827,23 @@ class JvPresenter(
     }
 
     //获取数据源
-    fun start(videos: List<Video>) {
-        Log.d(JvCommon.TAG, " videos:${videos.size}")
-        if (videos.isEmpty()) {
-            mView.showMessagePrompt("数据源为空~")
-            return
-        }
-        mVideoList.clear()
-        mVideoList.addAll(videos)
-        entryVideoLoop()
-    }
+//    fun start(videos: List<Video>) {
+//        Log.d(JvCommon.TAG, " videos:${videos.size}")
+//        if (videos.isEmpty()) {
+//            mView.showMessagePrompt("数据源为空~")
+//            return
+//        }
+//        mVideoList.clear()
+//        mVideoList.addAll(videos)
+//        entryVideoLoop()
+//    }
 
-    override fun entryVideoLoop() {
-        //播放后如果有顺序播放，则重新开始播放列表
+    fun startVideo(video: Video) {
+        //播放视频
         mSurface?.let {
-            Log.d(JvCommon.TAG, "mVideoIndex:$mVideoIndex")
+            //            Log.d(JvCommon.TAG, "mVideoIndex:$mVideoIndex")
             mView.buffering(0) //清空前一集的缓存进度条
-            loadVideo(it, mVideoList[mVideoIndex])
+            loadVideo(it, video)
         }
     }
 
@@ -851,6 +900,10 @@ class JvPresenter(
      * @param distance
      */
     private fun slidePlay(startProgress: Int, distance: Float) {
+        if (mPlayState == PlayState.STATE_IDLE || mPlayState == PlayState.STATE_INITLIZED || mPlayState == PlayState.STATE_ERROR) {
+            //播放状态为初始前，初始化完成以及错误时不能滑动播放
+            return
+        }
         var position =
             startProgress + floor(
                 dt2progress(
@@ -861,13 +914,10 @@ class JvPresenter(
                 )
             ).toInt()
         when {
-            position in 0..getDuration() -> {
-
-            }
+            position > getDuration() -> position = getDuration()
             position < 0 -> position = 0
-            else -> position = getDuration()
+            else -> mPosition = position //保存进度
         }
-        mPosition = position
         mView.seekingVideo(getVideoTimeStr(position), position, true)
     }
 
@@ -882,16 +932,15 @@ class JvPresenter(
             )
         ).toInt()
         when {
-            light in 0..255 -> {
-            }
+            light >= 255 -> light = 255
             light <= 0 -> light = 0
-            else -> light = 255
+            else -> mLight = light //保存亮度
         }
+        //设置当前activity的亮度
         val params = mActivity.window.attributes
         params.screenBrightness = light / 255f
         mActivity.window.attributes = params
-        //保存亮度
-        mLight = light
+
         mView.setLightUi(floor(light / 255f * 100).toInt())
     }
 
@@ -917,38 +966,6 @@ class JvPresenter(
         mView.setVolumeUi(volume * 100 / getVolume(true))
     }
 
-    //视频播放准备
-    private fun loadVideo(surface: Surface, video: Video) {
-
-        toLoading(true, "视频预加载...", 4)
-        mCallback.startPlay()
-
-        Log.d(JvCommon.TAG, "entryVideo:${video.videoUrl}")
-        //设置title
-        mView.setTitle(video.videoName ?: "未知视频")
-        mPlayer.let {
-
-            //如果不是IDLE状态就改变播放器状态
-            if (mPlayState != PlayState.STATE_IDLE) {
-                resetPlay()
-            }
-            try {
-                val url = video.videoUrl
-                it.dataSource = (url)
-                //加载url之后为播放器初始化完成状态
-                mPlayState = PlayState.STATE_INITLIZED
-                //设置渲染画板
-                it.setSurface(surface)
-                //初始化播放器监听
-                initPlayerListener()
-                //异步的方式装载流媒体文件
-                it.prepareAsync()
-            } catch (e: IOException) {
-                e.printStackTrace()
-                errorPlay(0, 0, "视频路径有误或者地址失效~")
-            }
-        }
-    }
 
     //按比例改变视频大小适配屏幕宽高
     private fun changeVideoSize(mJVideoWidth: Int, mJVideoHeight: Int) {

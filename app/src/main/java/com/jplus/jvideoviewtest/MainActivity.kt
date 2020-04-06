@@ -33,7 +33,7 @@ class MainActivity : AppCompatActivity() {
             id++
         }
 //        JvController.getInstance(this, jv_video_main2)
-        presenter = JvPresenter(this, jv_video_main2, JvState.PlayBackEngine.PLAYBACK_IJK_PLAYER,object :JvPresenter.JVideoCallBack{
+        presenter = JvPresenter(this, jv_video_main2, JvState.PlayBackEngine.PLAYBACK_IJK_PLAYER, object :JvPresenter.JVideoCallBack{
             override fun initSuccess() {
                 presenter?.start(list)
             }

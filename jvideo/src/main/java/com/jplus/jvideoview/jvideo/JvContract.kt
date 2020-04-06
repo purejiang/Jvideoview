@@ -115,6 +115,11 @@ interface JvContract {
     }
     interface Presenter:BasePresenter {
         /**
+         * 切换播放引擎
+         * @param 播放引擎
+         */
+        fun switchPlaybackEngine(playerEngine:Int)
+        /**
          * 播放控制
          */
         fun controlPlay()
