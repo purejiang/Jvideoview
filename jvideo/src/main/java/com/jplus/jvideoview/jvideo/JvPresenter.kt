@@ -399,7 +399,7 @@ class JvPresenter(
                 pausePlay()
             } else if (mPlayState == PlayState.STATE_PLAYING || mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
                 soughtTo(position.toLong())
-                continuePlay()
+                 continuePlay()
             } else if (mPlayState == PlayState.STATE_PREPARED) {
                 startPlay(position)
             }
@@ -785,12 +785,12 @@ class JvPresenter(
 
     private fun showLoading(content: String, loadingNum: Int){
         if(loadingNum in mLoadingNums){
-            Log.e(JvCommon.TAG, "loading- show[$loadingNum] is exist.")
+            Log.e(JvCommon.TAG, "loading- show[$content, $loadingNum] is exist.")
         }else{
             mLoadingNums.add(loadingNum)
             mView.showLoading(content)
             mIsLoading =true
-            Log.d(JvCommon.TAG, "loading-show[$loadingNum]")
+            Log.d(JvCommon.TAG, "loading-show[$content, $loadingNum]")
         }
     }
 
@@ -799,9 +799,9 @@ class JvPresenter(
             mLoadingNums.remove(loadingNum)
             mView.closeLoading(content)
             mIsLoading = false
-            Log.d(JvCommon.TAG, "loading-close[$loadingNum]")
+            Log.d(JvCommon.TAG, "loading-close[$content, $loadingNum]")
         }else{
-            Log.e(JvCommon.TAG, "loading- close[$loadingNum] is not exist.")
+            Log.e(JvCommon.TAG, "loading- close[$content, $loadingNum] is not exist.")
         }
     }
 

@@ -271,7 +271,6 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
     }
 
     override fun continueVideo() {
-        closeLoading("所有loading")
         vpv_video_control_play.play()
         vpv_video_center_play.play()
     }
