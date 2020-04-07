@@ -22,11 +22,31 @@ interface JvContract {
          */
         fun setTitle(title:String)
         /**
-         * 播放器loading
-         * @param isShow 是否显示进度条
+         * 开启播放器loading
          * @param text 提示文字
          */
-        fun showLoading(isShow:Boolean, text:String)
+        fun showLoading(text:String)
+        /**
+         * 关闭播放器loading
+         * @param text 提示文字
+         */
+        fun closeLoading(text:String)
+        /**
+         * 显示中间播放控制按钮
+         */
+        fun showCenterControlView()
+        /**
+         * 关闭中间播放控制按钮
+         */
+        fun closeCenterControlView()
+        /**
+         * 显示中间提示信息view
+         */
+        fun showCenterHintView()
+        /**
+         * 关闭中间提示信息view
+         */
+        fun closeCenterHintView()
         /**
          * 播放准备就绪
          * @param videoTime 播放时间
@@ -34,10 +54,19 @@ interface JvContract {
          */
         fun preparedVideo(videoTime:String, max:Int)
         /**
+         * 播放器reset
+         */
+        fun reset()
+        /**
+         * 播放器引擎切换
+         * @param isSupport 是否支持
+         */
+        fun showSwitchEngine(isSupport: Boolean)
+        /**
          * 缓冲中
          *@param percent 百分比
          */
-        fun buffering(percent:Int)
+        fun showBuffering(percent:Int)
         /**
          * 缩略图
          */
@@ -99,15 +128,13 @@ interface JvContract {
          */
         fun exitMode()
         /**
-         * 弹出/隐藏控制栏
-         * @param isShow 是否显示
+         * 显示功能控制栏
          */
-        fun hideOrShowController(isShow:Boolean)
+        fun showController()
         /**
-         * 弹出/隐藏屏幕中心控制按钮
-         * @param isShow 是否显示
+         * 隐藏功能控制栏
          */
-        fun hideOrShowCenterPlay(isShow:Boolean)
+        fun hideController()
         /**
          * 隐藏进度控制ui
          */
@@ -116,9 +143,14 @@ interface JvContract {
     interface Presenter:BasePresenter {
         /**
          * 切换播放引擎
-         * @param 播放引擎
+         * @param playerEngine 播放引擎
          */
-        fun switchPlaybackEngine(playerEngine:Int)
+        fun switchPlayEngine(playerEngine:Int)
+        /**
+         * 是否支持切换播放引擎
+         * @param isSupport 是否支持切换
+         */
+        fun isSupportPlayEngine(isSupport:Boolean)
         /**
          * 播放控制
          */
@@ -225,10 +257,10 @@ interface JvContract {
          * @param isMute 是否静音
          */
         fun setVolumeMute(isMute:Boolean)
-        /**
-         * 循环播放
-         */
-        fun entryVideoLoop()
+//        /**
+//         * 循环播放
+//         */
+//        fun entryVideoLoop()
         /**
          * 生命周期onPause()
          */

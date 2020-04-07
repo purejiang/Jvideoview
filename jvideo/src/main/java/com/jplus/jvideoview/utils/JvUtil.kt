@@ -4,16 +4,22 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.media.MediaMetadataRetriever
 import android.provider.Settings
+import android.util.Log
+import android.view.ViewGroup
 import android.view.WindowManager
+import android.widget.LinearLayout
+import com.jplus.jvideoview.jvideo.JvCommon
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.math.ceil
 import kotlin.math.floor
+import kotlin.math.max
 
 /**
  * @author JPlus
  * @date 2019/9/2.
  */
-object JVideoUtil {
+object JvUtil {
         /**
          * 播放进度转换为时间
          * @param progress 进度(整型)
@@ -72,7 +78,21 @@ object JVideoUtil {
             }
             return bitmap
         }
+    //按比例改变视频大小适配屏幕宽高, 因为jvView就是继承lineatlayout的，所以要返回LinearLayout.LayoutParams
+     fun changeVideoSize(viewWidth: Int, viewHeight: Int, playerWidth:Int, playerHeight:Int): LinearLayout.LayoutParams {
+        val defaultWidth = if (viewWidth < 0) 1080 else viewWidth
 
+        //根据视频尺寸去计算->视频可以在TextureView中放大的最大倍数。
+        val max =
+            //竖屏模式下按视频宽度计算放大倍数值
+            max(playerHeight * 1.0 / viewHeight, playerWidth * 1.0 / defaultWidth)
+        //视频宽高分别/最大倍数值 计算出放大后的视频尺寸
+        val videoWidth = ceil(playerWidth * 1.0 / max).toInt()
+        val videoHeight  = ceil(playerHeight * 1.0 / max).toInt()
+        //无法直接设置视频尺寸，将计算出的视频尺寸设置到surfaceView 让视频自动填充。
+        return LinearLayout.LayoutParams(videoWidth, videoHeight)
+
+    }
     /**
      * 获取手机是否开启重力感应
      * @param context 上下文

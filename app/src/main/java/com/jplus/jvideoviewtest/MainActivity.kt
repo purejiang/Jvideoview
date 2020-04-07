@@ -7,22 +7,15 @@ import androidx.appcompat.app.AppCompatActivity
 import com.jplus.jvideoview.JvController
 import com.jplus.jvideoview.data.Video
 
-import com.jplus.jvideoview.jvideo.JvState
-import com.jplus.jvideoview.jvideo.JvPresenter
 import kotlinx.android.synthetic.main.activity_main.*
 
 
 class MainActivity : AppCompatActivity() {
-    private var presenter: JvPresenter? = null
+    private var mController: JvController? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-    }
-
-    override fun onStart() {
-        super.onStart()
         val urls = intent.getStringExtra("urls")
         val s1 = Regex("\n")
         var id = 0
@@ -32,33 +25,45 @@ class MainActivity : AppCompatActivity() {
             list.add(Video(id, "视频$id", "", it1.replace("\n| ", ""), 0, "", ""))
             id++
         }
-//        JvController.getInstance(this, jv_video_main2)
-        presenter = JvPresenter(this, jv_video_main2, JvState.PlayBackEngine.PLAYBACK_IJK_PLAYER, object :JvPresenter.JVideoCallBack{
+        mController = JvController(this, jv_video_main2, object :JvController.JvCallBack{
             override fun initSuccess() {
-                presenter?.start(list)
+                mController?.playVideos(list)
             }
+
+            override fun startPlay() {
+
+            }
+
+            override fun endPlay() {
+
+            }
+
         })
-        presenter?.subscribe()
+
+    }
+
+    override fun onStart() {
+        super.onStart()
     }
 
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        presenter?.onConfigChanged(newConfig)
+       mController?.onConfigChanged(newConfig)
     }
 
     override fun onResume() {
         super.onResume()
-        presenter?.onResume()
+        mController?.onResume()
     }
 
     override fun onPause() {
         super.onPause()
-        presenter?.onPause()
+        mController?.onPause()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        presenter?.unSubscribe()
+        mController?.destroy()
     }
 }

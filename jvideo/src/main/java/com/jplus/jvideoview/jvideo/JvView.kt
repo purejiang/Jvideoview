@@ -18,7 +18,6 @@ import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import com.jplus.jvideoview.R
-import com.jplus.jvideoview.jvideo.JvState.SwitchMode
 import kotlinx.android.synthetic.main.layout_control_bottom.view.*
 import kotlinx.android.synthetic.main.layout_control_center.view.*
 import kotlinx.android.synthetic.main.layout_control_slide.view.*
@@ -45,6 +44,7 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
     private var mPresenter: JvContract.Presenter? = null
     private var mView: View? = null
     private lateinit var mContext: Context
+    private var mCenterIsShow = false
 
     constructor(context: Context) : super(context) {
         initControllerView(context, null)
@@ -54,7 +54,11 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
         initControllerView(context, attrs)
     }
 
-    constructor(context: Context, attrs: AttributeSet, defStyleAttr: Int) : super(context, attrs, defStyleAttr) {
+    constructor(context: Context, attrs: AttributeSet, defStyleAttr: Int) : super(
+        context,
+        attrs,
+        defStyleAttr
+    ) {
         initControllerView(context, attrs)
     }
 
@@ -74,16 +78,19 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
                 R.drawable.draw_seek_bar
             )
 
-        val lineBackground = typeArray.getDrawable(R.styleable.JvView_lines_drawer) ?: ContextCompat.getDrawable(
-            context,
-            R.drawable.draw_line_progress
-        )
+        val lineBackground =
+            typeArray.getDrawable(R.styleable.JvView_lines_drawer) ?: ContextCompat.getDrawable(
+                context,
+                R.drawable.draw_line_progress
+            )
 
         val thumbColor = typeArray.getColor(
-            R.styleable.JvView_thumb_color, ContextCompat.getColor(context, R.color.video_play_color)
+            R.styleable.JvView_thumb_color,
+            ContextCompat.getColor(context, R.color.video_play_color)
         )
         val loadingColor = typeArray.getColor(
-            R.styleable.JvView_loading_color, ContextCompat.getColor(context, R.color.video_play_color)
+            R.styleable.JvView_loading_color,
+            ContextCompat.getColor(context, R.color.video_play_color)
         )
         val numMode = typeArray.getInt(R.styleable.JvView_num_progress_mode, 0)
 
@@ -104,10 +111,14 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
         vlv_video_loading.setColor(loadingColor)
         when (numMode) {
             BOTH_SIDES_MODE -> {
-                ly_tv_progress_left.findViewById<TextView>(R.id.tv_video_playing_count).visibility = GONE
-                ly_tv_progress_left.findViewById<TextView>(R.id.tv_video_playing_split).visibility = GONE
-                ly_tv_progress_right.findViewById<TextView>(R.id.tv_video_playing_split).visibility = GONE
-                ly_tv_progress_right.findViewById<TextView>(R.id.tv_video_playing_progress).visibility = GONE
+                ly_tv_progress_left.findViewById<TextView>(R.id.tv_video_playing_count).visibility =
+                    GONE
+                ly_tv_progress_left.findViewById<TextView>(R.id.tv_video_playing_split).visibility =
+                    GONE
+                ly_tv_progress_right.findViewById<TextView>(R.id.tv_video_playing_split)
+                    .visibility = GONE
+                ly_tv_progress_right.findViewById<TextView>(R.id.tv_video_playing_progress)
+                    .visibility = GONE
             }
             LEFT_SIDES_MODE -> ly_tv_progress_right.visibility = GONE
             RIGHT_SIDES_MODE -> ly_tv_progress_left.visibility = GONE
@@ -168,8 +179,7 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
         }
         tv_video_refresh.setOnClickListener {
             //重新播放
-            hideCenterHintUi()
-            mPresenter?.continuePlay()
+            mPresenter?.reStartPlay()
         }
         img_video_volume_open.setOnClickListener {
             mPresenter?.let {
@@ -188,6 +198,13 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
         }
     }
 
+    override fun reset() {
+
+    }
+
+    override fun showSwitchEngine(isSupport: Boolean) {
+
+    }
 
     override fun setThumbnail(bitmap: Bitmap?) {
         rl_controller_layout.background = BitmapDrawable(null, bitmap)
@@ -209,11 +226,15 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
     }
 
     override fun showMessagePrompt(message: String) {
-        showMessageUi(message)
+        if (ly_video_hint.visibility == GONE) {
+            ly_video_hint.visibility = VISIBLE
+        }
+        tv_video_refresh.text = "重新播放"
+        tv_video_hint1.text = message
     }
 
     override fun preparedVideo(videoTime: String, max: Int) {
-        hideCenterHintUi()
+
         setNumProgress(videoTime)
         //加载完成后可以拖动seekBar
         seek_video_progress.setOnTouchListener { _, _ -> false }
@@ -225,7 +246,10 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
         pgb_video_line_progress?.max = max
         pgb_video_line_progress?.progress = 0
 
-        showCenterPlayUi()
+        showBottomControlUi()
+        showTopControlUi()
+        showCenterControlView()
+
         vpv_video_control_play.pause()
         vpv_video_center_play.pause()
     }
@@ -233,39 +257,39 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
     override fun startVideo(position: Int) {
         rl_controller_layout.setBackgroundResource(0)
         seek_video_progress?.progress = position
-        hideCenterPlayUi()
-        hideCenterHintUi()
+        closeCenterHintView()
         vpv_video_control_play.play()
         vpv_video_center_play.play()
     }
 
 
-    override fun buffering(percent: Int) {
+    override fun showBuffering(percent: Int) {
         seek_video_progress.secondaryProgress = (seek_video_progress.max) * percent / 100
         if (ly_video_line.visibility == VISIBLE) {
             pgb_video_line_progress?.secondaryProgress = (seek_video_progress.max) * percent / 100
         }
-
     }
 
     override fun continueVideo() {
-        hideCenterPlayUi()
-        hideLoadingUi()
+        closeLoading("所有loading")
         vpv_video_control_play.play()
         vpv_video_center_play.play()
     }
 
     override fun pauseVideo() {
-        showCenterPlayUi()
-        hideLoadingUi()
         vpv_video_control_play.pause()
         vpv_video_center_play.pause()
     }
-    private fun setNumProgress(videoTime: String){
-        ly_tv_progress_left.findViewById<TextView>(R.id.tv_video_playing_progress).text = videoTime.split("&")[0]
-        ly_tv_progress_left.findViewById<TextView>(R.id.tv_video_playing_count).text = videoTime.split("&")[1]
-        ly_tv_progress_right.findViewById<TextView>(R.id.tv_video_playing_progress).text = videoTime.split("&")[0]
-        ly_tv_progress_right.findViewById<TextView>(R.id.tv_video_playing_count).text = videoTime.split("&")[1]
+
+    private fun setNumProgress(videoTime: String) {
+        ly_tv_progress_left.findViewById<TextView>(R.id.tv_video_playing_progress).text =
+            videoTime.split("&")[0]
+        ly_tv_progress_left.findViewById<TextView>(R.id.tv_video_playing_count).text =
+            videoTime.split("&")[1]
+        ly_tv_progress_right.findViewById<TextView>(R.id.tv_video_playing_progress).text =
+            videoTime.split("&")[0]
+        ly_tv_progress_right.findViewById<TextView>(R.id.tv_video_playing_count).text =
+            videoTime.split("&")[1]
     }
 
     override fun playing(videoTime: String, position: Int) {
@@ -298,13 +322,30 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
     }
 
 
-    override fun showLoading(isShow: Boolean, text: String) {
-        if (isShow) {
-            showLoadingUi(text)
-            hideCenterPlayUi()
-            hideCenterHintUi()
-        } else {
-            hideLoadingUi()
+    override fun showLoading(text: String) {
+        if (ly_video_loading.visibility == GONE) {
+            tv_video_loading.text = text
+            ly_video_loading.visibility = VISIBLE
+        }
+        //中间播放按钮的ui是否显示
+        if (ly_video_play.visibility == VISIBLE) {
+            closeCenterControlView()
+            mCenterIsShow = true
+        }
+//        if(ly_video_hint.visibility == VISIBLE){
+//            closeCenterHintView()
+//        }
+    }
+
+    override fun closeLoading(text: String) {
+        if (ly_video_loading.visibility == VISIBLE) {
+            ly_video_loading.visibility = GONE
+        }
+        if (mCenterIsShow) {
+            if (ly_video_play.visibility == GONE) {
+                showCenterControlView()
+                mCenterIsShow = false
+            }
         }
     }
 
@@ -320,44 +361,38 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
         }
     }
 
-    private fun showLoadingUi(text: String) {
-//        if (ly_video_loading.visibility == GONE) {
-            tv_video_loading.text = text
-            ly_video_loading.visibility = VISIBLE
-//        }
-    }
 
-    private fun hideLoadingUi() {
-        if (ly_video_loading.visibility == VISIBLE) {
-            ly_video_loading.visibility = GONE
-        }
-    }
-
-    private fun hideControlUi() {
+    private fun closeBottomControlUi() {
         if (ly_video_bottom_controller.visibility == VISIBLE) {
             ly_video_bottom_controller.visibility = GONE
         }
+    }
+
+    private fun showBottomControlUi() {
+        if (ly_video_bottom_controller.visibility == GONE) {
+            ly_video_bottom_controller.visibility = VISIBLE
+        }
+    }
+
+    private fun closeTopControlUi() {
         if (ly_video_title.visibility == VISIBLE) {
             ly_video_title.visibility = GONE
         }
     }
 
-    private fun showControlUi() {
-        if (ly_video_bottom_controller.visibility == GONE) {
-            ly_video_bottom_controller.visibility = VISIBLE
-        }
+    private fun showTopControlUi() {
         if (ly_video_title.visibility == GONE) {
             ly_video_title.visibility = VISIBLE
         }
     }
 
-    private fun hideCenterPlayUi() {
+    override fun closeCenterControlView() {
         if (ly_video_play.visibility == VISIBLE) {
             ly_video_play.visibility = GONE
         }
     }
 
-    private fun showCenterPlayUi() {
+    override fun showCenterControlView() {
         if (ly_video_play.visibility == GONE) {
             ly_video_play.visibility = VISIBLE
         }
@@ -370,30 +405,22 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
         tv_slide_top.text = text
     }
 
-    private fun hideTopAdjustUi() {
-        if (ly_video_slide.visibility == VISIBLE) {
-            ly_video_slide.visibility = GONE
-        }
-    }
-
-    private fun showMessageUi(text: String) {
+    override fun showCenterHintView() {
         if (ly_video_hint.visibility == GONE) {
             ly_video_hint.visibility = VISIBLE
         }
-        hideCenterPlayUi()
-        hideLoadingUi()
-        tv_video_refresh.text = "重新播放"
-        tv_video_hint1.text = text
     }
 
-    private fun hideCenterHintUi() {
+    override fun closeCenterHintView() {
         if (ly_video_hint.visibility == VISIBLE) {
             ly_video_hint.visibility = GONE
         }
     }
 
     override fun hideAdjustUi() {
-        hideTopAdjustUi()
+        if (ly_video_slide.visibility == VISIBLE) {
+            ly_video_slide.visibility = GONE
+        }
     }
 
     override fun entryFullMode() {
@@ -413,26 +440,22 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
 
     }
 
-    override fun hideOrShowController(isShow: Boolean) {
-        if (isShow) {
-            showControlUi()
-            hideBottomLineUi()
-        } else {
-            hideControlUi()
-            showBottomLineUi()
-        }
+    override fun hideController() {
+        closeBottomControlUi()
+        closeTopControlUi()
+        closeCenterControlView()
+        showBottomLineUi()
     }
+
+    override fun showController() {
+        showBottomControlUi()
+        showTopControlUi()
+        hideBottomLineUi()
+    }
+
 
     override fun onConfigChanged() {
 
-    }
-
-    override fun hideOrShowCenterPlay(isShow: Boolean) {
-        if (isShow) {
-            showCenterPlayUi()
-        } else {
-            hideCenterPlayUi()
-        }
     }
 
     override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture?, width: Int, height: Int) {
