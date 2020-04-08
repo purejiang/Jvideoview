@@ -66,8 +66,11 @@ class JvPresenter(
     private var mVolume = 0
     //调节的亮度
     private var mLight = 0
+    //缓存
     private var mBufferPercent = 0
-    //    private var mVideoIndex = 0
+
+    //播放点
+    private var mVideoIndex = 0
     private var mLoadingNums= mutableSetOf<Int>()
     private var mAdjustWay = -1
 
@@ -170,9 +173,9 @@ class JvPresenter(
 
     //初始化播放器监听
     private fun initPlayerListener() {
-        mPlayer.let {
+        mPlayer.let {player->
             //设置是否循环播放，默认可不写
-            it.isLooping = false
+            player.isLooping = false
             //设置播放类型
             if (mPlayer is AndroidMediaPlayer) {
                 Log.d(JvCommon.TAG, "AndroidMediaPlayer")
@@ -183,45 +186,45 @@ class JvPresenter(
                         .setUsage(AudioAttributes.USAGE_MEDIA)
                         .setLegacyStreamType(AudioManager.STREAM_MUSIC)
                         .build()
-                    (it as AndroidMediaPlayer).internalMediaPlayer.setAudioAttributes(attributes)
+                    (player as AndroidMediaPlayer).internalMediaPlayer.setAudioAttributes(attributes)
                 } else {
-                    it.setAudioStreamType(AudioManager.STREAM_MUSIC)
+                    player.setAudioStreamType(AudioManager.STREAM_MUSIC)
                 }
             } else {
-                it.setAudioStreamType(AudioManager.STREAM_MUSIC)
+                player.setAudioStreamType(AudioManager.STREAM_MUSIC)
             }
 
             //播放完成监听
-            it.setOnCompletionListener {
+            player.setOnCompletionListener {
                 completedPlay(null)
                 mCallback.endPlay()
             }
 
             //seekTo()调用并实际查找完成之后
-            it.setOnSeekCompleteListener {
+            player.setOnSeekCompleteListener {
                 // mPlayState = PlayState.STATE_IDLE
                 Log.d(JvCommon.TAG, "setOnSeekCompleteListener")
                 seekCompleted(it.currentPosition)
             }
 
             //预加载监听
-            it.setOnPreparedListener {
+            player.setOnPreparedListener {
                 preparedPlay()
             }
 
             //相当于缓存进度条
-            it.setOnBufferingUpdateListener { _, percent ->
+            player.setOnBufferingUpdateListener { _, percent ->
                 buffering(percent)
             }
 
             //播放错误监听
-            it.setOnErrorListener { _, what, extra ->
+            player.setOnErrorListener { _, what, extra ->
                 errorPlay(what, extra, "播放错误，请重试~")
                 true
             }
 
             //播放信息监听
-            it.setOnInfoListener { _, what, _ ->
+            player.setOnInfoListener { _, what, _ ->
                 when (what) {
                     MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START -> {
                         // 播放器开始渲染
@@ -243,30 +246,30 @@ class JvPresenter(
                 true
             }
             //播放尺寸
-            it.setOnVideoSizeChangedListener { _, _, _, _, _ ->
+            player.setOnVideoSizeChangedListener { _, _, _, _, _ ->
                 //这里是视频的原始尺寸大小
                 Log.d(JvCommon.TAG, "setOnVideoSizeChangedListener")
-                mTextureView?.layoutParams = JvUtil.changeVideoSize(mView.width, mView.height, it.videoWidth, it.videoHeight)
+                mTextureView?.layoutParams = JvUtil.changeVideoSize(mView.width, mView.height, player.videoWidth, player.videoHeight)
             }
             //设置Option
-            if (it is IjkMediaPlayer) {
-                it.setOption(
+            if (player is IjkMediaPlayer) {
+                player.setOption(
                     IjkMediaPlayer.OPT_CATEGORY_PLAYER,
                     "start-on-prepared",
                     0
                 )
-                it.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "analyzeduration", 1)
-                it.setOption(IjkMediaPlayer.OPT_CATEGORY_CODEC, "skip_loop_filter", 0)
+                player.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "analyzeduration", 1)
+                player.setOption(IjkMediaPlayer.OPT_CATEGORY_CODEC, "skip_loop_filter", 0)
             }
 
             //设置是否保持屏幕常亮
-            it.setScreenOnWhilePlaying(true)
-            if (it is IjkMediaPlayer) {
-                it.setOnNativeInvokeListener(IjkMediaPlayer.OnNativeInvokeListener { _, _ ->
+            player.setScreenOnWhilePlaying(true)
+            if (player is IjkMediaPlayer) {
+                player.setOnNativeInvokeListener(IjkMediaPlayer.OnNativeInvokeListener { _, _ ->
                     true
                 })
-                it.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "reconnect", 5)
-                it.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "dns_cache_clear", 1)
+                player.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "reconnect", 5)
+                player.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "dns_cache_clear", 1)
             }
         }
     }
@@ -619,10 +622,15 @@ class JvPresenter(
 //        mPlayForm = playForm
     }
 
-    override fun setVolumeMute(isMute: Boolean) {
+    override fun switchVolumeMute() {
         //设置静音和恢复静音前音量
-        mAudioManager?.setStreamVolume(AudioManager.STREAM_MUSIC, if (isMute) 0 else mVolume, 0)
-        mIsVolumeMute = isMute
+        mIsVolumeMute = !mIsVolumeMute
+        mAudioManager?.setStreamVolume(
+            AudioManager.STREAM_MUSIC,
+            if (mIsVolumeMute) 0 else mVolume,
+            0
+        )
+        mView.setVolumeMute(mIsVolumeMute)
     }
 
     private fun endAdjust() {
@@ -761,6 +769,7 @@ class JvPresenter(
     private fun runHideControlUi(time:Long){
         Log.d(JvCommon.TAG, "runHideControlUi")
         if (mPlayState == PlayState.STATE_PLAYING || mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
+            stopHideControlUi()
             mHandler.postDelayed(mHideRunnable, time)
         }
     }
@@ -816,7 +825,6 @@ class JvPresenter(
     }
 
     fun startVideo(video: Video, callback: VideoPlayCallBack) {
-        mView.reset()
         mJvCallBack = callback
         //播放视频
         mSurface?.let {

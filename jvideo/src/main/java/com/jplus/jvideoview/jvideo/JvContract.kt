@@ -68,6 +68,11 @@ interface JvContract {
          */
         fun showBuffering(percent:Int)
         /**
+         * 静音/正常状态的切换
+         * @param isMute 是否静音状态
+         */
+        fun setVolumeMute(isMute:Boolean)
+        /**
          * 缩略图
          */
         fun setThumbnail(bitmap:Bitmap?)
@@ -170,6 +175,10 @@ interface JvContract {
          */
         fun completedPlay(videoUrl:String?)
         /**
+         * 静音/正常状态的切换
+         */
+        fun switchVolumeMute()
+        /**
          * 继续播放
          */
         fun continuePlay()
@@ -252,15 +261,6 @@ interface JvContract {
          * @return 亮度大小0~255
          */
         fun getLight(isMax:Boolean):Int
-        /**
-         * 是否静音
-         * @param isMute 是否静音
-         */
-        fun setVolumeMute(isMute:Boolean)
-//        /**
-//         * 循环播放
-//         */
-//        fun entryVideoLoop()
         /**
          * 生命周期onPause()
          */

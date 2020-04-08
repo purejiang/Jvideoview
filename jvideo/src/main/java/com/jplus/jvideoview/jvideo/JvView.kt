@@ -127,15 +127,11 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
                 ly_tv_progress_left.visibility = GONE
             }
         }
-
-        initView()
-    }
-
-    private fun initView() {
-        ly_video_title.setOnTouchListener { _, _ -> true }
     }
 
     private fun initListener() {
+        ly_video_title.setOnTouchListener { _, _ -> true }
+
         mPresenter?.setPlayForm(PlayForm.PLAYFORM_TURN)
         //设置Texture监听
         ttv_video_player.surfaceTextureListener = this
@@ -182,19 +178,10 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
             mPresenter?.reStartPlay()
         }
         img_video_volume_open.setOnClickListener {
-            mPresenter?.let {
-                //音量ui的显示
-                if (it.getVolume(false) == 0) {
-                    img_video_volume_open.setImageResource(R.mipmap.ic_video_volume_open)
-                    it.setVolumeMute(false)
-                } else {
-                    img_video_volume_open.setImageResource(R.mipmap.ic_video_volume_close)
-                    it.setVolumeMute(true)
-                }
-            }
+            mPresenter?.switchVolumeMute()
         }
         imb_video_back.setOnClickListener {
-            mPresenter?.exitMode(true, false)
+            mPresenter?.exitMode(isBackNormal = true, isRotateScreen = false)
         }
     }
 
@@ -206,6 +193,13 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
 
     }
 
+    override fun setVolumeMute(isMute: Boolean) {
+        if(isMute){
+            img_video_volume_open.setImageResource(R.mipmap.ic_video_volume_close)
+        }else{
+            img_video_volume_open.setImageResource(R.mipmap.ic_video_volume_open)
+        }
+    }
     override fun setThumbnail(bitmap: Bitmap?) {
         rl_controller_layout.background = BitmapDrawable(null, bitmap)
     }
@@ -255,9 +249,9 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
     }
 
     override fun startVideo(position: Int) {
-        rl_controller_layout.setBackgroundResource(0)
+//        rl_controller_layout.setBackgroundResource(0)
         seek_video_progress?.progress = position
-        closeCenterHintView()
+//        closeCenterHintView()
         vpv_video_control_play.play()
         vpv_video_center_play.play()
     }
@@ -299,7 +293,6 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
         }
     }
 
-
     override fun setLightUi(light: Int) {
         showTopAdjustUi("亮度：$light%")
     }
@@ -319,7 +312,6 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
             }
         }
     }
-
 
     override fun showLoading(text: String) {
         if (ly_video_loading.visibility == GONE) {
@@ -359,7 +351,6 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
             ly_video_line.visibility = GONE
         }
     }
-
 
     private fun closeBottomControlUi() {
         if (ly_video_bottom_controller.visibility == VISIBLE) {
@@ -436,7 +427,6 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
         if (imb_video_back.visibility == VISIBLE) {
             imb_video_back.visibility = GONE
         }
-
     }
 
     override fun hideController() {
@@ -451,7 +441,6 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
         showTopControlUi()
         hideBottomLineUi()
     }
-
 
     override fun onConfigChanged() {
 

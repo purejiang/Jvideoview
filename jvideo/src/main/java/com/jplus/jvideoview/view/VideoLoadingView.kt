@@ -95,7 +95,7 @@ class VideoLoadingView(context: Context, attrs: AttributeSet) : View(context, at
             mWidth = widthSize
             mHeight = heightSize
         }
-        Log.d(JvCommon.TAG, "mWidth:$mWidth, mHeight:$mHeight,mRate$mRate")
+//        Log.d(JvCommon.TAG, "mWidth:$mWidth, mHeight:$mHeight,mRate$mRate")
         if (mStrokeWidth == 0f) {
             mStrokeWidth = mWidth / 9f
             mPaint?.strokeWidth = mStrokeWidth

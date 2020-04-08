@@ -53,6 +53,7 @@ class JvController(private val activity: Activity, private val jvView: JvView, p
     //设置播放队列
     fun playVideos(videos: MutableList<Video>) {
         mVideos = videos
+        mPosition = 0
         startPlayLoop()
     }
 
@@ -66,10 +67,6 @@ class JvController(private val activity: Activity, private val jvView: JvView, p
         })
     }
 
-
-    fun setCallBack() {
-
-    }
 
     fun onPause() {
         presenter?.onPause()
