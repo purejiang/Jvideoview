@@ -197,7 +197,6 @@ class JvPresenter(
             //播放完成监听
             player.setOnCompletionListener {
                 completedPlay(null)
-                mCallback.endPlay()
             }
 
             //seekTo()调用并实际查找完成之后
