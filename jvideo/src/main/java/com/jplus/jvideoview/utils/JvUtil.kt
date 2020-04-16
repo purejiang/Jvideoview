@@ -24,13 +24,13 @@ object JvUtil {
          * 播放进度转换为时间
          * @param progress 进度(整型)
          */
-        fun progress2Time(progress:Int?):String{
+        fun progress2Time(progress:Long?):String{
             return if(progress==null) {
                 "00:00"
             }else {
                 val simpleDate = SimpleDateFormat("mm:ss", Locale.CHINA)
                 simpleDate.timeZone = TimeZone.getTimeZone("GMT+00:00")
-                simpleDate.format(Date(progress.toLong()))
+                simpleDate.format(Date(progress))
             }
         }
         /**
@@ -40,7 +40,7 @@ object JvUtil {
          * @param proportion 一次屏幕的滑动所占总进度的比例
          * @param all 总高度/总宽度
          */
-        fun dt2progress(distance: Float, duration: Int, all: Int, proportion: Double): Double {
+        fun dt2progress(distance: Float, duration: Long, all: Int, proportion: Double): Double {
             return (distance * duration * proportion / all)
         }
         /**

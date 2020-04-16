@@ -148,7 +148,7 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
 
             override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
                 //seekBar滑动中的回调
-                mPresenter?.seekingPlay(seekBar.progress, false)
+                mPresenter?.seekingPlay(seekBar.progress.toLong(), false)
             }
 
             override fun onStartTrackingTouch(seekBar: SeekBar) {
@@ -157,7 +157,7 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
 
             override fun onStopTrackingTouch(seekBar: SeekBar) {
                 //seekBar滑动结束的回调
-                mPresenter?.seekCompletePlay(seekBar.progress)
+                mPresenter?.seekCompletePlay(seekBar.progress.toLong())
             }
 
         })
@@ -249,9 +249,9 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
         vpv_video_center_play.pause()
     }
 
-    override fun startVideo(position: Int) {
+    override fun startVideo(position: Long) {
 //        rl_controller_layout.setBackgroundResource(0)
-        seek_video_progress?.progress = position
+        seek_video_progress?.progress = position.toInt()
 //        closeCenterHintView()
         vpv_video_control_play.play()
         vpv_video_center_play.play()
@@ -286,11 +286,11 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
             videoTime.split("&")[1]
     }
 
-    override fun playing(videoTime: String, position: Int) {
+    override fun playing(videoTime: String, position: Long) {
         setNumProgress(videoTime)
-        seek_video_progress?.progress = position
+        seek_video_progress?.progress = position.toInt()
         if (ly_video_line.visibility == VISIBLE) {
-            pgb_video_line_progress?.progress = position
+            pgb_video_line_progress?.progress = position.toInt()
         }
     }
 
@@ -303,13 +303,13 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
         showTopAdjustUi("音量：$volumePercent%")
     }
 
-    override fun seekingVideo(videoTime: String, position: Int, isSlide: Boolean) {
+    override fun seekingVideo(videoTime: String, position: Long, isSlide: Boolean) {
         setNumProgress(videoTime)
         if (isSlide) {
             showTopAdjustUi("进度：${videoTime.split("&")[0]}/${videoTime.split("&")[1]}")
-            seek_video_progress?.progress = position
+            seek_video_progress?.progress = position.toInt()
             if (ly_video_line.visibility == VISIBLE) {
-                pgb_video_line_progress?.progress = position
+                pgb_video_line_progress?.progress = position.toInt()
             }
         }
     }

@@ -36,6 +36,9 @@ class JvController(activity: Activity, jvView: JvView, callback:JvCallBack) {
         }
     }
 
+    fun getPlayProgress():Long?{
+        return presenter?.getPosition()
+    }
     //设置播放引擎
     fun setPlayBackEngine(playBackEngine: Int) {
         mPlayBackEngine = playBackEngine

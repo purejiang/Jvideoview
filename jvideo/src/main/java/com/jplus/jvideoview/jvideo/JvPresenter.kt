@@ -56,12 +56,12 @@ class JvPresenter(
     private var mPlayMode = PlayMode.MODE_NORMAL
     //初始音量
     private var mDefaultVolume = 0
-
-    private var mStartPosition = 0
+    //初始进度
+    private var mStartPosition = 0L
     //初始亮度
     private var mStartLight = 0
     //播放进度
-    private var mPosition = 0
+    private var mPosition = 0L
     //调节的音量
     private var mVolume = 0
     //调节的亮度
@@ -320,12 +320,12 @@ class JvPresenter(
     }
 
     //开始播放
-    override fun startPlay(position: Int) {
+    override fun startPlay(position: Long) {
         if (mPlayState == PlayState.STATE_PREPARED) {
             Log.d(JvCommon.TAG, "startPlay:$position")
             mPlayer.let {
                 //如果不在播放中，指定视频播放位置并开始播放
-                if (position != 0) soughtTo(position.toLong())
+                if (position != 0L) soughtTo(position.toLong())
                 it.start()
                 mPlayState = PlayState.STATE_PLAYING
             }
@@ -399,7 +399,7 @@ class JvPresenter(
         closeLoading("缓冲完成", 3)
     }
 
-    override fun seekCompletePlay(position: Int) {
+    override fun seekCompletePlay(position: Long) {
         Log.d(JvCommon.TAG, "seekToPlay:$position")
         mPlayer.let {
             if (mPlayState == PlayState.STATE_PAUSED || mPlayState == PlayState.STATE_BUFFERING_PAUSED) {
@@ -415,7 +415,7 @@ class JvPresenter(
         mPosition = position
     }
 
-    override fun seekingPlay(position: Int, isSlide: Boolean) {
+    override fun seekingPlay(position: Long, isSlide: Boolean) {
         mView.seekingVideo(getVideoTimeStr(position), position, isSlide)
     }
 
@@ -753,8 +753,8 @@ class JvPresenter(
                 if (it.isPlaying) {
                     //更新播放进度
                     mView.playing(
-                        getVideoTimeStr(it.currentPosition.toInt()),
-                        it.currentPosition.toInt()
+                        getVideoTimeStr(it.currentPosition),
+                        it.currentPosition
                     )
                 }
             }
@@ -866,12 +866,12 @@ class JvPresenter(
         } ?: 0
     }
 
-    override fun getDuration(): Int {
-        return mPlayer.duration.toInt()
+    override fun getDuration(): Long {
+        return mPlayer.duration
     }
 
-    override fun getPosition(): Int {
-        return mPlayer.currentPosition.toInt()
+    override fun getPosition(): Long {
+        return mPlayer.currentPosition
     }
 
     override fun getBufferPercent(): Int {
@@ -891,7 +891,7 @@ class JvPresenter(
      * 滑动屏幕快进或者后退
      * @param distance
      */
-    private fun slidePlay(startProgress: Int, distance: Float) {
+    private fun slidePlay(startProgress: Long, distance: Float) {
         if (mPlayState == PlayState.STATE_COMPLETED || mPlayState == PlayState.STATE_IDLE || mPlayState == PlayState.STATE_INITLIZED || mPlayState == PlayState.STATE_ERROR) {
             //播放状态为初始前，初始化完成以及加载完毕和错误时不能滑动播放
             Log.d(JvCommon.TAG, "can't to slide play ,state${mPlayState}")
@@ -905,7 +905,7 @@ class JvPresenter(
                     (mView as LinearLayout).width,
                     0.2
                 )
-            ).toInt()
+            ).toLong()
         when {
             position > getDuration() -> position = getDuration()
             position < 0 -> position = 0
@@ -942,7 +942,7 @@ class JvPresenter(
             startVolume + floor(
                 dt2progress(
                     distance,
-                    getVolume(true),
+                    getVolume(true).toLong(),
                     (mView as LinearLayout).height,
                     1.0
                 )
@@ -959,7 +959,7 @@ class JvPresenter(
         mView.setVolumeUi(volume * 100 / getVolume(true))
     }
 
-    private fun getVideoTimeStr(position: Int?): String {
+    private fun getVideoTimeStr(position: Long?): String {
         return JvUtil.progress2Time(position) + "&" + JvUtil.progress2Time(getDuration())
     }
 

@@ -80,7 +80,7 @@ interface JvContract {
          * 开始播放
          * @param position 可选任意位置，默认为初始位置
          */
-        fun startVideo(position: Int = 0)
+        fun startVideo(position: Long = 0)
         /**
          * 显示实时网速
          * @param speed 实时网速
@@ -91,12 +91,12 @@ interface JvContract {
          *  @param videoTime 播放时间
          * @param position 播放位置
          */
-        fun playing(videoTime:String, position: Int)
+        fun playing(videoTime:String, position: Long)
         /**
          * seek滑动到某个位置的UI显示
          * @param videoTime 播放时间
          */
-        fun seekingVideo(videoTime:String, position: Int, isSlide: Boolean)
+        fun seekingVideo(videoTime:String, position: Long, isSlide: Boolean)
         /**
          * 暂停播放
          */
@@ -164,7 +164,7 @@ interface JvContract {
          * 开始播放
          * @param position 可选任意位置，默认为初始位置
          */
-        fun startPlay(position: Int = 0)
+        fun startPlay(position: Long = 0)
         /**
          * 暂停播放
          */
@@ -205,12 +205,12 @@ interface JvContract {
          * @param position 进度条进度
          * @param isSlide 是否为手势滑动
          */
-        fun seekingPlay(position: Int, isSlide: Boolean)
+        fun seekingPlay(position: Long, isSlide: Boolean)
         /**
          * 滑动完成
          * @param position 进度条进度
          */
-        fun seekCompletePlay(position: Int)
+        fun seekCompletePlay(position: Long)
         /**
          * 切换播放模式（全屏与普通模式）
          * @param switchMode 切换的模式
@@ -277,12 +277,12 @@ interface JvContract {
          * 获取视频总时长
          * @return 视频时长
          */
-        fun getDuration():Int
+        fun getDuration():Long
         /**
          * 获取当前播放位置
          * @return 当前视频进度
          */
-        fun getPosition():Int
+        fun getPosition():Long
         /**
          * 获取当前缓冲百分比
          * @return 1~100
