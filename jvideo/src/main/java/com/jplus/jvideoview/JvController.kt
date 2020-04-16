@@ -2,11 +2,9 @@ package com.jplus.jvideoview
 
 import android.app.Activity
 import android.content.res.Configuration
-import com.jplus.jvideoview.data.Video
 import com.jplus.jvideoview.jvideo.JvPresenter
 import com.jplus.jvideoview.jvideo.JvView
-import com.jplus.jvideoview.jvideo.PlayBackEngine
-import com.jplus.jvideoview.jvideo.PlayForm
+import com.jplus.jvideoview.common.JvConstant.*
 import tv.danmaku.ijk.media.player.AndroidMediaPlayer
 import tv.danmaku.ijk.media.player.IMediaPlayer
 import tv.danmaku.ijk.media.player.IjkMediaPlayer
@@ -15,12 +13,11 @@ import tv.danmaku.ijk.media.player.IjkMediaPlayer
  * @author JPlus
  * @date 2019/10/24.
  */
-class JvController(private val activity: Activity, private val jvView: JvView, private val callback:JvCallBack) {
-    private var mVideos = mutableListOf<Video>()
+class JvController(activity: Activity, jvView: JvView, callback:JvCallBack) {
+    private var mVideos = mutableListOf<Pair<String,String>>()
     private var presenter: JvPresenter? = null
     private var mPlayForm = PlayForm.PLAYBACK_ONE_END
     private var mPlayBackEngine = PlayBackEngine.PLAYBACK_MEDIA_PLAYER
-    private var mPosition = 0
 
     init {
         presenter = JvPresenter(activity, jvView, jvView.layoutParams, callback, getPlayEngine(mPlayBackEngine))
@@ -50,19 +47,18 @@ class JvController(private val activity: Activity, private val jvView: JvView, p
         mPlayForm = playForm
     }
 
-    //设置播放队列
-    fun playVideos(videos: MutableList<Video>) {
-        mVideos = videos
-        mPosition = 0
-        startPlayLoop()
+    //设置播放列表
+    fun playVideos(videos: MutableList<Pair<String, String>>) {
+        mVideos =videos
+        startPlayLoop(0)
     }
 
     //顺序播放
-    fun startPlayLoop() {
-        presenter?.startVideo(mVideos[mPosition], object : JvPresenter.VideoPlayCallBack {
+    fun startPlayLoop(position:Int) {
+        presenter?.startVideo(mVideos[position].first, mVideos[position].second, object : JvPresenter.VideoPlayCallBack {
             override fun videoCompleted() {
-                mPosition++
-                startPlayLoop()
+
+                startPlayLoop(position+1)
             }
         })
     }

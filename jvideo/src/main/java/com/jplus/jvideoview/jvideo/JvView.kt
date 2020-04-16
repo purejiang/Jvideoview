@@ -18,6 +18,7 @@ import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import com.jplus.jvideoview.R
+import com.jplus.jvideoview.common.JvConstant.*
 import kotlinx.android.synthetic.main.layout_control_bottom.view.*
 import kotlinx.android.synthetic.main.layout_control_center.view.*
 import kotlinx.android.synthetic.main.layout_control_slide.view.*

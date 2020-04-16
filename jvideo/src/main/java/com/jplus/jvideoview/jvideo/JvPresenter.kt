@@ -18,14 +18,14 @@ import android.view.*
 import android.view.GestureDetector.SimpleOnGestureListener
 import android.widget.LinearLayout
 import com.jplus.jvideoview.JvController
-import com.jplus.jvideoview.data.Video
+import com.jplus.jvideoview.common.JvConstant.*
 import com.jplus.jvideoview.utils.JvUtil
 import com.jplus.jvideoview.utils.JvUtil.dt2progress
 import tv.danmaku.ijk.media.player.AndroidMediaPlayer
 import tv.danmaku.ijk.media.player.IMediaPlayer
 import tv.danmaku.ijk.media.player.IjkMediaPlayer
-import java.io.IOException
 import kotlin.math.floor
+import java.io.IOException as IOException1
 
 
 /**
@@ -71,7 +71,7 @@ class JvPresenter(
 
     //播放点
     private var mVideoIndex = 0
-    private var mLoadingNums= mutableSetOf<Int>()
+    private var mLoadingNums = mutableSetOf<Int>()
     private var mAdjustWay = -1
 
     //是否第一次按下，用于滑动判断
@@ -90,7 +90,8 @@ class JvPresenter(
     private val mHandler by lazy {
         Handler()
     }
-    private var mVideo: Video? = null
+    private var mUrl: String? = null
+    private var mName: String? = null
 
     private val mHideRunnable: Runnable by lazy {
         //延时后执行
@@ -126,7 +127,7 @@ class JvPresenter(
     }
 
     override fun subscribe() {
-        showLoading( "音频初始化中...", 1)
+        showLoading("音频初始化中...", 1)
         initAudio()
         closeLoading("音频初始化完成", 1)
     }
@@ -173,7 +174,7 @@ class JvPresenter(
 
     //初始化播放器监听
     private fun initPlayerListener() {
-        mPlayer.let {player->
+        mPlayer.let { player ->
             //设置是否循环播放，默认可不写
             player.isLooping = false
             //设置播放类型
@@ -248,7 +249,12 @@ class JvPresenter(
             player.setOnVideoSizeChangedListener { _, _, _, _, _ ->
                 //这里是视频的原始尺寸大小
                 Log.d(JvCommon.TAG, "setOnVideoSizeChangedListener")
-                mTextureView?.layoutParams = JvUtil.changeVideoSize(mView.width, mView.height, player.videoWidth, player.videoHeight)
+                mTextureView?.layoutParams = JvUtil.changeVideoSize(
+                    mView.width,
+                    mView.height,
+                    player.videoWidth,
+                    player.videoHeight
+                )
             }
             //设置Option
             if (player is IjkMediaPlayer) {
@@ -274,13 +280,14 @@ class JvPresenter(
     }
 
     //视频播放准备
-    private fun loadVideo(surface: Surface, video: Video) {
-        Log.d(JvCommon.TAG, "entryVideo:${video}")
-
-        showLoading( "视频预加载...", 4)
+    private fun loadVideo(surface: Surface, name: String?, url: String?) {
+        Log.d(JvCommon.TAG, "entryVideo:$name, $url")
+        mName = name
+        mUrl = url
+        showLoading("视频预加载...", 4)
 
         //设置title
-        mView.setTitle(video.videoName ?: "未知视频")
+        mView.setTitle(name ?: "未知视频")
         mPlayer.let {
 
             //如果不是IDLE状态就改变播放器状态
@@ -288,7 +295,6 @@ class JvPresenter(
                 resetPlay()
             }
             try {
-                val url = video.videoUrl
                 it.dataSource = (url)
                 //加载url之后为播放器初始化完成状态
                 mPlayState = PlayState.STATE_INITLIZED
@@ -298,7 +304,7 @@ class JvPresenter(
                 initPlayerListener()
                 //异步的方式装载流媒体文件
                 it.prepareAsync()
-            } catch (e: IOException) {
+            } catch (e: IOException1) {
                 e.printStackTrace()
                 errorPlay(0, 0, "视频路径有误或者地址失效~")
             }
@@ -319,7 +325,7 @@ class JvPresenter(
             Log.d(JvCommon.TAG, "startPlay:$position")
             mPlayer.let {
                 //如果不在播放中，指定视频播放位置并开始播放
-                if(position!=0) soughtTo(position.toLong())
+                if (position != 0) soughtTo(position.toLong())
                 it.start()
                 mPlayState = PlayState.STATE_PLAYING
             }
@@ -401,7 +407,7 @@ class JvPresenter(
                 pausePlay()
             } else if (mPlayState == PlayState.STATE_PLAYING || mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
                 soughtTo(position.toLong())
-                 continuePlay()
+                continuePlay()
             } else if (mPlayState == PlayState.STATE_PREPARED) {
                 startPlay(position)
             }
@@ -476,10 +482,8 @@ class JvPresenter(
 
     override fun reStartPlay() {
         resetPlay()
-        mVideo?.let {
-            mJvCallBack?.let { call ->
-                startVideo(it, call)
-            }
+        mJvCallBack?.let { call ->
+            startVideo(mName, mUrl, call)
         }
     }
 
@@ -725,7 +729,8 @@ class JvPresenter(
             )
             mActivity.window.decorView.systemUiVisibility = View.VISIBLE
             mView.layoutParams = it
-            mTextureView?.layoutParams = JvUtil.changeVideoSize(it.width, it.height, mPlayer.videoWidth, mPlayer.videoHeight)
+            mTextureView?.layoutParams =
+                JvUtil.changeVideoSize(it.width, it.height, mPlayer.videoWidth, mPlayer.videoHeight)
         }
         //屏幕方向改为未知，保证下次能够旋转屏幕
 //        mActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
@@ -765,50 +770,53 @@ class JvPresenter(
         mHandler.removeCallbacks(mRunnable)
     }
 
-    private fun runHideControlUi(time:Long){
+    private fun runHideControlUi(time: Long) {
         Log.d(JvCommon.TAG, "runHideControlUi")
         if (mPlayState == PlayState.STATE_PLAYING || mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
             stopHideControlUi()
             mHandler.postDelayed(mHideRunnable, time)
         }
     }
-    private fun showControlUi(autoHide:Boolean){
-        mCenterControlViewIsShow =true
-        if(!mIsLoading){ //不在加载中则显示中心按钮
+
+    private fun showControlUi(autoHide: Boolean) {
+        mCenterControlViewIsShow = true
+        if (!mIsLoading) { //不在加载中则显示中心按钮
             mView.showCenterControlView()
         }
         mView.showController()
-        if(autoHide){
+        if (autoHide) {
             runHideControlUi(5000)
         }
     }
-    private fun hideControlUi(){
+
+    private fun hideControlUi() {
         stopHideControlUi() // 去掉自动隐藏
         mCenterControlViewIsShow = false
         mView.hideController()
     }
-    private fun stopHideControlUi(){
+
+    private fun stopHideControlUi() {
         mHandler.removeCallbacks(mHideRunnable)
     }
 
-    private fun showLoading(content: String, loadingNum: Int){
-        if(loadingNum in mLoadingNums){
+    private fun showLoading(content: String, loadingNum: Int) {
+        if (loadingNum in mLoadingNums) {
             Log.e(JvCommon.TAG, "loading- show[$content, $loadingNum] is exist.")
-        }else{
+        } else {
             mLoadingNums.add(loadingNum)
             mView.showLoading(content)
-            mIsLoading =true
+            mIsLoading = true
             Log.d(JvCommon.TAG, "loading-show[$content, $loadingNum]")
         }
     }
 
-    private fun closeLoading(content: String, loadingNum: Int){
-        if(loadingNum in mLoadingNums){
+    private fun closeLoading(content: String, loadingNum: Int) {
+        if (loadingNum in mLoadingNums) {
             mLoadingNums.remove(loadingNum)
             mView.closeLoading(content)
             mIsLoading = false
             Log.d(JvCommon.TAG, "loading-close[$content, $loadingNum]")
-        }else{
+        } else {
             Log.e(JvCommon.TAG, "loading- close[$content, $loadingNum] is not exist.")
         }
     }
@@ -823,11 +831,11 @@ class JvPresenter(
         mCallback.initSuccess()
     }
 
-    fun startVideo(video: Video, callback: VideoPlayCallBack) {
+    fun startVideo(name: String?, url: String?, callback: VideoPlayCallBack) {
         mJvCallBack = callback
         //播放视频
         mSurface?.let {
-            loadVideo(it, video)
+            loadVideo(it, name, url)
         }
     }
 
@@ -884,7 +892,7 @@ class JvPresenter(
      * @param distance
      */
     private fun slidePlay(startProgress: Int, distance: Float) {
-        if (mPlayState==PlayState.STATE_COMPLETED||mPlayState == PlayState.STATE_IDLE || mPlayState == PlayState.STATE_INITLIZED || mPlayState == PlayState.STATE_ERROR) {
+        if (mPlayState == PlayState.STATE_COMPLETED || mPlayState == PlayState.STATE_IDLE || mPlayState == PlayState.STATE_INITLIZED || mPlayState == PlayState.STATE_ERROR) {
             //播放状态为初始前，初始化完成以及加载完毕和错误时不能滑动播放
             Log.d(JvCommon.TAG, "can't to slide play ,state${mPlayState}")
             return
