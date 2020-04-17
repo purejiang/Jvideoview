@@ -45,14 +45,18 @@ class JvPresenter(
     private var mPlayer: IMediaPlayer
 ) :
     JvContract.Presenter {
+    //播放界面，相当于一块幕布
     private var mSurface: Surface? = null
+    //播放视图界面，相当于放映的画面所在的区域
     private var mTextureView: TextureView? = null
+    //音频管理器
     private var mAudioManager: AudioManager? = null
     private var mRunnable: Runnable? = null
-
+    //是否在onResume后进行播放操作
     private var mIsBackContinue: Boolean? = null
-
+    //播放状态
     private var mPlayState = PlayState.STATE_IDLE
+    //播放模式
     private var mPlayMode = PlayMode.MODE_NORMAL
     //初始音量
     private var mDefaultVolume = 0
@@ -66,14 +70,12 @@ class JvPresenter(
     private var mVolume = 0
     //调节的亮度
     private var mLight = 0
-    //缓存
+    //缓存进度
     private var mBufferPercent = 0
-
-    //播放点
-    private var mVideoIndex = 0
+    //loadingID
     private var mLoadingNums = mutableSetOf<Int>()
+    //滑动功能模式
     private var mAdjustWay = -1
-
     //是否第一次按下，用于滑动判断
     private var mIsFirstDown = true
     //中间的控制view是否显示中
@@ -90,7 +92,9 @@ class JvPresenter(
     private val mHandler by lazy {
         Handler()
     }
+    //播放url
     private var mUrl: String? = null
+    //名称
     private var mName: String? = null
 
     private val mHideRunnable: Runnable by lazy {
@@ -104,10 +108,10 @@ class JvPresenter(
 
     init {
         mView.setPresenter(this)
+        mView.setOnTouchListener { v, event -> true }
         //保存普通状态下的布局参数
         Log.d(JvCommon.TAG, "orientation:" + mActivity.requestedOrientation)
     }
-
 
     override fun isSupportPlayEngine(isSupport: Boolean) {
         mView.showSwitchEngine(isSupport)
@@ -468,6 +472,7 @@ class JvPresenter(
         closeLoading("预加载完成", 4)
         Log.d(JvCommon.TAG, "setOnPreparedListener")
         mPlayer.let {
+            mView.setOnTouchListener { _, _ ->  false}
             //预加载后先播放再暂停，1：防止播放错误-38(未开始就停止) 2：可以显示第一帧画面
             mView.preparedVideo(getVideoTimeStr(null), it.duration.toInt())
         }
@@ -478,6 +483,7 @@ class JvPresenter(
         mPlayer.reset()
         mView.reset()
         mPlayState = PlayState.STATE_IDLE
+        mView.setOnTouchListener { _, _ ->  true}
     }
 
     override fun reStartPlay() {

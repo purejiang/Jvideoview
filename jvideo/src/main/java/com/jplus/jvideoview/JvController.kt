@@ -2,9 +2,10 @@ package com.jplus.jvideoview
 
 import android.app.Activity
 import android.content.res.Configuration
+import com.jplus.jvideoview.common.JvConstant.PlayBackEngine
+import com.jplus.jvideoview.common.JvConstant.PlayForm
 import com.jplus.jvideoview.jvideo.JvPresenter
 import com.jplus.jvideoview.jvideo.JvView
-import com.jplus.jvideoview.common.JvConstant.*
 import tv.danmaku.ijk.media.player.AndroidMediaPlayer
 import tv.danmaku.ijk.media.player.IMediaPlayer
 import tv.danmaku.ijk.media.player.IjkMediaPlayer
@@ -13,19 +14,25 @@ import tv.danmaku.ijk.media.player.IjkMediaPlayer
  * @author JPlus
  * @date 2019/10/24.
  */
-class JvController(activity: Activity, jvView: JvView, callback:JvCallBack) {
-    private var mVideos = mutableListOf<Pair<String,String>>()
+class JvController(activity: Activity, jvView: JvView, callback: JvCallBack) {
+    private var mVideos = mutableListOf<Pair<String, String>>()
     private var presenter: JvPresenter? = null
     private var mPlayForm = PlayForm.PLAYBACK_ONE_END
     private var mPlayBackEngine = PlayBackEngine.PLAYBACK_MEDIA_PLAYER
 
     init {
-        presenter = JvPresenter(activity, jvView, jvView.layoutParams, callback, getPlayEngine(mPlayBackEngine))
+        presenter = JvPresenter(
+            activity,
+            jvView,
+            jvView.layoutParams,
+            callback,
+            getPlayEngine(mPlayBackEngine)
+        )
         presenter?.subscribe()
     }
 
-    private fun getPlayEngine(playEngine:Int):IMediaPlayer{
-       return  when (playEngine) {
+    private fun getPlayEngine(playEngine: Int): IMediaPlayer {
+        return when (playEngine) {
             //使用ijkplayer播放引擎
             PlayBackEngine.PLAYBACK_IJK_PLAYER -> IjkMediaPlayer()
             //使用android自带的播放引擎
@@ -36,9 +43,10 @@ class JvController(activity: Activity, jvView: JvView, callback:JvCallBack) {
         }
     }
 
-    fun getPlayProgress():Long?{
+    fun getPlayProgress(): Long? {
         return presenter?.getPosition()
     }
+
     //设置播放引擎
     fun setPlayBackEngine(playBackEngine: Int) {
         mPlayBackEngine = playBackEngine
@@ -52,18 +60,21 @@ class JvController(activity: Activity, jvView: JvView, callback:JvCallBack) {
 
     //设置播放列表
     fun playVideos(videos: MutableList<Pair<String, String>>) {
-        mVideos =videos
+        mVideos = videos
         startPlayLoop(0)
     }
 
     //顺序播放
-    fun startPlayLoop(position:Int) {
-        presenter?.startVideo(mVideos[position].first, mVideos[position].second, object : JvPresenter.VideoPlayCallBack {
-            override fun videoCompleted() {
-
-                startPlayLoop(position+1)
-            }
-        })
+    fun startPlayLoop(position: Int) {
+        if (position >= mVideos.size) return
+        presenter?.startVideo(
+            mVideos[position].first,
+            mVideos[position].second,
+            object : JvPresenter.VideoPlayCallBack {
+                override fun videoCompleted() {
+                    startPlayLoop(position + 1)
+                }
+            })
     }
 
 
@@ -79,7 +90,7 @@ class JvController(activity: Activity, jvView: JvView, callback:JvCallBack) {
         presenter?.onConfigChanged(newConfig)
     }
 
-    fun destroy(){
+    fun destroy() {
         presenter?.unSubscribe()
     }
 
