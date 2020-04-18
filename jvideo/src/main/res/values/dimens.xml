@@ -7,4 +7,6 @@
     <dimen name="view_margin_big">12dp</dimen>
     <dimen name="view_slide_margin_top">60dp</dimen>
     <dimen name="video_line_bottom">2.5dp</dimen>
+    <dimen name="video_progress_size_tv">10sp</dimen>
+    <dimen name="video_title_size_tv">12sp</dimen>
 </resources>

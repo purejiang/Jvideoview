@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.res.Configuration
 import com.jplus.jvideoview.common.JvConstant.PlayBackEngine
 import com.jplus.jvideoview.common.JvConstant.PlayForm
+import com.jplus.jvideoview.entity.Video
 import com.jplus.jvideoview.jvideo.JvPresenter
 import com.jplus.jvideoview.jvideo.JvView
 import tv.danmaku.ijk.media.player.AndroidMediaPlayer
@@ -15,7 +16,7 @@ import tv.danmaku.ijk.media.player.IjkMediaPlayer
  * @date 2019/10/24.
  */
 class JvController(activity: Activity, jvView: JvView, callback: JvCallBack) {
-    private var mVideos = mutableListOf<Pair<String, String>>()
+    private var mVideos = mutableListOf<Video>()
     private var presenter: JvPresenter? = null
     private var mPlayForm = PlayForm.PLAYBACK_ONE_END
     private var mPlayBackEngine = PlayBackEngine.PLAYBACK_MEDIA_PLAYER
@@ -59,7 +60,7 @@ class JvController(activity: Activity, jvView: JvView, callback: JvCallBack) {
     }
 
     //设置播放列表
-    fun playVideos(videos: MutableList<Pair<String, String>>) {
+    fun playVideos(videos: MutableList<Video>) {
         mVideos = videos
         startPlayLoop(0)
     }
@@ -67,9 +68,7 @@ class JvController(activity: Activity, jvView: JvView, callback: JvCallBack) {
     //顺序播放
     fun startPlayLoop(position: Int) {
         if (position >= mVideos.size) return
-        presenter?.startVideo(
-            mVideos[position].first,
-            mVideos[position].second,
+        presenter?.startVideo(mVideos[position],
             object : JvPresenter.VideoPlayCallBack {
                 override fun videoCompleted() {
                     startPlayLoop(position + 1)

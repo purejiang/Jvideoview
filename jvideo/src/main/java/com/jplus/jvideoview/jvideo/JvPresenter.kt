@@ -19,6 +19,7 @@ import android.view.GestureDetector.SimpleOnGestureListener
 import android.widget.LinearLayout
 import com.jplus.jvideoview.JvController
 import com.jplus.jvideoview.common.JvConstant.*
+import com.jplus.jvideoview.entity.Video
 import com.jplus.jvideoview.utils.JvUtil
 import com.jplus.jvideoview.utils.JvUtil.dt2progress
 import tv.danmaku.ijk.media.player.AndroidMediaPlayer
@@ -92,10 +93,8 @@ class JvPresenter(
     private val mHandler by lazy {
         Handler()
     }
-    //播放url
-    private var mUrl: String? = null
-    //名称
-    private var mName: String? = null
+    //播放的视频
+    private var mVideo: Video? = null
 
     private val mHideRunnable: Runnable by lazy {
         //延时后执行
@@ -108,7 +107,7 @@ class JvPresenter(
 
     init {
         mView.setPresenter(this)
-        mView.setOnTouchListener { v, event -> true }
+        mView.setOnTouchListener { _, _ -> true }
         //保存普通状态下的布局参数
         Log.d(JvCommon.TAG, "orientation:" + mActivity.requestedOrientation)
     }
@@ -284,14 +283,13 @@ class JvPresenter(
     }
 
     //视频播放准备
-    private fun loadVideo(surface: Surface, name: String?, url: String?) {
-        Log.d(JvCommon.TAG, "entryVideo:$name, $url")
-        mName = name
-        mUrl = url
+    private fun loadVideo(surface: Surface, video:Video) {
+        Log.d(JvCommon.TAG, "entryVideo:$video")
+        mVideo = video
         showLoading("视频预加载...", 4)
 
         //设置title
-        mView.setTitle(name ?: "未知视频")
+        mView.setTitle(if (video.name.isEmpty()) "未知视频" else video.name)
         mPlayer.let {
 
             //如果不是IDLE状态就改变播放器状态
@@ -299,7 +297,7 @@ class JvPresenter(
                 resetPlay()
             }
             try {
-                it.dataSource = (url)
+                it.dataSource = (video.url)
                 //加载url之后为播放器初始化完成状态
                 mPlayState = PlayState.STATE_INITLIZED
                 //设置渲染画板
@@ -319,7 +317,7 @@ class JvPresenter(
         when (mPlayState) {
             PlayState.STATE_PLAYING, PlayState.STATE_BUFFERING_PLAYING -> pausePlay()
             PlayState.STATE_PAUSED, PlayState.STATE_BUFFERING_PAUSED -> continuePlay()
-            PlayState.STATE_PREPARED -> startPlay()
+            PlayState.STATE_PREPARED -> startPlay(mVideo?.progress?:0L)
         }
     }
 
@@ -329,7 +327,7 @@ class JvPresenter(
             Log.d(JvCommon.TAG, "startPlay:$position")
             mPlayer.let {
                 //如果不在播放中，指定视频播放位置并开始播放
-                if (position != 0L) soughtTo(position.toLong())
+                if (position != 0L) soughtTo(position)
                 it.start()
                 mPlayState = PlayState.STATE_PLAYING
             }
@@ -472,24 +470,27 @@ class JvPresenter(
         closeLoading("预加载完成", 4)
         Log.d(JvCommon.TAG, "setOnPreparedListener")
         mPlayer.let {
-            mView.setOnTouchListener { _, _ ->  false}
+            mView.setOnTouchListener { _, _ -> false }
             //预加载后先播放再暂停，1：防止播放错误-38(未开始就停止) 2：可以显示第一帧画面
             mView.preparedVideo(getVideoTimeStr(null), it.duration.toInt())
         }
         showControlUi(false)
+        startPlay(mVideo?.progress?:0L)
     }
 
     override fun resetPlay() {
         mPlayer.reset()
         mView.reset()
         mPlayState = PlayState.STATE_IDLE
-        mView.setOnTouchListener { _, _ ->  true}
+        mView.setOnTouchListener { _, _ -> true }
     }
 
     override fun reStartPlay() {
         resetPlay()
         mJvCallBack?.let { call ->
-            startVideo(mName, mUrl, call)
+            mVideo?.let{
+                startVideo(it, call)
+            }
         }
     }
 
@@ -837,11 +838,11 @@ class JvPresenter(
         mCallback.initSuccess()
     }
 
-    fun startVideo(name: String?, url: String?, callback: VideoPlayCallBack) {
+    fun startVideo(video: Video, callback: VideoPlayCallBack) {
         mJvCallBack = callback
         //播放视频
         mSurface?.let {
-            loadVideo(it, name, url)
+            loadVideo(it, video)
         }
     }
 

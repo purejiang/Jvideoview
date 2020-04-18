@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.jplus.jvideoview.JvController
+import com.jplus.jvideoview.entity.Video
 
 import kotlinx.android.synthetic.main.activity_main.*
 
@@ -18,11 +19,10 @@ class MainActivity : AppCompatActivity() {
         val urls = intent.getStringExtra("urls")
         val s1 = Regex("\n")
         var id = 0
-        val list = mutableListOf<Pair<String, String>>()
+        val list = mutableListOf<Video>()
         urls.split(s1).forEach { it1 ->
             Log.d("pipa", "split:" + it1)
-            list.add("视频$id" to it1.replace("\n| ", ""))
-            id++
+            list.add(Video("视频$id",it1.replace("\n| ", ""),55306L))
         }
 
         mController = JvController(this, jv_video_main2, object :JvController.JvCallBack{

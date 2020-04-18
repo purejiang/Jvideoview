@@ -1,49 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:id="@+id/ly_video_bottom_controller"
-              android:layout_width="match_parent"
-              android:layout_height="@dimen/controller_height"
-              android:background="@drawable/bg_bottom_controller_trans"
-              android:gravity="center_vertical"
-              android:orientation="horizontal">
+        android:id="@+id/ly_video_bottom_controller"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/controller_height"
+        android:background="@drawable/bg_bottom_controller_trans"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
 
     <com.jplus.jvideoview.view.VideoPlayView
             android:id="@+id/vpv_video_control_play"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:padding="@dimen/view_margin_normal"
-    />
+            android:padding="@dimen/view_margin_normal" />
 
     <include
             android:id="@+id/ly_tv_progress_left"
-            layout="@layout/layout_tv_progress"
-            />
+            layout="@layout/layout_tv_progress" />
+
     <SeekBar
             android:id="@+id/seek_video_progress"
-            android:layout_weight="1"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:background="@color/video_transparent_bg"
             android:layout_margin="@dimen/view_margin_small"
+            android:layout_weight="1"
+            android:background="@color/video_transparent_bg"
             android:maxHeight="5dp"
             android:minHeight="5dp"
-            android:splitTrack="false"
-    />
+            android:splitTrack="false" />
+
     <include
             android:id="@+id/ly_tv_progress_right"
-            layout="@layout/layout_tv_progress"
-            />
+            layout="@layout/layout_tv_progress" />
+
     <ImageView
             android:id="@+id/img_video_volume_open"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_margin="@dimen/view_margin_small"
-            android:src="@mipmap/ic_video_volume_open"/>
+            android:src="@mipmap/ic_video_volume_open" />
+
     <ImageView
             android:id="@+id/img_screen_change"
-            android:layout_marginLeft="@dimen/view_margin_small"
-            android:layout_marginRight="@dimen/view_margin_big"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@mipmap/ic_video_arrawsalt"/>
+            android:layout_marginLeft="@dimen/view_margin_small"
+            android:layout_marginRight="@dimen/view_margin_big"
+            android:src="@mipmap/ic_video_arrawsalt" />
 </LinearLayout>

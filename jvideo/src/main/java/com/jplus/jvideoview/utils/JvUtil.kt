@@ -4,15 +4,11 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.media.MediaMetadataRetriever
 import android.provider.Settings
-import android.util.Log
-import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.LinearLayout
-import com.jplus.jvideoview.jvideo.JvCommon
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.ceil
-import kotlin.math.floor
 import kotlin.math.max
 
 /**
@@ -28,7 +24,7 @@ object JvUtil {
             return if(progress==null) {
                 "00:00"
             }else {
-                val simpleDate = SimpleDateFormat("mm:ss", Locale.CHINA)
+                val simpleDate = SimpleDateFormat("HH:mm:ss", Locale.CHINA)
                 simpleDate.timeZone = TimeZone.getTimeZone("GMT+00:00")
                 simpleDate.format(Date(progress))
             }
