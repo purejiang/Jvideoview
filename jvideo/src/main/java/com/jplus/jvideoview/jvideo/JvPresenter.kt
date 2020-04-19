@@ -475,7 +475,10 @@ class JvPresenter(
             mView.preparedVideo(getVideoTimeStr(null), it.duration.toInt())
         }
         showControlUi(false)
-        startPlay(mVideo?.progress?:0L)
+        //如果有初始播放进度的话就直接播放
+        mVideo?.progress?.let{
+            if(it!=0L) startPlay(it)
+        }
     }
 
     override fun resetPlay() {
@@ -676,6 +679,11 @@ class JvPresenter(
         }
     }
 
+    override fun onBackProcess() {
+        if(mPlayMode==PlayMode.MODE_FULL_SCREEN) {
+            exitMode(true, true)
+        }
+    }
     override fun switchSpecialMode(switchMode: Int, isRotateScreen: Boolean) {
         Log.d(JvCommon.TAG, "playMode$mPlayMode")
         when (mPlayMode) {
@@ -695,6 +703,7 @@ class JvPresenter(
             }
         }
     }
+
 
     private fun entryFullScreen() {
         // 隐藏ActionBar、状态栏
@@ -745,7 +754,7 @@ class JvPresenter(
     }
 
     @SuppressLint("SourceLockedOrientationActivity")
-    override fun exitMode(isBackNormal: Boolean, isRotateScreen: Boolean) {
+    override fun  exitMode(isBackNormal: Boolean, isRotateScreen: Boolean) {
         Log.d(JvCommon.TAG, "exitMode")
         if (getPlayMode() != PlayMode.MODE_NORMAL && isBackNormal) {
             mActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT

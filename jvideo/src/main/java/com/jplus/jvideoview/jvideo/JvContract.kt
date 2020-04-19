@@ -270,6 +270,10 @@ interface JvContract {
          */
         fun onResume()
         /**
+         * 按退出按钮时的逻辑
+         */
+        fun onBackProcess()
+        /**
          * 屏幕旋转处理
          */
         fun onConfigChanged(newConfig: Configuration)

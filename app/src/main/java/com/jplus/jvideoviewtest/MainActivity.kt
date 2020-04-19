@@ -23,6 +23,7 @@ class MainActivity : AppCompatActivity() {
         urls.split(s1).forEach { it1 ->
             Log.d("pipa", "split:" + it1)
             list.add(Video("视频$id",it1.replace("\n| ", ""),55306L))
+            id++
         }
 
         mController = JvController(this, jv_video_main2, object :JvController.JvCallBack{
