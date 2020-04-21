@@ -22,6 +22,11 @@ interface JvContract {
          */
         fun setTitle(title:String)
         /**
+         * 显示系统时间
+         * @param isShow 是否显示
+         */
+        fun showSysTime(isShow:Boolean)
+        /**
          * 开启播放器loading
          * @param text 提示文字
          */
@@ -145,6 +150,7 @@ interface JvContract {
          */
         fun hideAdjustUi()
     }
+
     interface Presenter:BasePresenter {
         /**
          * 切换播放引擎
@@ -156,6 +162,17 @@ interface JvContract {
          * @param isSupport 是否支持切换
          */
         fun isSupportPlayEngine(isSupport:Boolean)
+        /**
+         * 是否支持显示实时网速
+         * @param isShow 是否显示实时网速
+         * @param frequency 显示频率
+         */
+        fun isShowSpeed(isShow:Boolean, frequency:Long = 2000L)
+        /**
+         * 是否支持显示系统时间
+         * @param isShow 是否显示系统时间
+         */
+        fun isShowSysTime(isShow:Boolean)
         /**
          * 播放控制
          */

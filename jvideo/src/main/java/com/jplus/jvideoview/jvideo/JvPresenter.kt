@@ -22,6 +22,7 @@ import com.jplus.jvideoview.common.JvConstant.*
 import com.jplus.jvideoview.entity.Video
 import com.jplus.jvideoview.utils.JvUtil
 import com.jplus.jvideoview.utils.JvUtil.dt2progress
+import com.jplus.jvideoview.utils.NetWorkSpeedHandler
 import tv.danmaku.ijk.media.player.AndroidMediaPlayer
 import tv.danmaku.ijk.media.player.IMediaPlayer
 import tv.danmaku.ijk.media.player.IjkMediaPlayer
@@ -87,6 +88,10 @@ class JvPresenter(
     private var mIsVolumeMute = false
     //是否强制翻转屏幕
     private var mIsForceScreen = false
+    //是否显示系统时间
+    private var mIsShowSysTime = false
+    //网速获取
+    private var mNetWorkSpeedHandler:NetWorkSpeedHandler?=null
 
     private var mJvCallBack: VideoPlayCallBack? = null
 
@@ -108,6 +113,8 @@ class JvPresenter(
     init {
         mView.setPresenter(this)
         mView.setOnTouchListener { _, _ -> true }
+        //默认显示网速
+        isShowSpeed(true, 2000L)
         //保存普通状态下的布局参数
         Log.d(JvCommon.TAG, "orientation:" + mActivity.requestedOrientation)
     }
@@ -370,24 +377,37 @@ class JvPresenter(
             } else {
                 return
             }
+            //缓冲开始时显示网速
+            mNetWorkSpeedHandler?.bindHandler(object : NetWorkSpeedHandler.OnNetWorkSpeedListener {
+                override fun netWorkSpeed(speed: String) {
+                    mView.showNetSpeed("$speed/s")
+                }
+            })
+    }
+
+    override fun isShowSpeed(isShow: Boolean, frequency: Long) {
+        if(isShow) {
+            if (mNetWorkSpeedHandler == null) {
+                //网速获取器
+                mNetWorkSpeedHandler = NetWorkSpeedHandler(mActivity, frequency)
+            }
+        }else{
+            mNetWorkSpeedHandler= null
+        }
     }
 
     private fun seekCompleted(position: Long) {
         Log.d(JvCommon.TAG, "seekCompleted")
         closeLoading("seek完成", 5)
+        //缓冲结束解绑网速获取器
+        mNetWorkSpeedHandler?.unbindHandler()
     }
 
     private fun buffering(percent: Int) {
-//        Log.d(JvCommon.TAG, "buffering$percent")
         if (percent != 0) {
             mBufferPercent = percent
         }
         mView.showBuffering(percent)
-        mPlayer.let {
-            if (it is IjkMediaPlayer) {
-                mView.showNetSpeed("" + it.tcpSpeed / 1024 + "K/s")//缓冲时显示网速
-            }
-        }
     }
 
     private fun bufferEnd() {
@@ -399,16 +419,18 @@ class JvPresenter(
             pausePlay()
         }
         closeLoading("缓冲完成", 3)
+        //缓冲结束解绑网速获取器
+        mNetWorkSpeedHandler?.unbindHandler()
     }
 
     override fun seekCompletePlay(position: Long) {
         Log.d(JvCommon.TAG, "seekToPlay:$position")
         mPlayer.let {
             if (mPlayState == PlayState.STATE_PAUSED || mPlayState == PlayState.STATE_BUFFERING_PAUSED) {
-                soughtTo(position.toLong())
+                soughtTo(position)
                 pausePlay()
             } else if (mPlayState == PlayState.STATE_PLAYING || mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
-                soughtTo(position.toLong())
+                soughtTo(position)
                 continuePlay()
             } else if (mPlayState == PlayState.STATE_PREPARED) {
                 startPlay(position)
@@ -429,6 +451,12 @@ class JvPresenter(
         //loading
         showLoading("seek中....", 5)
         mPlayer.seekTo(position)
+        //缓冲开始时显示网速
+        mNetWorkSpeedHandler?.bindHandler(object :NetWorkSpeedHandler.OnNetWorkSpeedListener{
+            override fun netWorkSpeed(speed: String) {
+                mView.showNetSpeed("$speed/s")
+            }
+        })
     }
 
     //暂停播放
@@ -706,6 +734,9 @@ class JvPresenter(
 
 
     private fun entryFullScreen() {
+        if(mIsShowSysTime){
+            mView.showSysTime(true)
+        }
         // 隐藏ActionBar、状态栏
         mActivity.actionBar?.hide()
 
@@ -835,6 +866,10 @@ class JvPresenter(
         } else {
             Log.e(JvCommon.TAG, "loading- close[$content, $loadingNum] is not exist.")
         }
+    }
+
+    override fun isShowSysTime(isShow:Boolean){
+        mIsShowSysTime = isShow
     }
 
     override fun textureReady(surface: SurfaceTexture, textureView: TextureView) {

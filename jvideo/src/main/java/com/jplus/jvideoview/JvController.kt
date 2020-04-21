@@ -48,6 +48,14 @@ class JvController(activity: Activity, jvView: JvView, callback: JvCallBack) {
         return presenter?.getPosition()
     }
 
+    fun supportShowSpeed(){
+        presenter?.isShowSpeed(true)
+    }
+
+    fun supportShowSysTime(isShow:Boolean){
+        presenter?.isShowSpeed(isShow)
+    }
+
     //设置播放引擎
     fun setPlayBackEngine(playBackEngine: Int) {
         mPlayBackEngine = playBackEngine
@@ -109,15 +117,4 @@ class JvController(activity: Activity, jvView: JvView, callback: JvCallBack) {
          */
         fun endPlay()
     }
-//    companion object {
-//        private var INSTANCE: JvController? = null
-//
-//        fun getInstance(activity: Activity, jvView: JvView): JvController {
-//            return INSTANCE ?: JvController(activity,jvView)
-//                .apply { INSTANCE = this }
-//        }
-//        fun destroyInstance() {
-//            INSTANCE = null
-//        }
-//    }
 }

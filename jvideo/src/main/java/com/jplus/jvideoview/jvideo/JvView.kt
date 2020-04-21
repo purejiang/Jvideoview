@@ -329,6 +329,18 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
 //        }
     }
 
+    override fun showSysTime(isShow:Boolean) {
+        if(isShow) {
+            if (tc_video_sys_time.visibility == VISIBLE) {
+                tc_video_sys_time.visibility = GONE
+            }
+        }else{
+            if (tc_video_sys_time.visibility == GONE) {
+                tc_video_sys_time.visibility = VISIBLE
+            }
+        }
+    }
+
     override fun closeLoading(text: String) {
         if (ly_video_loading.visibility == VISIBLE) {
             ly_video_loading.visibility = GONE

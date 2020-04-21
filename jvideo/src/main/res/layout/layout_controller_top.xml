@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
         android:id="@+id/ly_video_title"
         android:layout_width="match_parent"
         android:layout_height="@dimen/controller_height"
@@ -15,7 +15,6 @@
             android:background="@color/video_transparent_bg"
             android:src="@mipmap/ic_video_back"
             android:visibility="gone" />
-
     <TextView
             android:id="@+id/tv_video_title"
             android:layout_width="wrap_content"
@@ -24,5 +23,15 @@
             android:text="标题"
             android:textColor="@color/video_text_color"
             android:textSize="@dimen/video_title_size_tv" />
+    <TextClock
+            android:id="@+id/tc_video_sys_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="@dimen/view_margin_normal"
+            android:format24Hour="HH:mm"
+            android:layout_alignParentEnd="true"
+            android:visibility="gone"
+            android:textColor="@color/video_text_color"
+            android:textSize="@dimen/video_title_size_tv" />
 
-</LinearLayout>
+</RelativeLayout>
