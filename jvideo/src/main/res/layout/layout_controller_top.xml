@@ -21,6 +21,7 @@
             android:layout_height="wrap_content"
             android:layout_margin="@dimen/view_margin_normal"
             android:text="标题"
+            android:layout_toRightOf="@+id/imb_video_back"
             android:textColor="@color/video_text_color"
             android:textSize="@dimen/video_title_size_tv" />
     <TextClock

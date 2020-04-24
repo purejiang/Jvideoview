@@ -18,7 +18,8 @@ import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import com.jplus.jvideoview.R
-import com.jplus.jvideoview.common.JvConstant.*
+import com.jplus.jvideoview.common.JvConstant.PlayForm
+import com.jplus.jvideoview.common.JvConstant.SwitchMode
 import kotlinx.android.synthetic.main.layout_control_bottom.view.*
 import kotlinx.android.synthetic.main.layout_control_center.view.*
 import kotlinx.android.synthetic.main.layout_control_slide.view.*
@@ -331,12 +332,12 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
 
     override fun showSysTime(isShow:Boolean) {
         if(isShow) {
-            if (tc_video_sys_time.visibility == VISIBLE) {
-                tc_video_sys_time.visibility = GONE
-            }
-        }else{
             if (tc_video_sys_time.visibility == GONE) {
                 tc_video_sys_time.visibility = VISIBLE
+            }
+        }else{
+            if (tc_video_sys_time.visibility == VISIBLE) {
+                tc_video_sys_time.visibility = GONE
             }
         }
     }

@@ -114,7 +114,7 @@ class JvPresenter(
         mView.setPresenter(this)
         mView.setOnTouchListener { _, _ -> true }
         //默认显示网速
-        isShowSpeed(true, 2000L)
+        isShowSpeed(false, 2000L)
         //保存普通状态下的布局参数
         Log.d(JvCommon.TAG, "orientation:" + mActivity.requestedOrientation)
     }
@@ -767,6 +767,9 @@ class JvPresenter(
     }
 
     private fun entryPortraitScreen() {
+        if(mIsShowSysTime){
+            mView.showSysTime(false)
+        }
         //进入普通模式
         mDefaultParams.let {
             mPlayMode = PlayMode.MODE_NORMAL

@@ -40,7 +40,7 @@ class MainActivity : AppCompatActivity() {
             }
 
         })
-
+mController?.supportShowSysTime(true)
     }
 
     override fun onStart() {

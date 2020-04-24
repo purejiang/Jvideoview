@@ -53,7 +53,7 @@ class JvController(activity: Activity, jvView: JvView, callback: JvCallBack) {
     }
 
     fun supportShowSysTime(isShow:Boolean){
-        presenter?.isShowSpeed(isShow)
+        presenter?.isShowSysTime(isShow)
     }
 
     //设置播放引擎
