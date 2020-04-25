@@ -196,12 +196,13 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
     }
 
     override fun setVolumeMute(isMute: Boolean) {
-        if(isMute){
+        if (isMute) {
             img_video_volume_open.setImageResource(R.mipmap.ic_video_volume_close)
-        }else{
+        } else {
             img_video_volume_open.setImageResource(R.mipmap.ic_video_volume_open)
         }
     }
+
     override fun setThumbnail(bitmap: Bitmap?) {
         rl_controller_layout.background = BitmapDrawable(null, bitmap)
     }
@@ -221,11 +222,9 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
         tv_video_title.text = title
     }
 
-    override fun showMessagePrompt(message: String) {
-        if (ly_video_hint.visibility == GONE) {
-            ly_video_hint.visibility = VISIBLE
-        }
+    override fun showMessagePrompt(message: String, isShow: Boolean) {
         tv_video_refresh.text = "重新播放"
+        tv_video_refresh.visibility = if(isShow) VISIBLE else GONE
         tv_video_hint1.text = message
     }
 
@@ -316,10 +315,9 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
     }
 
     override fun showLoading(text: String) {
-        if (ly_video_loading.visibility == GONE) {
-            tv_video_loading.text = text
-            ly_video_loading.visibility = VISIBLE
-        }
+        Log.d("pipa", "showLoading")
+        tv_video_loading.text = text
+        ly_video_loading.visibility = VISIBLE
         //中间播放按钮的ui是否显示
         if (ly_video_play.visibility == VISIBLE) {
             closeCenterControlView()
@@ -330,22 +328,13 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
 //        }
     }
 
-    override fun showSysTime(isShow:Boolean) {
-        if(isShow) {
-            if (tc_video_sys_time.visibility == GONE) {
-                tc_video_sys_time.visibility = VISIBLE
-            }
-        }else{
-            if (tc_video_sys_time.visibility == VISIBLE) {
-                tc_video_sys_time.visibility = GONE
-            }
-        }
+    override fun showSysTime(isShow: Boolean) {
+        tc_video_sys_time.visibility =  if (isShow) VISIBLE else GONE
     }
 
     override fun closeLoading(text: String) {
-        if (ly_video_loading.visibility == VISIBLE) {
-            ly_video_loading.visibility = GONE
-        }
+        Log.d("pipa", "closeLoading")
+        ly_video_loading.visibility = GONE
         if (mCenterIsShow) {
             if (ly_video_play.visibility == GONE) {
                 showCenterControlView()
@@ -355,92 +344,78 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
     }
 
     private fun showBottomLineUi() {
-        if (ly_video_line.visibility == GONE) {
-            ly_video_line.visibility = VISIBLE
-        }
+        Log.d("pipa", "showBottomLineUi")
+        ly_video_line.visibility = VISIBLE
     }
 
     private fun hideBottomLineUi() {
-        if (ly_video_line.visibility == VISIBLE) {
-            ly_video_line.visibility = GONE
-        }
+        Log.d("pipa", "hideBottomLineUi")
+        ly_video_line.visibility = GONE
     }
 
     private fun closeBottomControlUi() {
-        if (ly_video_bottom_controller.visibility == VISIBLE) {
-            ly_video_bottom_controller.visibility = GONE
-        }
+        Log.d("pipa", "closeBottomControlUi")
+        ly_video_bottom_controller.visibility = GONE
     }
 
     private fun showBottomControlUi() {
-        if (ly_video_bottom_controller.visibility == GONE) {
-            ly_video_bottom_controller.visibility = VISIBLE
-        }
+        Log.d("pipa", "showBottomControlUi")
+        ly_video_bottom_controller.visibility = VISIBLE
     }
 
     private fun closeTopControlUi() {
-        if (ly_video_title.visibility == VISIBLE) {
-            ly_video_title.visibility = GONE
-        }
+        Log.d("pipa", "closeTopControlUi")
+        ly_video_title.visibility = GONE
     }
 
     private fun showTopControlUi() {
-        if (ly_video_title.visibility == GONE) {
-            ly_video_title.visibility = VISIBLE
-        }
+        Log.d("pipa", "showTopControlUi")
+        ly_video_title.visibility = VISIBLE
     }
 
     override fun closeCenterControlView() {
-        if (ly_video_play.visibility == VISIBLE) {
-            ly_video_play.visibility = GONE
-        }
+        Log.d("pipa", "closeCenterControlView")
+        ly_video_play.visibility = GONE
     }
 
     override fun showCenterControlView() {
-        if (ly_video_play.visibility == GONE) {
-            ly_video_play.visibility = VISIBLE
-        }
+        Log.d("pipa", "showCenterControlView")
+        ly_video_play.visibility = VISIBLE
     }
 
     private fun showTopAdjustUi(text: String) {
-        if (ly_video_slide.visibility == GONE) {
-            ly_video_slide.visibility = VISIBLE
-        }
+        Log.d("pipa", "showTopAdjustUi")
+        ly_video_slide.visibility = VISIBLE
         tv_slide_top.text = text
     }
 
     override fun showCenterHintView() {
-        if (ly_video_hint.visibility == GONE) {
-            ly_video_hint.visibility = VISIBLE
-        }
+        Log.d("pipa", "showCenterHintView")
+        ly_video_hint.visibility = VISIBLE
     }
 
     override fun closeCenterHintView() {
-        if (ly_video_hint.visibility == VISIBLE) {
-            ly_video_hint.visibility = GONE
-        }
+        Log.d("pipa", "closeCenterHintView")
+        ly_video_hint.visibility = GONE
     }
 
     override fun hideAdjustUi() {
-        if (ly_video_slide.visibility == VISIBLE) {
-            ly_video_slide.visibility = GONE
-        }
+        Log.d("pipa", "hideAdjustUi")
+        ly_video_slide.visibility = GONE
     }
 
     override fun entryFullMode() {
+        Log.d("pipa", "entryFullMode")
         img_screen_change.setImageResource(R.mipmap.ic_video_shrink)
         //显示返回键
-        if (imb_video_back.visibility == GONE) {
-            imb_video_back.visibility = VISIBLE
-        }
+        imb_video_back.visibility = VISIBLE
     }
 
     override fun exitMode() {
+        Log.d("pipa", "exitMode")
         img_screen_change.setImageResource(R.mipmap.ic_video_arrawsalt)
         //隐藏返回键
-        if (imb_video_back.visibility == VISIBLE) {
-            imb_video_back.visibility = GONE
-        }
+        imb_video_back.visibility = GONE
     }
 
     override fun hideController() {

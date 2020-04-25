@@ -113,8 +113,9 @@ interface JvContract {
         /**
          * 显示提示消息
          * @param message 显示的内容
+         * @param isShow 是否显示重新播放按钮
          */
-        fun showMessagePrompt(message:String)
+        fun showMessagePrompt(message:String, isShow: Boolean)
         /**
          * 调节亮度
          * @param light 亮度
@@ -174,6 +175,12 @@ interface JvContract {
          */
         fun isShowSysTime(isShow:Boolean)
         /**
+         * 设置中间提示
+         * @param message 提示消息
+         * @param isShowReset 是否显示重新播放按钮
+         */
+        fun setMessagePromptInCenter(message:String, isShowReset:Boolean)
+        /**
          * 播放控制
          */
         fun controlPlay()
@@ -182,6 +189,7 @@ interface JvContract {
          * @param position 可选任意位置，默认为初始位置
          */
         fun startPlay(position: Long = 0)
+
         /**
          * 暂停播放
          */
@@ -245,7 +253,6 @@ interface JvContract {
          * @param playForm
          */
         fun setPlayForm(playForm:Int)
-
         /**
          * 幕布准备就绪
          * @param surface 表面

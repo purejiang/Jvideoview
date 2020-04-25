@@ -62,7 +62,7 @@ class JvPresenter(
     private var mPlayMode = PlayMode.MODE_NORMAL
     //初始音量
     private var mDefaultVolume = 0
-    //初始进度
+    //滑动初始进度
     private var mStartPosition = 0L
     //初始亮度
     private var mStartLight = 0
@@ -477,11 +477,6 @@ class JvPresenter(
         mView.pauseVideo()
     }
 
-    fun setMessagePrompt(message: String) {
-        mView.closeCenterControlView()
-        mView.closeLoading("所有的loading")
-        mView.showMessagePrompt(message)
-    }
 
     override fun completedPlay(videoUrl: String?) {
         //播放完成状态
@@ -517,6 +512,7 @@ class JvPresenter(
     }
 
     override fun reStartPlay() {
+        mView.closeCenterHintView()
         resetPlay()
         mJvCallBack?.let { call ->
             mVideo?.let{
@@ -528,7 +524,17 @@ class JvPresenter(
     override fun errorPlay(what: Int, extra: Int, message: String) {
         Log.d(JvCommon.TAG, "setOnErrorListener:$what,$message")
         mPlayState = PlayState.STATE_ERROR
-        mView.showMessagePrompt(message)
+        //播放错误时记录下时间点
+        mVideo?.progress = if(getPosition()!=0L){
+            getPosition()
+        }else{
+            if(mStartPosition!=0L){
+                mStartPosition
+            }else{
+                mPosition
+            }
+        }
+        setMessagePromptInCenter(message, true)
     }
 
     override fun onPause() {
@@ -586,6 +592,7 @@ class JvPresenter(
 
         override fun onSingleTapConfirmed(e: MotionEvent?): Boolean {
             Log.d(JvCommon.TAG, "onSingleTapConfirmed")
+            if (mPlayState==PlayState.STATE_ERROR) return true
             if (mCenterControlViewIsShow) hideControlUi() else showControlUi(true)
             return true
         }
@@ -709,7 +716,7 @@ class JvPresenter(
 
     override fun onBackProcess() {
         if(mPlayMode==PlayMode.MODE_FULL_SCREEN) {
-            exitMode(true, true)
+            exitMode(isBackNormal = true, isRotateScreen = true)
         }
     }
     override fun switchSpecialMode(switchMode: Int, isRotateScreen: Boolean) {
@@ -870,7 +877,11 @@ class JvPresenter(
             Log.e(JvCommon.TAG, "loading- close[$content, $loadingNum] is not exist.")
         }
     }
-
+    private fun closeAllLoading() {
+        mLoadingNums.clear()
+        mView.closeLoading("closeAll")
+        mIsLoading = false
+    }
     override fun isShowSysTime(isShow:Boolean){
         mIsShowSysTime = isShow
     }
@@ -940,6 +951,12 @@ class JvPresenter(
         mSurface = null
     }
 
+    override fun setMessagePromptInCenter(message: String, isShowReset: Boolean) {
+        mView.closeCenterControlView()
+        closeAllLoading()
+        mView.showCenterHintView()
+        mView.showMessagePrompt(message, isShowReset)
+    }
 
     /**
      * 滑动屏幕快进或者后退
