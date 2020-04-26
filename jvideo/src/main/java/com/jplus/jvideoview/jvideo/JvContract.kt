@@ -295,8 +295,9 @@ interface JvContract {
         fun onResume()
         /**
          * 按退出按钮时的逻辑
+         * @return 是否已消费
          */
-        fun onBackProcess()
+        fun onBackProcess():Boolean
         /**
          * 屏幕旋转处理
          */

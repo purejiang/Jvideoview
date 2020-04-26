@@ -22,11 +22,11 @@ class MainActivity : AppCompatActivity() {
         val list = mutableListOf<Video>()
         urls.split(s1).forEach { it1 ->
             Log.d("pipa", "split:" + it1)
-            list.add(Video("视频$id",it1.replace("\n| ", ""),55306L))
+            list.add(Video("视频$id", it1.replace("\n| ", ""), 55306L))
             id++
         }
 
-        mController = JvController(this, jv_video_main2, object :JvController.JvCallBack{
+        mController = JvController(this, jv_video_main2, object : JvController.JvCallBack {
             override fun initSuccess() {
                 mController?.playVideos(list)
             }
@@ -40,7 +40,7 @@ class MainActivity : AppCompatActivity() {
             }
 
         })
-mController?.supportShowSysTime(true)
+        mController?.supportShowSysTime(true)
     }
 
     override fun onStart() {
@@ -50,7 +50,7 @@ mController?.supportShowSysTime(true)
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-       mController?.onConfigChanged(newConfig)
+        mController?.onConfigChanged(newConfig)
     }
 
     override fun onResume() {
@@ -66,5 +66,9 @@ mController?.supportShowSysTime(true)
     override fun onDestroy() {
         super.onDestroy()
         mController?.destroy()
+    }
+
+    override fun onBackPressed() {
+        if (mController?.onBackProgress() == false) super.onBackPressed()
     }
 }

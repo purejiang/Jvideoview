@@ -56,6 +56,10 @@ class JvController(activity: Activity, jvView: JvView, callback: JvCallBack) {
         presenter?.isShowSysTime(isShow)
     }
 
+    fun onBackProgress():Boolean{
+        return presenter?.onBackProcess()?:false
+    }
+
     //设置播放引擎
     fun setPlayBackEngine(playBackEngine: Int) {
         mPlayBackEngine = playBackEngine

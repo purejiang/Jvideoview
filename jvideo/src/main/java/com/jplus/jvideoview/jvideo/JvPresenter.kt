@@ -294,7 +294,6 @@ class JvPresenter(
         Log.d(JvCommon.TAG, "entryVideo:$video")
         mVideo = video
         showLoading("视频预加载...", 4)
-
         //设置title
         mView.setTitle(if (video.name.isEmpty()) "未知视频" else video.name)
         mPlayer.let {
@@ -714,10 +713,12 @@ class JvPresenter(
         }
     }
 
-    override fun onBackProcess() {
+    override fun onBackProcess():Boolean {
         if(mPlayMode==PlayMode.MODE_FULL_SCREEN) {
             exitMode(isBackNormal = true, isRotateScreen = true)
+            return true
         }
+        return false
     }
     override fun switchSpecialMode(switchMode: Int, isRotateScreen: Boolean) {
         Log.d(JvCommon.TAG, "playMode$mPlayMode")
