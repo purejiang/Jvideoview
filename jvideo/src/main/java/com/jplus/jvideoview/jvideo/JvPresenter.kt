@@ -17,7 +17,6 @@ import android.util.Log
 import android.view.*
 import android.view.GestureDetector.SimpleOnGestureListener
 import android.widget.LinearLayout
-import com.jplus.jvideoview.JvController
 import com.jplus.jvideoview.common.JvConstant.*
 import com.jplus.jvideoview.entity.Video
 import com.jplus.jvideoview.utils.JvUtil
@@ -39,11 +38,7 @@ class JvPresenter(
     private val mActivity: Activity,
     //播放器view
     private val mView: JvView,
-    //默认params
-    private val mDefaultParams: ViewGroup.LayoutParams,
-    //播放器状态回调
-    private val mCallback: JvController.JvCallBack,
-    //默认播放引擎
+    //默认播放器内核
     private var mPlayer: IMediaPlayer
 ) :
     JvContract.Presenter {
@@ -90,10 +85,14 @@ class JvPresenter(
     private var mIsForceScreen = false
     //是否显示系统时间
     private var mIsShowSysTime = false
-    //网速获取
-    private var mNetWorkSpeedHandler:NetWorkSpeedHandler?=null
-
-    private var mJvCallBack: VideoPlayCallBack? = null
+    //网速获取器
+    private var mNetWorkSpeedHandler: NetWorkSpeedHandler? = null
+    //播放器状态回调
+    private var mJvListener: JvListener? = null
+    //是否自动播放
+    private var mIsAutoPlay = false
+    //默认params
+    private var mDefaultParams: ViewGroup.LayoutParams?=null
 
     private val mHandler by lazy {
         Handler()
@@ -111,23 +110,21 @@ class JvPresenter(
     }
 
     init {
+        mDefaultParams = mView.layoutParams
         mView.setPresenter(this)
         mView.setOnTouchListener { _, _ -> true }
         //默认显示网速
-        isShowSpeed(false, 2000L)
+        setIsSupShowSpeed(false, 2000L)
         //保存普通状态下的布局参数
         Log.d(JvCommon.TAG, "orientation:" + mActivity.requestedOrientation)
     }
 
-    override fun isSupportPlayEngine(isSupport: Boolean) {
-        mView.showSwitchEngine(isSupport)
-    }
 
     override fun switchPlayEngine(playerEngine: Int) {
         mPlayer = when (playerEngine) {
-            //使用ijkplayer播放引擎
+            //使用ijkplayer播放器内核
             PlayBackEngine.PLAYBACK_IJK_PLAYER -> IjkMediaPlayer()
-            //使用android自带的播放引擎
+            //使用android自带的播放器内核
             PlayBackEngine.PLAYBACK_MEDIA_PLAYER -> AndroidMediaPlayer()
             //使用exoplayer引擎
 //            PlayBackEngine.PLAYBACK_EXO_PLAYER ->Exo
@@ -243,7 +240,6 @@ class JvPresenter(
                     }
                     MediaPlayer.MEDIA_INFO_BUFFERING_START -> {
                         bufferStart()
-
                     }
                     IMediaPlayer.MEDIA_INFO_BUFFERING_END -> {
                         bufferEnd()
@@ -288,9 +284,15 @@ class JvPresenter(
             }
         }
     }
+    fun startVideo(video: Video) {
+        //播放视频
+        mSurface?.let {
+            loadVideo(it, video)
+        }
+    }
 
     //视频播放准备
-    private fun loadVideo(surface: Surface, video:Video) {
+    private fun loadVideo(surface: Surface, video: Video) {
         Log.d(JvCommon.TAG, "entryVideo:$video")
         mVideo = video
         showLoading("视频预加载...", 4)
@@ -319,16 +321,76 @@ class JvPresenter(
         }
     }
 
-    override fun controlPlay() {
-        when (mPlayState) {
-            PlayState.STATE_PLAYING, PlayState.STATE_BUFFERING_PLAYING -> pausePlay()
-            PlayState.STATE_PAUSED, PlayState.STATE_BUFFERING_PAUSED -> continuePlay()
-            PlayState.STATE_PREPARED -> startPlay(mVideo?.progress?:0L)
+    override fun setJvListener(listener: JvListener) {
+        mJvListener = listener
+    }
+
+    /*
+    设置区
+     */
+    override fun setIsSupShowSpeed(isShow: Boolean, frequency: Long) {
+        if (isShow) {
+            if (mNetWorkSpeedHandler == null) {
+                //网速获取器
+                mNetWorkSpeedHandler = NetWorkSpeedHandler(mActivity, frequency)
+            }
+        } else {
+            mNetWorkSpeedHandler = null
+        }
+    }
+
+    override fun setIsSupSysTime(isShow: Boolean) {
+        mIsShowSysTime = isShow
+    }
+
+    override fun setIsSupPlayEngine(isSupport: Boolean) {
+        mView.showSwitchEngine(isSupport)
+    }
+
+    override fun setIsSupAutoPlay(isAuto: Boolean) {
+        mIsAutoPlay = isAuto
+    }
+
+    override fun setPlayForm(playForm: Int) {
+        Log.d(JvCommon.TAG, "setPlayForm:$playForm")
+//        mPlayForm = playForm
+    }
+
+    /*
+    播放器状态区
+     */
+    override fun textureReady(surface: SurfaceTexture, textureView: TextureView) {
+        Log.d(JvCommon.TAG, "textureReady")
+        if (mSurface == null) {
+            mSurface = Surface(surface)
+        }
+        mTextureView = mTextureView ?: textureView
+        mPlayState = PlayState.STATE_PREPARING
+        mJvListener?.onInitSuccess()
+    }
+
+    override fun preparedPlay() {
+        mJvListener?.onPrepared()
+        //预加载完成状态
+        mPlayState = PlayState.STATE_PREPARED
+
+        closeLoading("预加载完成", 4)
+        Log.d(JvCommon.TAG, "setOnPreparedListener")
+        mPlayer.let {
+            mView.setOnTouchListener { _, _ -> false }
+            //预加载后先播放再暂停，1：防止播放错误-38(未开始就停止) 2：可以显示第一帧画面
+            mView.preparedVideo(getVideoTimeStr(null), it.duration.toInt())
+        }
+        showControlUi(false)
+        //如果开启自动播放的话就直接播放
+        mVideo?.progress?.let {
+            if (mIsAutoPlay) startPlay(it)
         }
     }
 
     //开始播放
     override fun startPlay(position: Long) {
+        mJvListener?.onStartPlay()
         if (mPlayState == PlayState.STATE_PREPARED) {
             Log.d(JvCommon.TAG, "startPlay:$position")
             mPlayer.let {
@@ -339,10 +401,26 @@ class JvPresenter(
             }
             mView.startVideo(position)
             runVideoTime()
-            mCallback.startPlay()
         }
     }
-
+    //暂停播放
+    override fun pausePlay() {
+        mJvListener?.onPausePlay()
+        Log.d(JvCommon.TAG, "pausePlay")
+        mPlayState =
+            if (mPlayState == PlayState.STATE_PLAYING || mPlayState == PlayState.STATE_PREPARED) {
+                PlayState.STATE_PAUSED
+            } else if (mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
+                PlayState.STATE_BUFFERING_PAUSED
+            } else {
+                return
+            }
+        mPlayer.pause()
+        stopVideoTime()
+        stopHideControlUi()
+        showControlUi(false)
+        mView.pauseVideo()
+    }
     override fun continuePlay() {
         Log.d(JvCommon.TAG, "continuePlay")
         when (mPlayState) {
@@ -361,65 +439,42 @@ class JvPresenter(
         mView.continueVideo()
         runVideoTime()
     }
+    override fun resetPlay() {
+        mJvListener?.onReset()
 
-    private fun bufferStart() {
-        //loading
-        showLoading("缓冲中....", 3)
-
-        Log.d(JvCommon.TAG, "bufferStart:state$mPlayState")
-        // MediaPlayer暂时不播放，以缓冲更多的数据
-        mPlayState =
-            if (mPlayState == PlayState.STATE_PAUSED) {
-                PlayState.STATE_BUFFERING_PAUSED
-            } else if (mPlayState == PlayState.STATE_PLAYING) {
-                PlayState.STATE_BUFFERING_PLAYING
-            } else {
-                return
-            }
-            //缓冲开始时显示网速
-            mNetWorkSpeedHandler?.bindHandler(object : NetWorkSpeedHandler.OnNetWorkSpeedListener {
-                override fun netWorkSpeed(speed: String) {
-                    mView.showNetSpeed("$speed/s")
-                }
-            })
+        mPlayer.reset()
+        mView.reset()
+        mPlayState = PlayState.STATE_IDLE
+        mView.setOnTouchListener { _, _ -> true }
     }
 
-    override fun isShowSpeed(isShow: Boolean, frequency: Long) {
-        if(isShow) {
-            if (mNetWorkSpeedHandler == null) {
-                //网速获取器
-                mNetWorkSpeedHandler = NetWorkSpeedHandler(mActivity, frequency)
-            }
-        }else{
-            mNetWorkSpeedHandler= null
+    override fun reStartPlay() {
+        mJvListener?.onReStart()
+
+        mView.closeCenterHintView()
+        resetPlay()
+        mVideo?.let {
+            startVideo(it)
         }
     }
 
     private fun seekCompleted(position: Long) {
         Log.d(JvCommon.TAG, "seekCompleted")
         closeLoading("seek完成", 5)
-        //缓冲结束解绑网速获取器
+        //缓冲结束解绑实时网速获取器
         mNetWorkSpeedHandler?.unbindHandler()
     }
 
-    private fun buffering(percent: Int) {
-        if (percent != 0) {
-            mBufferPercent = percent
-        }
-        mView.showBuffering(percent)
-    }
-
-    private fun bufferEnd() {
-        Log.d(JvCommon.TAG, "buffered")
-        // 填充缓冲区后，MediaPlayer恢复播放/暂停
-        if (mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
-            continuePlay()
-        } else if (mPlayState == PlayState.STATE_BUFFERING_PAUSED) {
-            pausePlay()
-        }
-        closeLoading("缓冲完成", 3)
-        //缓冲结束解绑网速获取器
-        mNetWorkSpeedHandler?.unbindHandler()
+    private fun soughtTo(position: Long) {
+        //loading
+        showLoading("seek中....", 5)
+        mPlayer.seekTo(position)
+        //缓冲开始时显示网速
+        mNetWorkSpeedHandler?.bindHandler(object : NetWorkSpeedHandler.OnNetWorkSpeedListener {
+            override fun netWorkSpeed(speed: String) {
+                mView.showNetSpeed("$speed/s")
+            }
+        })
     }
 
     override fun seekCompletePlay(position: Long) {
@@ -442,127 +497,130 @@ class JvPresenter(
         mView.seekingVideo(getVideoTimeStr(position), position, isSlide)
     }
 
-    private fun notSeek() {
-
-    }
-
-    private fun soughtTo(position: Long) {
+    private fun bufferStart() {
         //loading
-        showLoading("seek中....", 5)
-        mPlayer.seekTo(position)
-        //缓冲开始时显示网速
-        mNetWorkSpeedHandler?.bindHandler(object :NetWorkSpeedHandler.OnNetWorkSpeedListener{
+        showLoading("缓冲中....", 3)
+
+        Log.d(JvCommon.TAG, "bufferStart:state$mPlayState")
+        // MediaPlayer暂时不播放，以缓冲更多的数据
+        mPlayState =
+            when (mPlayState) {
+                PlayState.STATE_PAUSED -> {
+                    PlayState.STATE_BUFFERING_PAUSED
+                }
+                PlayState.STATE_PLAYING -> {
+                    PlayState.STATE_BUFFERING_PLAYING
+                }
+                else -> {
+                    return
+                }
+            }
+        //缓冲开始时绑定实时网速获取器
+        mNetWorkSpeedHandler?.bindHandler(object : NetWorkSpeedHandler.OnNetWorkSpeedListener {
             override fun netWorkSpeed(speed: String) {
                 mView.showNetSpeed("$speed/s")
             }
         })
     }
 
-    //暂停播放
-    override fun pausePlay() {
-        Log.d(JvCommon.TAG, "pausePlay")
-        mPlayState =
-            if (mPlayState == PlayState.STATE_PLAYING || mPlayState == PlayState.STATE_PREPARED) {
-                PlayState.STATE_PAUSED
-            } else if (mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
-                PlayState.STATE_BUFFERING_PAUSED
-            } else {
-                return
-            }
-        mPlayer.pause()
-        stopVideoTime()
-        stopHideControlUi()
-        showControlUi(false)
-        mView.pauseVideo()
+    private fun buffering(percent: Int) {
+        mJvListener?.onBuffering()
+        if (percent != 0) {
+            mBufferPercent = percent
+        }
+        mView.showBuffering(percent)
     }
 
+    private fun bufferEnd() {
+        Log.d(JvCommon.TAG, "buffered")
+        // 填充缓冲区后，MediaPlayer恢复播放/暂停
+        if (mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
+            continuePlay()
+        } else if (mPlayState == PlayState.STATE_BUFFERING_PAUSED) {
+            pausePlay()
+        }
+        closeLoading("缓冲完成", 3)
+        //缓冲结束解绑网速获取器
+        mNetWorkSpeedHandler?.unbindHandler()
+    }
 
     override fun completedPlay(videoUrl: String?) {
+        mJvListener?.onCompleted()
         //播放完成状态
         mPlayState = PlayState.STATE_COMPLETED
         Log.d(JvCommon.TAG, "completedPlay")
-        mCallback.endPlay()
-        mJvCallBack?.videoCompleted()
     }
-
-    override fun preparedPlay() {
-        //预加载完成状态
-        mPlayState = PlayState.STATE_PREPARED
-
-        closeLoading("预加载完成", 4)
-        Log.d(JvCommon.TAG, "setOnPreparedListener")
-        mPlayer.let {
-            mView.setOnTouchListener { _, _ -> false }
-            //预加载后先播放再暂停，1：防止播放错误-38(未开始就停止) 2：可以显示第一帧画面
-            mView.preparedVideo(getVideoTimeStr(null), it.duration.toInt())
-        }
-        showControlUi(false)
-        //如果有初始播放进度的话就直接播放
-        mVideo?.progress?.let{
-            if(it!=0L) startPlay(it)
-        }
-    }
-
-    override fun resetPlay() {
-        mPlayer.reset()
-        mView.reset()
-        mPlayState = PlayState.STATE_IDLE
-        mView.setOnTouchListener { _, _ -> true }
-    }
-
-    override fun reStartPlay() {
-        mView.closeCenterHintView()
-        resetPlay()
-        mJvCallBack?.let { call ->
-            mVideo?.let{
-                startVideo(it, call)
-            }
-        }
-    }
-
     override fun errorPlay(what: Int, extra: Int, message: String) {
+        mJvListener?.onError()
+
         Log.d(JvCommon.TAG, "setOnErrorListener:$what,$message")
         mPlayState = PlayState.STATE_ERROR
         //播放错误时记录下时间点
-        mVideo?.progress = if(getPosition()!=0L){
+        mVideo?.progress = if (getPosition() != 0L) {
             getPosition()
-        }else{
-            if(mStartPosition!=0L){
+        } else {
+            if (mStartPosition != 0L) {
                 mStartPosition
-            }else{
+            } else {
                 mPosition
             }
         }
         setMessagePromptInCenter(message, true)
     }
 
-    override fun onPause() {
-        //取消屏幕常亮
-        mActivity.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
-        mIsBackContinue =
-            if (mPlayState == PlayState.STATE_PAUSED || mPlayState == PlayState.STATE_BUFFERING_PAUSED) {
-                false
-            } else if (mPlayState == PlayState.STATE_PLAYING || mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
-                true
-            } else {
-                //播放器初始化前、初始化中、初始化后或者播放完成、播放错误时中不做任何操作
-                mIsBackContinue = null
-                return
-            }
-        pausePlay()
+    override fun releasePlay(destroyUi: Boolean) {
+        mSurface?.release()
+        mHandler.removeCallbacks(mRunnable)
+        mPlayer.stop()
+        mPlayer.release()//调用release()方法来释放资源，资源可能包括硬件加速组件的单态固件
+        mSurface = null
     }
 
-    override fun onResume() {
-        //设置屏幕常亮
-        mActivity.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        //播放器初始化中不做任何操作
-        mIsBackContinue?.let {
-            if (it) continuePlay() else pausePlay()
+    /*
+信息获取方法区
+ */
+    override fun getPlayState(): Int {
+        return mPlayState
+    }
+
+    override fun getPlayMode(): Int {
+        return mPlayMode
+    }
+
+    override fun getLight(isMax: Boolean): Int {
+        var nowBrightnessValue = 0
+        try {
+            nowBrightnessValue =
+                Settings.System.getInt(mActivity.contentResolver, Settings.System.SCREEN_BRIGHTNESS)
+        } catch (e: Exception) {
+
         }
+        return nowBrightnessValue
     }
 
-    //====================================================================================
+    override fun getVolume(isMax: Boolean): Int {
+        return if (isMax) {
+            mAudioManager?.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+        } else {
+            mAudioManager?.getStreamVolume(AudioManager.STREAM_MUSIC)
+        } ?: 0
+    }
+
+    override fun getDuration(): Long {
+        return mPlayer.duration
+    }
+
+    override fun getPosition(): Long {
+        return mPlayer.currentPosition
+    }
+
+    override fun getBufferPercent(): Int {
+        return mBufferPercent
+    }
+
+    /*
+    播放器参数调节方法区
+     */
     // 1.创建一个手势监听回调
     private val listener: SimpleOnGestureListener = object : SimpleOnGestureListener() {
         override fun onDown(e: MotionEvent): Boolean {
@@ -591,7 +649,7 @@ class JvPresenter(
 
         override fun onSingleTapConfirmed(e: MotionEvent?): Boolean {
             Log.d(JvCommon.TAG, "onSingleTapConfirmed")
-            if (mPlayState==PlayState.STATE_ERROR) return true
+            if (mPlayState == PlayState.STATE_ERROR) return true
             if (mCenterControlViewIsShow) hideControlUi() else showControlUi(true)
             return true
         }
@@ -664,22 +722,6 @@ class JvPresenter(
         }
     }
 
-    override fun setPlayForm(playForm: Int) {
-        Log.d(JvCommon.TAG, "setPlayForm:$playForm")
-//        mPlayForm = playForm
-    }
-
-    override fun switchVolumeMute() {
-        //设置静音和恢复静音前音量
-        mIsVolumeMute = !mIsVolumeMute
-        mAudioManager?.setStreamVolume(
-            AudioManager.STREAM_MUSIC,
-            if (mIsVolumeMute) 0 else mVolume,
-            0
-        )
-        mView.setVolumeMute(mIsVolumeMute)
-    }
-
     private fun endAdjust() {
         //调整结束后保存结果
         Log.d(JvCommon.TAG, "endAdjust")
@@ -702,263 +744,16 @@ class JvPresenter(
         mAdjustWay = -1
     }
 
-    override fun onConfigChanged(newConfig: Configuration) {
-        if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) {
-            entryPortraitScreen()
-            Log.d(JvCommon.TAG, "Configuration.ORIENTATION_PORTRAIT")
-        }
-        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            entryFullScreen()
-            Log.d(JvCommon.TAG, "Configuration.ORIENTATION_LANDSCAPE")
-        }
-    }
-
-    override fun onBackProcess():Boolean {
-        if(mPlayMode==PlayMode.MODE_FULL_SCREEN) {
-            exitMode(isBackNormal = true, isRotateScreen = true)
-            return true
-        }
-        return false
-    }
-    override fun switchSpecialMode(switchMode: Int, isRotateScreen: Boolean) {
-        Log.d(JvCommon.TAG, "playMode$mPlayMode")
-        when (mPlayMode) {
-            PlayMode.MODE_NORMAL -> {
-                if (switchMode == SwitchMode.SWITCH_TO_FULL) {
-                    //进入全屏模式（在dialog的模式下似乎会有适配问题）
-                    mPlayMode = PlayMode.MODE_FULL_SCREEN
-                    //屏幕旋转时指定带重力感应的屏幕方向不然会转不过来...，但是没有开启旋转的情况下要强制转屏来达到全屏效果
-                    mActivity.requestedOrientation =
-                        ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-                    //屏幕方向改为未知，保证下次能够旋转屏幕
-//                    mActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-                }
-            }
-            PlayMode.MODE_FULL_SCREEN -> {
-                exitMode(true, isRotateScreen)
-            }
-        }
-    }
-
-
-    private fun entryFullScreen() {
-        if(mIsShowSysTime){
-            mView.showSysTime(true)
-        }
-        // 隐藏ActionBar、状态栏
-        mActivity.actionBar?.hide()
-
-        mActivity.window.setFlags(
-            WindowManager.LayoutParams.FLAG_FULLSCREEN,
-            WindowManager.LayoutParams.FLAG_FULLSCREEN
+    override fun switchVolumeMute() {
+        //设置静音和恢复静音前音量
+        mIsVolumeMute = !mIsVolumeMute
+        mAudioManager?.setStreamVolume(
+            AudioManager.STREAM_MUSIC,
+            if (mIsVolumeMute) 0 else mVolume,
+            0
         )
-        //设置为充满父布局
-        val params = LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.MATCH_PARENT
-        )
-        //隐藏虚拟按键，并且全屏
-        mActivity.window.decorView.systemUiVisibility =
-            View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or View.SYSTEM_UI_FLAG_FULLSCREEN
-        mView.layoutParams = params
-
-        //全屏直接使用手机大小,此时未翻转的话，高宽对调
-        val phoneWidth = JvUtil.getPhoneDisplayWidth(mActivity)
-        val phoneHeight = JvUtil.getPhoneDisplayHeight(mActivity)
-        mTextureView?.layoutParams = JvUtil.changeVideoSize(
-            if (phoneHeight > phoneWidth) phoneHeight else phoneWidth,
-            if (phoneHeight > phoneWidth) phoneWidth else phoneHeight,
-            mPlayer.videoWidth,
-            mPlayer.videoHeight
-        )
-        mView.entryFullMode()
+        mView.setVolumeMute(mIsVolumeMute)
     }
-
-    private fun entryPortraitScreen() {
-        if(mIsShowSysTime){
-            mView.showSysTime(false)
-        }
-        //进入普通模式
-        mDefaultParams.let {
-            mPlayMode = PlayMode.MODE_NORMAL
-            mActivity.actionBar?.show()
-            mActivity.window.clearFlags(
-                WindowManager.LayoutParams.FLAG_FULLSCREEN
-            )
-            mActivity.window.decorView.systemUiVisibility = View.VISIBLE
-            mView.layoutParams = it
-            mTextureView?.layoutParams =
-                JvUtil.changeVideoSize(it.width, it.height, mPlayer.videoWidth, mPlayer.videoHeight)
-        }
-        //屏幕方向改为未知，保证下次能够旋转屏幕
-//        mActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-        mView.exitMode()
-    }
-
-    @SuppressLint("SourceLockedOrientationActivity")
-    override fun  exitMode(isBackNormal: Boolean, isRotateScreen: Boolean) {
-        Log.d(JvCommon.TAG, "exitMode")
-        if (getPlayMode() != PlayMode.MODE_NORMAL && isBackNormal) {
-            mActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-        }
-    }
-
-    //播放进度开始计时
-    private fun runVideoTime() {
-        Log.d(JvCommon.TAG, "runVideoTime")
-        mRunnable = mRunnable ?: Runnable {
-            mPlayer.let {
-                if (it.isPlaying) {
-                    //更新播放进度
-                    mView.playing(
-                        getVideoTimeStr(it.currentPosition),
-                        it.currentPosition
-                    )
-                }
-            }
-            //重复调起自身
-            mHandler.postDelayed(mRunnable, 200)
-        }
-        mHandler.post(mRunnable)
-        runHideControlUi(5000)
-    }
-
-    //播放进度停止计时
-    private fun stopVideoTime() {
-        mHandler.removeCallbacks(mRunnable)
-    }
-
-    private fun runHideControlUi(time: Long) {
-        Log.d(JvCommon.TAG, "runHideControlUi")
-        if (mPlayState == PlayState.STATE_PLAYING || mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
-            stopHideControlUi()
-            mHandler.postDelayed(mHideRunnable, time)
-        }
-    }
-
-    private fun showControlUi(autoHide: Boolean) {
-        mCenterControlViewIsShow = true
-        if (!mIsLoading) { //不在加载中则显示中心按钮
-            mView.showCenterControlView()
-        }
-        mView.showController()
-        if (autoHide) {
-            runHideControlUi(5000)
-        }
-    }
-
-    private fun hideControlUi() {
-        stopHideControlUi() // 去掉自动隐藏
-        mCenterControlViewIsShow = false
-        mView.hideController()
-    }
-
-    private fun stopHideControlUi() {
-        mHandler.removeCallbacks(mHideRunnable)
-    }
-
-    private fun showLoading(content: String, loadingNum: Int) {
-        if (loadingNum in mLoadingNums) {
-            Log.e(JvCommon.TAG, "loading- show[$content, $loadingNum] is exist.")
-        } else {
-            mLoadingNums.add(loadingNum)
-            mView.showLoading(content)
-            mIsLoading = true
-            Log.d(JvCommon.TAG, "loading-show[$content, $loadingNum]")
-        }
-    }
-
-    private fun closeLoading(content: String, loadingNum: Int) {
-        if (loadingNum in mLoadingNums) {
-            mLoadingNums.remove(loadingNum)
-            mView.closeLoading(content)
-            mIsLoading = false
-            Log.d(JvCommon.TAG, "loading-close[$content, $loadingNum]")
-        } else {
-            Log.e(JvCommon.TAG, "loading- close[$content, $loadingNum] is not exist.")
-        }
-    }
-    private fun closeAllLoading() {
-        mLoadingNums.clear()
-        mView.closeLoading("closeAll")
-        mIsLoading = false
-    }
-    override fun isShowSysTime(isShow:Boolean){
-        mIsShowSysTime = isShow
-    }
-
-    override fun textureReady(surface: SurfaceTexture, textureView: TextureView) {
-        Log.d(JvCommon.TAG, "textureReady")
-        if (mSurface == null) {
-            mSurface = Surface(surface)
-        }
-        mTextureView = mTextureView ?: textureView
-        mPlayState = PlayState.STATE_PREPARING
-        mCallback.initSuccess()
-    }
-
-    fun startVideo(video: Video, callback: VideoPlayCallBack) {
-        mJvCallBack = callback
-        //播放视频
-        mSurface?.let {
-            loadVideo(it, video)
-        }
-    }
-
-    override fun getPlayState(): Int {
-        return mPlayState
-    }
-
-    override fun getPlayMode(): Int {
-        return mPlayMode
-    }
-
-    override fun getLight(isMax: Boolean): Int {
-        var nowBrightnessValue = 0
-        try {
-            nowBrightnessValue =
-                Settings.System.getInt(mActivity.contentResolver, Settings.System.SCREEN_BRIGHTNESS)
-        } catch (e: Exception) {
-
-        }
-        return nowBrightnessValue
-    }
-
-    override fun getVolume(isMax: Boolean): Int {
-        return if (isMax) {
-            mAudioManager?.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-        } else {
-            mAudioManager?.getStreamVolume(AudioManager.STREAM_MUSIC)
-        } ?: 0
-    }
-
-    override fun getDuration(): Long {
-        return mPlayer.duration
-    }
-
-    override fun getPosition(): Long {
-        return mPlayer.currentPosition
-    }
-
-    override fun getBufferPercent(): Int {
-        return mBufferPercent
-    }
-
-    override fun releasePlay(destroyUi: Boolean) {
-        mSurface?.release()
-        mHandler.removeCallbacks(mRunnable)
-        mPlayer.stop()
-        mPlayer.release()//调用release()方法来释放资源，资源可能包括硬件加速组件的单态固件
-        mSurface = null
-    }
-
-    override fun setMessagePromptInCenter(message: String, isShowReset: Boolean) {
-        mView.closeCenterControlView()
-        closeAllLoading()
-        mView.showCenterHintView()
-        mView.showMessagePrompt(message, isShowReset)
-    }
-
     /**
      * 滑动屏幕快进或者后退
      * @param distance
@@ -1030,12 +825,250 @@ class JvPresenter(
         mVolume = volume
         mView.setVolumeUi(volume * 100 / getVolume(true))
     }
+    /*
+    生命周期方法
+     */
+    override fun onPause() {
+        //取消屏幕常亮
+        mActivity.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+        mIsBackContinue =
+            if (mPlayState == PlayState.STATE_PAUSED || mPlayState == PlayState.STATE_BUFFERING_PAUSED) {
+                false
+            } else if (mPlayState == PlayState.STATE_PLAYING || mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
+                true
+            } else {
+                //播放器初始化前、初始化中、初始化后或者播放完成、播放错误时中不做任何操作
+                mIsBackContinue = null
+                return
+            }
+        pausePlay()
+    }
+
+    override fun onResume() {
+        //设置屏幕常亮
+        mActivity.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        //播放器初始化中不做任何操作
+        mIsBackContinue?.let {
+            if (it) continuePlay() else pausePlay()
+        }
+    }
+
+    override fun onConfigChanged(newConfig: Configuration) {
+        if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) {
+            entryPortraitScreen()
+            Log.d(JvCommon.TAG, "Configuration.ORIENTATION_PORTRAIT")
+        }
+        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            entryFullScreen()
+            Log.d(JvCommon.TAG, "Configuration.ORIENTATION_LANDSCAPE")
+        }
+    }
+
+    override fun onBackProcess(): Boolean {
+        if (mPlayMode == PlayMode.MODE_FULL_SCREEN) {
+            exitMode(isBackNormal = true, isRotateScreen = true)
+            return true
+        }
+        return false
+    }
+
+    override fun switchSpecialMode(switchMode: Int, isRotateScreen: Boolean) {
+        Log.d(JvCommon.TAG, "playMode$mPlayMode")
+        when (mPlayMode) {
+            PlayMode.MODE_NORMAL -> {
+                if (switchMode == SwitchMode.SWITCH_TO_FULL) {
+                    //进入全屏模式（在dialog的模式下似乎会有适配问题）
+                    mPlayMode = PlayMode.MODE_FULL_SCREEN
+                    //屏幕旋转时指定带重力感应的屏幕方向不然会转不过来...，但是没有开启旋转的情况下要强制转屏来达到全屏效果
+                    mActivity.requestedOrientation =
+                        ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                    //屏幕方向改为未知，保证下次能够旋转屏幕
+//                    mActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                }
+            }
+            PlayMode.MODE_FULL_SCREEN -> {
+                exitMode(true, isRotateScreen)
+            }
+        }
+    }
+    /*
+    模式切换方法
+     */
+    private fun entryFullScreen() {
+        if (mIsShowSysTime) {
+            mView.showSysTime(true)
+        }
+        // 隐藏ActionBar、状态栏
+        mActivity.actionBar?.hide()
+
+        mActivity.window.setFlags(
+            WindowManager.LayoutParams.FLAG_FULLSCREEN,
+            WindowManager.LayoutParams.FLAG_FULLSCREEN
+        )
+        //设置为充满父布局
+        val params = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.MATCH_PARENT
+        )
+        //隐藏虚拟按键，并且全屏
+        mActivity.window.decorView.systemUiVisibility =
+            View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or View.SYSTEM_UI_FLAG_FULLSCREEN
+        mView.layoutParams = params
+
+        //全屏直接使用手机大小,此时未翻转的话，高宽对调
+        val phoneWidth = JvUtil.getPhoneDisplayWidth(mActivity)
+        val phoneHeight = JvUtil.getPhoneDisplayHeight(mActivity)
+        mTextureView?.layoutParams = JvUtil.changeVideoSize(
+            if (phoneHeight > phoneWidth) phoneHeight else phoneWidth,
+            if (phoneHeight > phoneWidth) phoneWidth else phoneHeight,
+            mPlayer.videoWidth,
+            mPlayer.videoHeight
+        )
+        mView.entryFullMode()
+    }
+
+    private fun entryPortraitScreen() {
+        if (mIsShowSysTime) {
+            mView.showSysTime(false)
+        }
+        //进入普通模式
+        mDefaultParams?.let {
+            mPlayMode = PlayMode.MODE_NORMAL
+            mActivity.actionBar?.show()
+            mActivity.window.clearFlags(
+                WindowManager.LayoutParams.FLAG_FULLSCREEN
+            )
+            mActivity.window.decorView.systemUiVisibility = View.VISIBLE
+            mView.layoutParams = it
+            mTextureView?.layoutParams =
+                JvUtil.changeVideoSize(it.width, it.height, mPlayer.videoWidth, mPlayer.videoHeight)
+        }
+        //屏幕方向改为未知，保证下次能够旋转屏幕
+//        mActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        mView.exitMode()
+    }
+
+    @SuppressLint("SourceLockedOrientationActivity")
+    override fun exitMode(isBackNormal: Boolean, isRotateScreen: Boolean) {
+        Log.d(JvCommon.TAG, "exitMode")
+        if (getPlayMode() != PlayMode.MODE_NORMAL && isBackNormal) {
+            mActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
+            //屏幕方向改为未知，保证下次能够旋转屏幕
+//            mActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        }
+    }
+
+    /*
+     线程相关方法
+     */
+    //播放进度开始计时
+    private fun runVideoTime() {
+        Log.d(JvCommon.TAG, "runVideoTime")
+        mRunnable = mRunnable ?: Runnable {
+            mPlayer.let {
+                if (it.isPlaying) {
+                    //更新播放进度
+                    mView.playing(
+                        getVideoTimeStr(it.currentPosition),
+                        it.currentPosition
+                    )
+                }
+            }
+            //重复调起自身
+            mHandler.postDelayed(mRunnable, 200)
+        }
+        mHandler.post(mRunnable)
+        runHideControlUi(5000)
+    }
+
+    //播放进度停止计时
+    private fun stopVideoTime() {
+        mHandler.removeCallbacks(mRunnable)
+    }
+    /*
+    UI调整方法
+     */
+    override fun controlPlay() {
+        when (mPlayState) {
+            PlayState.STATE_PLAYING, PlayState.STATE_BUFFERING_PLAYING -> pausePlay()
+            PlayState.STATE_PAUSED, PlayState.STATE_BUFFERING_PAUSED -> continuePlay()
+            PlayState.STATE_PREPARED -> startPlay(mVideo?.progress ?: 0L)
+        }
+    }
+    private fun runHideControlUi(time: Long) {
+        Log.d(JvCommon.TAG, "runHideControlUi")
+        if (mPlayState == PlayState.STATE_PLAYING || mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
+            stopHideControlUi()
+            mHandler.postDelayed(mHideRunnable, time)
+        }
+    }
+
+    private fun showControlUi(autoHide: Boolean) {
+        mCenterControlViewIsShow = true
+        if (!mIsLoading) { //不在加载中则显示中心按钮
+            mView.showCenterControlView()
+        }
+        mView.showController()
+        if (autoHide) {
+            runHideControlUi(5000)
+        }
+    }
+
+    private fun hideControlUi() {
+        stopHideControlUi() // 去掉自动隐藏
+        mCenterControlViewIsShow = false
+        mView.hideController()
+    }
+
+    private fun stopHideControlUi() {
+        mHandler.removeCallbacks(mHideRunnable)
+    }
+
+    private fun showLoading(content: String, loadingNum: Int) {
+        if (loadingNum in mLoadingNums) {
+            Log.e(JvCommon.TAG, "loading- show[$content, $loadingNum] is exist.")
+        } else {
+            mLoadingNums.add(loadingNum)
+            mView.showLoading(content)
+            mIsLoading = true
+            Log.d(JvCommon.TAG, "loading-show[$content, $loadingNum]")
+        }
+    }
+
+    private fun closeLoading(content: String, loadingNum: Int) {
+        if (loadingNum in mLoadingNums) {
+            mLoadingNums.remove(loadingNum)
+            mView.closeLoading(content)
+            mIsLoading = false
+            Log.d(JvCommon.TAG, "loading-close[$content, $loadingNum]")
+        } else {
+            Log.e(JvCommon.TAG, "loading- close[$content, $loadingNum] is not exist.")
+        }
+    }
+
+    private fun closeAllLoading() {
+        mLoadingNums.clear()
+        mView.closeLoading("closeAll")
+        mIsLoading = false
+    }
+
+    override fun setMessagePromptInCenter(message: String, isShowReset: Boolean) {
+        mView.closeCenterControlView()
+        closeAllLoading()
+        mView.showCenterHintView()
+        mView.showMessagePrompt(message, isShowReset)
+    }
+
+    /*
+    其他方法区
+     */
+    private fun notSeek() {
+
+    }
 
     private fun getVideoTimeStr(position: Long?): String {
         return JvUtil.progress2Time(position) + "&" + JvUtil.progress2Time(getDuration())
     }
 
-    interface VideoPlayCallBack {
-        fun videoCompleted()
-    }
 }

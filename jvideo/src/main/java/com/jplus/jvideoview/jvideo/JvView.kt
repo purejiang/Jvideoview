@@ -381,6 +381,7 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
     override fun showCenterControlView() {
         Log.d("pipa", "showCenterControlView")
         ly_video_play.visibility = VISIBLE
+
     }
 
     private fun showTopAdjustUi(text: String) {

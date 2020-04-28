@@ -5,6 +5,7 @@ import android.content.res.Configuration
 import com.jplus.jvideoview.common.JvConstant.PlayBackEngine
 import com.jplus.jvideoview.common.JvConstant.PlayForm
 import com.jplus.jvideoview.entity.Video
+import com.jplus.jvideoview.jvideo.JvListener
 import com.jplus.jvideoview.jvideo.JvPresenter
 import com.jplus.jvideoview.jvideo.JvView
 import tv.danmaku.ijk.media.player.AndroidMediaPlayer
@@ -15,94 +16,151 @@ import tv.danmaku.ijk.media.player.IjkMediaPlayer
  * @author JPlus
  * @date 2019/10/24.
  */
-class JvController(activity: Activity, jvView: JvView, callback: JvCallBack) {
+class JvController(
+    private val mActivity: Activity,
+    private val mView: JvView,
+    private val mCallBack: JvCallBack
+) {
     private var mVideos = mutableListOf<Video>()
-    private var presenter: JvPresenter? = null
+    private var mPresenter: JvPresenter? = null
     private var mPlayForm = PlayForm.PLAYBACK_ONE_END
     private var mPlayBackEngine = PlayBackEngine.PLAYBACK_MEDIA_PLAYER
+    private var mPosition = -1
 
     init {
-        presenter = JvPresenter(
-            activity,
-            jvView,
-            jvView.layoutParams,
-            callback,
+        mPresenter = JvPresenter(
+            mActivity,
+            mView,
             getPlayEngine(mPlayBackEngine)
         )
-        presenter?.subscribe()
+        mPresenter?.subscribe()
+        initListener()
+    }
+
+    private fun initListener() {
+        mPresenter?.setJvListener(object : JvListener {
+            override fun onInitSuccess() {
+                mCallBack.initSuccess()
+            }
+
+            override fun onPrepared() {
+            }
+
+            override fun onReset() {
+
+            }
+
+            override fun onBuffering() {
+
+            }
+
+            override fun onStartPlay() {
+
+            }
+
+            override fun onReStart() {
+
+            }
+
+            override fun onPlaying() {
+
+            }
+
+            override fun onPausePlay() {
+
+            }
+
+            override fun onCompleted() {
+                mPosition+=1
+                if (mPosition >= mVideos.size) return
+                play(mVideos[mPosition])
+            }
+
+            override fun onError() {
+
+            }
+
+            override fun onFullScreen() {
+
+            }
+
+            override fun onNormalScreen() {
+
+            }
+
+        })
     }
 
     private fun getPlayEngine(playEngine: Int): IMediaPlayer {
         return when (playEngine) {
-            //使用ijkplayer播放引擎
+            //使用ijkplayer播放器内核
             PlayBackEngine.PLAYBACK_IJK_PLAYER -> IjkMediaPlayer()
-            //使用android自带的播放引擎
+            //使用android自带的播放器内核
             PlayBackEngine.PLAYBACK_MEDIA_PLAYER -> AndroidMediaPlayer()
-            //使用exoplayer引擎
+            //使用exoplayer内核
 //            PlayBackEngine.PLAYBACK_EXO_PLAYER ->Exo
             else -> AndroidMediaPlayer()
         }
     }
 
     fun getPlayProgress(): Long? {
-        return presenter?.getPosition()
+        return mPresenter?.getPosition()
     }
 
-    fun supportShowSpeed(){
-        presenter?.isShowSpeed(true)
+    fun supportShowSpeed() {
+        mPresenter?.setIsSupShowSpeed(true)
     }
 
-    fun supportShowSysTime(isShow:Boolean){
-        presenter?.isShowSysTime(isShow)
+    fun supportShowSysTime(isShow: Boolean) {
+        mPresenter?.setIsSupSysTime(isShow)
     }
 
-    fun onBackProgress():Boolean{
-        return presenter?.onBackProcess()?:false
+    fun supportAutoPlay(isAuto: Boolean) {
+        mPresenter?.setIsSupAutoPlay(isAuto)
     }
 
-    //设置播放引擎
+    fun onBackProgress(): Boolean {
+        return mPresenter?.onBackProcess() ?: false
+    }
+
+    //设置播放器内核
     fun setPlayBackEngine(playBackEngine: Int) {
         mPlayBackEngine = playBackEngine
-        presenter?.switchPlayEngine(mPlayBackEngine)
+        mPresenter?.switchPlayEngine(mPlayBackEngine)
     }
 
     //设置播放循环模式
     fun setPlayForm(playForm: Int) {
-        mPlayForm = playForm
+        mPresenter?.setPlayForm(playForm)
     }
 
     //设置播放列表
     fun playVideos(videos: MutableList<Video>) {
         mVideos = videos
-        startPlayLoop(0)
+        if (videos.size > 0) {
+            play(videos[0])
+            mPosition = 0
+        }
     }
 
-    //顺序播放
-    fun startPlayLoop(position: Int) {
-        if (position >= mVideos.size) return
-        presenter?.startVideo(mVideos[position],
-            object : JvPresenter.VideoPlayCallBack {
-                override fun videoCompleted() {
-                    startPlayLoop(position + 1)
-                }
-            })
+    private fun play(video: Video) {
+        mPresenter?.startVideo(video)
     }
-
 
     fun onPause() {
-        presenter?.onPause()
+        mPresenter?.onPause()
     }
 
     fun onResume() {
-        presenter?.onResume()
+        mPresenter?.onResume()
     }
 
     fun onConfigChanged(newConfig: Configuration) {
-        presenter?.onConfigChanged(newConfig)
+        mPresenter?.onConfigChanged(newConfig)
     }
 
     fun destroy() {
-        presenter?.unSubscribe()
+        mPresenter?.unSubscribe()
     }
 
     interface JvCallBack {

@@ -154,26 +154,35 @@ interface JvContract {
 
     interface Presenter:BasePresenter {
         /**
-         * 切换播放引擎
-         * @param playerEngine 播放引擎
+         * 设置播放器状态回调
+         */
+        fun setJvListener(listener:JvListener)
+        /**
+         * 切换播放器内核
+         * @param playerEngine 播放器内核
          */
         fun switchPlayEngine(playerEngine:Int)
         /**
-         * 是否支持切换播放引擎
+         * 是否支持切换播放器内核
          * @param isSupport 是否支持切换
          */
-        fun isSupportPlayEngine(isSupport:Boolean)
+        fun setIsSupPlayEngine(isSupport:Boolean)
         /**
          * 是否支持显示实时网速
          * @param isShow 是否显示实时网速
          * @param frequency 显示频率
          */
-        fun isShowSpeed(isShow:Boolean, frequency:Long = 2000L)
+        fun setIsSupShowSpeed(isShow:Boolean, frequency:Long = 2000L)
         /**
          * 是否支持显示系统时间
          * @param isShow 是否显示系统时间
          */
-        fun isShowSysTime(isShow:Boolean)
+        fun setIsSupSysTime(isShow:Boolean)
+        /**
+         * 是否支持自动开始播放
+         * @param isAuto 是否自动开始播放
+         */
+        fun setIsSupAutoPlay(isAuto:Boolean)
         /**
          * 设置中间提示
          * @param message 提示消息
@@ -189,7 +198,6 @@ interface JvContract {
          * @param position 可选任意位置，默认为初始位置
          */
         fun startPlay(position: Long = 0)
-
         /**
          * 暂停播放
          */
@@ -254,7 +262,7 @@ interface JvContract {
          */
         fun setPlayForm(playForm:Int)
         /**
-         * 幕布准备就绪
+         * 幕布准备就绪,播放器初始化完成
          * @param surface 表面
          * @param textureView 幕布View
          */
@@ -300,6 +308,7 @@ interface JvContract {
         fun onBackProcess():Boolean
         /**
          * 屏幕旋转处理
+         * @param newConfig
          */
         fun onConfigChanged(newConfig: Configuration)
         /**

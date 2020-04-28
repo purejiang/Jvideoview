@@ -41,6 +41,7 @@ class MainActivity : AppCompatActivity() {
 
         })
         mController?.supportShowSysTime(true)
+        mController?.supportAutoPlay(true)
     }
 
     override fun onStart() {

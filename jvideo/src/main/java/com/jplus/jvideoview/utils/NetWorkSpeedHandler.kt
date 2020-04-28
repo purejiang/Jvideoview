@@ -47,27 +47,10 @@ class NetWorkSpeedHandler (private val context: Context,private val  frequency:L
         val nowTotalRxBytes = getTotalRxBytes(context)
         val speed1 = ((nowTotalRxBytes - mLastRxBytes) * 1f) / ((nowTime - mLastTime) * 1f/ 1000f)*1024
         mLastRxBytes = nowTotalRxBytes
-        return parseByteSize(speed1)
+        return JvUtil.parseByteSize(speed1)
     }
 
-    /**
-     * long转文件大小
-     * @param size
-     * @return 返回B、K、M、G
-     */
-    private fun parseByteSize(size: Float): String {
-        return if (size in 0f..1023f) {
-            String.format("%.1fB", size)
-        } else if (size >= 1024f && size < 1024f * 1024f) {
-            String.format("%.1fK", size / 1024f)
-        } else if (size >= 1024f * 1024f && size < 1024f * 1024f * 1024f) {
-            String.format("%.1fM", size / 1024f / 1024f)
-        } else if (size >= 1024f * 1024f * 1024f) {
-            String.format("%.1fG", size / 1024f / 1024f / 1024f)
-        } else {
-            "0B"
-        }
-    }
+
 
     interface OnNetWorkSpeedListener {
         /**

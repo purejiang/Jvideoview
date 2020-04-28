@@ -112,7 +112,7 @@ class JvConstant {
     }
 
     /**
-     * 播放引擎
+     * 播放器内核
      */
     class PlayBackEngine {
         companion object {

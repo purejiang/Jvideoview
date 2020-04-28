@@ -90,10 +90,29 @@ object JvUtil {
 
     }
     /**
-     * 获取手机是否开启重力感应
+     * 获取手机是否开启自动旋转屏幕
      * @param context 上下文
      */
     fun getIsOpenRotate(context: Context):Boolean{
         return Settings.System.getInt(context.contentResolver, Settings.System.ACCELEROMETER_ROTATION)==1
+    }
+
+    /**
+     * long转文件大小
+     * @param size
+     * @return 返回B、K、M、G
+     */
+     fun parseByteSize(size: Float): String {
+        return if (size in 0f..1023f) {
+            String.format("%.1fB", size)
+        } else if (size >= 1024f && size < 1024f * 1024f) {
+            String.format("%.1fK", size / 1024f)
+        } else if (size >= 1024f * 1024f && size < 1024f * 1024f * 1024f) {
+            String.format("%.1fM", size / 1024f / 1024f)
+        } else if (size >= 1024f * 1024f * 1024f) {
+            String.format("%.1fG", size / 1024f / 1024f / 1024f)
+        } else {
+            "0B"
+        }
     }
 }
