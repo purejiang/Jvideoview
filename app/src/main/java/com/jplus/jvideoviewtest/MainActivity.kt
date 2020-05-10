@@ -6,7 +6,6 @@ import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.jplus.jvideoview.JvController
 import com.jplus.jvideoview.entity.Video
-
 import kotlinx.android.synthetic.main.activity_main.*
 
 
@@ -28,15 +27,20 @@ class MainActivity : AppCompatActivity() {
 
         mController = JvController(this, jv_video_main2, object : JvController.JvCallBack {
             override fun initSuccess() {
+                Log.d("pipa", "initSuccess" )
                 mController?.playVideos(list)
             }
 
             override fun startPlay() {
+                Log.d("pipa", "startPlay")
+            }
 
+            override fun toNext() {
+                Log.d("pipa", "toNext")
             }
 
             override fun endPlay() {
-
+                Log.d("pipa", "endPlay")
             }
 
         })

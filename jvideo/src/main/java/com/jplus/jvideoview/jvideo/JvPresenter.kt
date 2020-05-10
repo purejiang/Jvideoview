@@ -92,7 +92,7 @@ class JvPresenter(
     //是否自动播放
     private var mIsAutoPlay = false
     //默认params
-    private var mDefaultParams: ViewGroup.LayoutParams?=null
+    private var mDefaultParams: ViewGroup.LayoutParams? = null
 
     private val mHandler by lazy {
         Handler()
@@ -120,16 +120,8 @@ class JvPresenter(
     }
 
 
-    override fun switchPlayEngine(playerEngine: Int) {
-        mPlayer = when (playerEngine) {
-            //使用ijkplayer播放器内核
-            PlayBackEngine.PLAYBACK_IJK_PLAYER -> IjkMediaPlayer()
-            //使用android自带的播放器内核
-            PlayBackEngine.PLAYBACK_MEDIA_PLAYER -> AndroidMediaPlayer()
-            //使用exoplayer引擎
-//            PlayBackEngine.PLAYBACK_EXO_PLAYER ->Exo
-            else -> AndroidMediaPlayer()
-        }
+    override fun switchPlayEngine(player: IMediaPlayer) {
+        mPlayer = player
         reStartPlay()
     }
 
@@ -262,8 +254,32 @@ class JvPresenter(
                     player.videoHeight
                 )
             }
-            //设置Option
+            //设置IjkMediaPlayer Option
             if (player is IjkMediaPlayer) {
+                /*
+                  rtsp设置 https://ffmpeg.org/ffmpeg-protocols.html#rtsp
+                 */
+//                player.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "rtsp_transport", "tcp")
+//                player.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "rtsp_flags", "prefer_tcp")
+//
+//                player.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "allowed_media_types", "video") //根据媒体类型来配置
+//                player.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "timeout", 20000)
+//                player.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "buffer_size", 1316)
+//                player.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "infbuf", 1)  // 无限读
+//                player.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "analyzemaxduration", 100L)
+//                player.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "probesize", 10240L)
+//                player.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "flush_packets", 1L)
+                //关闭播放器缓冲，这个必须关闭，否则会出现播放一段时间后，一直卡主，控制台打印 FFP_MSG_BUFFERING_START
+                player.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "packet-buffering", 1)
+                player.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "framedrop", 1L)
+                /*
+                结束
+                 */
+                player.setOption(
+                    IjkMediaPlayer.OPT_CATEGORY_PLAYER,
+                    "enable-accurate-seek",
+                    1
+                )//防止某些视频在SeekTo的时候，（FFMPEG不兼容）会跳回到拖动前的位置
                 player.setOption(
                     IjkMediaPlayer.OPT_CATEGORY_PLAYER,
                     "start-on-prepared",
@@ -271,19 +287,28 @@ class JvPresenter(
                 )
                 player.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "analyzeduration", 1)
                 player.setOption(IjkMediaPlayer.OPT_CATEGORY_CODEC, "skip_loop_filter", 0)
+                player.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER,"max-buffer-size", 1024*1024*2)//最大缓冲大小,单位kb
+                player.setOnNativeInvokeListener(IjkMediaPlayer.OnNativeInvokeListener { _, _ ->
+                    true
+                })
+                player.setOption(
+                    IjkMediaPlayer.OPT_CATEGORY_FORMAT,
+                    "fflags",
+                    "fastseek"
+                );//设置seekTo能够快速seek到指定位置并播放
+                player.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "reconnect", 5)
+                player.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "dns_cache_clear", 1)
+                //硬解码
+//                player.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "mediacodec", 1);
+//                player.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "mediacodec-auto-rotate", 1);
+//                player.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "mediacodec-handle-resolution-change", 1);
             }
 
             //设置是否保持屏幕常亮
             player.setScreenOnWhilePlaying(true)
-            if (player is IjkMediaPlayer) {
-                player.setOnNativeInvokeListener(IjkMediaPlayer.OnNativeInvokeListener { _, _ ->
-                    true
-                })
-                player.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "reconnect", 5)
-                player.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "dns_cache_clear", 1)
-            }
         }
     }
+
     fun startVideo(video: Video) {
         //播放视频
         mSurface?.let {
@@ -403,6 +428,7 @@ class JvPresenter(
             runVideoTime()
         }
     }
+
     //暂停播放
     override fun pausePlay() {
         mJvListener?.onPausePlay()
@@ -421,6 +447,7 @@ class JvPresenter(
         showControlUi(false)
         mView.pauseVideo()
     }
+
     override fun continuePlay() {
         Log.d(JvCommon.TAG, "continuePlay")
         when (mPlayState) {
@@ -439,6 +466,7 @@ class JvPresenter(
         mView.continueVideo()
         runVideoTime()
     }
+
     override fun resetPlay() {
         mJvListener?.onReset()
 
@@ -550,6 +578,7 @@ class JvPresenter(
         mPlayState = PlayState.STATE_COMPLETED
         Log.d(JvCommon.TAG, "completedPlay")
     }
+
     override fun errorPlay(what: Int, extra: Int, message: String) {
         mJvListener?.onError()
 
@@ -754,6 +783,7 @@ class JvPresenter(
         )
         mView.setVolumeMute(mIsVolumeMute)
     }
+
     /**
      * 滑动屏幕快进或者后退
      * @param distance
@@ -825,6 +855,7 @@ class JvPresenter(
         mVolume = volume
         mView.setVolumeUi(volume * 100 / getVolume(true))
     }
+
     /*
     生命周期方法
      */
@@ -892,6 +923,7 @@ class JvPresenter(
             }
         }
     }
+
     /*
     模式切换方法
      */
@@ -986,6 +1018,7 @@ class JvPresenter(
     private fun stopVideoTime() {
         mHandler.removeCallbacks(mRunnable)
     }
+
     /*
     UI调整方法
      */
@@ -996,6 +1029,7 @@ class JvPresenter(
             PlayState.STATE_PREPARED -> startPlay(mVideo?.progress ?: 0L)
         }
     }
+
     private fun runHideControlUi(time: Long) {
         Log.d(JvCommon.TAG, "runHideControlUi")
         if (mPlayState == PlayState.STATE_PLAYING || mPlayState == PlayState.STATE_BUFFERING_PLAYING) {

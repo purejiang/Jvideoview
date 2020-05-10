@@ -8,6 +8,7 @@ import android.view.TextureView
 import android.view.View
 import com.jplus.jvideoview.BasePresenter
 import com.jplus.jvideoview.BaseView
+import tv.danmaku.ijk.media.player.IMediaPlayer
 
 /**
  * @author JPlus
@@ -159,9 +160,9 @@ interface JvContract {
         fun setJvListener(listener:JvListener)
         /**
          * 切换播放器内核
-         * @param playerEngine 播放器内核
+         * @param player 播放器内核
          */
-        fun switchPlayEngine(playerEngine:Int)
+        fun switchPlayEngine(player: IMediaPlayer)
         /**
          * 是否支持切换播放器内核
          * @param isSupport 是否支持切换

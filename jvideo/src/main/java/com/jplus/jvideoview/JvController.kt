@@ -19,19 +19,19 @@ import tv.danmaku.ijk.media.player.IjkMediaPlayer
 class JvController(
     private val mActivity: Activity,
     private val mView: JvView,
-    private val mCallBack: JvCallBack
+    private val mCallBack: JvCallBack,
+    private var mPlayEngine: Int = PlayBackEngine.PLAYBACK_MEDIA_PLAYER
 ) {
     private var mVideos = mutableListOf<Video>()
     private var mPresenter: JvPresenter? = null
     private var mPlayForm = PlayForm.PLAYBACK_ONE_END
-    private var mPlayBackEngine = PlayBackEngine.PLAYBACK_MEDIA_PLAYER
     private var mPosition = -1
 
     init {
         mPresenter = JvPresenter(
             mActivity,
             mView,
-            getPlayEngine(mPlayBackEngine)
+            getPlayEngine(mPlayEngine)
         )
         mPresenter?.subscribe()
         initListener()
@@ -71,8 +71,12 @@ class JvController(
             }
 
             override fun onCompleted() {
-                mPosition+=1
-                if (mPosition >= mVideos.size) return
+                mPosition += 1
+                if (mPosition >= mVideos.size) {
+                    mCallBack.endPlay()
+                    return
+                }
+                mCallBack.toNext()
                 play(mVideos[mPosition])
             }
 
@@ -103,6 +107,12 @@ class JvController(
         }
     }
 
+    //切换播放器内核
+    fun switchPlayEngine(playEngine: Int) {
+        mPlayEngine = playEngine
+        mPresenter?.switchPlayEngine(getPlayEngine(playEngine))
+    }
+
     fun getPlayProgress(): Long? {
         return mPresenter?.getPosition()
     }
@@ -121,12 +131,6 @@ class JvController(
 
     fun onBackProgress(): Boolean {
         return mPresenter?.onBackProcess() ?: false
-    }
-
-    //设置播放器内核
-    fun setPlayBackEngine(playBackEngine: Int) {
-        mPlayBackEngine = playBackEngine
-        mPresenter?.switchPlayEngine(mPlayBackEngine)
     }
 
     //设置播放循环模式
@@ -175,7 +179,12 @@ class JvController(
         fun startPlay()
 
         /**
-         * 播放结束
+         * 播放下一集
+         */
+        fun toNext()
+
+        /**
+         * 全部播放完成
          */
         fun endPlay()
     }
