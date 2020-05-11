@@ -24,7 +24,7 @@ class JvController(
 ) {
     private var mVideos = mutableListOf<Video>()
     private var mPresenter: JvPresenter? = null
-    private var mPlayForm = PlayForm.PLAYBACK_ONE_END
+    private var mPlayForm = PlayForm.PLAY_ONE_END
     private var mPosition = -1
 
     init {

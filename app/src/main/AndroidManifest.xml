@@ -34,6 +34,7 @@
                 <data android:mimeType="video/mp4" />
             </intent-filter>
         </activity>
+
     </application>
 
 </manifest>

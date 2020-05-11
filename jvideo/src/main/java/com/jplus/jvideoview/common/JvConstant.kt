@@ -139,15 +139,15 @@ class JvConstant {
             /**
              * 顺序播放
              */
-            const val PLAYFORM_TURN = 40
+            const val PLAY_FORM_TURN = 40
             /**
              * 单视频循环
              */
-            const val PLAYBACK_ONE_LOOP = 41
+            const val PLAY_ONE_LOOP = 41
             /**
              * 单视频播放
              */
-            const val PLAYBACK_ONE_END = 42
+            const val PLAY_ONE_END = 42
         }
     }
 }

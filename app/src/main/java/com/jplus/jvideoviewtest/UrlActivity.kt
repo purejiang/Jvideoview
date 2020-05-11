@@ -38,9 +38,7 @@ class UrlActivity : AppCompatActivity() {
         val view = LayoutInflater.from(this).inflate(R.layout.view_url_dialog, null, false)
         val edt = view?.findViewById<EditText>(R.id.edt_url)
         edt?.setText(
-            "https://cn5.download05.com/hls/20190804/ebfd96741e2e6e854144b2e012c30755/1564883639/index.m3u8\n" +
-                    "https://cn5.download05.com/hls/20190811/fa9d03cdb6881fb674fe5d85ae55efa5/1565487765/index.m3u8\n"
-                    +"http://ivi.bupt.edu.cn/hls/cctv1hd.m3u8"
+            "https://bili.let-1977cdn.com/20190902/MJZBTF8k/index.m3u8"
         )
 
         AlertDialog.Builder(this)
@@ -54,13 +52,13 @@ class UrlActivity : AppCompatActivity() {
                     intent.putExtra("urls", it.toString())
                     startActivity(intent)
                 }
+
             }.setNegativeButton("取消") { dialog, _ ->
                 dialog.dismiss()
             }
             .show()
 
     }
-
     override fun onResume() {
         super.onResume()
         lineAnimator()

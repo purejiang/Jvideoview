@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.jplus.jvideoview.JvController
+import com.jplus.jvideoview.common.JvConstant
 import com.jplus.jvideoview.entity.Video
 import kotlinx.android.synthetic.main.activity_main.*
 
@@ -21,7 +22,7 @@ class MainActivity : AppCompatActivity() {
         val list = mutableListOf<Video>()
         urls.split(s1).forEach { it1 ->
             Log.d("pipa", "split:" + it1)
-            list.add(Video("视频$id", it1.replace("\n| ", ""), 55306L))
+            list.add(Video("视频$id", it1.replace("\n| ", ""), 565306L))
             id++
         }
 
@@ -43,7 +44,7 @@ class MainActivity : AppCompatActivity() {
                 Log.d("pipa", "endPlay")
             }
 
-        })
+        },JvConstant.PlayBackEngine.PLAYBACK_IJK_PLAYER)
         mController?.supportShowSysTime(true)
         mController?.supportAutoPlay(true)
     }

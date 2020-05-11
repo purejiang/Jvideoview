@@ -263,8 +263,7 @@ class JvPresenter(
 //                player.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "rtsp_flags", "prefer_tcp")
 //
 //                player.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "allowed_media_types", "video") //根据媒体类型来配置
-//                player.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "timeout", 20000)
-//                player.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "buffer_size", 1316)
+//                player.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "timeout", 10000)
 //                player.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "infbuf", 1)  // 无限读
 //                player.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "analyzemaxduration", 100L)
 //                player.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "probesize", 10240L)
@@ -287,21 +286,29 @@ class JvPresenter(
                 )
                 player.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "analyzeduration", 1)
                 player.setOption(IjkMediaPlayer.OPT_CATEGORY_CODEC, "skip_loop_filter", 0)
-                player.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER,"max-buffer-size", 1024*1024*2)//最大缓冲大小,单位kb
+                player.setOption(
+                    IjkMediaPlayer.OPT_CATEGORY_PLAYER,
+                    "buffer-size",
+                    1024 * 1024 * 5
+                )//缓冲大小,单位b
                 player.setOnNativeInvokeListener(IjkMediaPlayer.OnNativeInvokeListener { _, _ ->
                     true
                 })
-                player.setOption(
-                    IjkMediaPlayer.OPT_CATEGORY_FORMAT,
-                    "fflags",
-                    "fastseek"
-                );//设置seekTo能够快速seek到指定位置并播放
+//                player.setOption(
+//                IjkMediaPlayer.OPT_CATEGORY_FORMAT,
+//                "fflags",
+//                "fastseek"
+//                )//设置seekTo能够快速seek到指定位置并播放
                 player.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "reconnect", 5)
                 player.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "dns_cache_clear", 1)
                 //硬解码
-//                player.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "mediacodec", 1);
-//                player.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "mediacodec-auto-rotate", 1);
-//                player.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "mediacodec-handle-resolution-change", 1);
+                player.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "mediacodec", 1);
+                player.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "mediacodec-auto-rotate", 1);
+                player.setOption(
+                    IjkMediaPlayer.OPT_CATEGORY_PLAYER,
+                    "mediacodec-handle-resolution-change",
+                    1
+                );
             }
 
             //设置是否保持屏幕常亮

@@ -134,7 +134,7 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
     private fun initListener() {
         ly_video_title.setOnTouchListener { _, _ -> true }
 
-        mPresenter?.setPlayForm(PlayForm.PLAYFORM_TURN)
+        mPresenter?.setPlayForm(PlayForm.PLAY_FORM_TURN)
         //设置Texture监听
         ttv_video_player.surfaceTextureListener = this
 
