@@ -21,7 +21,6 @@
             android:id="@+id/seek_video_progress"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_margin="@dimen/view_margin_small"
             android:layout_weight="1"
             android:background="@color/video_transparent_bg"
             android:maxHeight="5dp"
@@ -43,7 +42,7 @@
             android:id="@+id/img_screen_change"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="@dimen/view_margin_small"
-            android:layout_marginRight="@dimen/view_margin_big"
+            android:layout_marginStart="@dimen/view_margin_small"
+            android:layout_marginEnd="@dimen/view_margin_big"
             android:src="@mipmap/ic_video_arrawsalt" />
 </LinearLayout>

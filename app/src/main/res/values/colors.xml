@@ -7,6 +7,6 @@
     <color name="video_line_progress_center">#7B3AF7</color>
     <color name="video_line_progress_end">#6617FA</color>
     <color name="video_seek_bar_progress">#D1B8FF</color>
-    <color name="video_seek_bar_progress_second">#DFFFFFFF</color>
+    <color name="video_seek_bar_progress_second">#AFFFFFFF</color>
     <color name="video_seek_bar_progress_thumb">#7E57CA</color>
 </resources>

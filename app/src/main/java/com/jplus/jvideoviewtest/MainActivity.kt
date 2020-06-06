@@ -21,34 +21,38 @@ class MainActivity : AppCompatActivity() {
         var id = 0
         val list = mutableListOf<Video>()
         urls.split(s1).forEach { it1 ->
-            Log.d("pipa", "split:" + it1)
+            Log.d("jv", "split:" + it1)
             list.add(Video("视频$id", it1.replace("\n| ", ""), 565306L))
             id++
         }
 
         mController = JvController(this, jv_video_main2, object : JvController.JvCallBack {
             override fun initSuccess() {
-                Log.d("pipa", "initSuccess" )
+                Log.d("jv", "initSuccess" )
                 mController?.playVideos(list)
             }
 
             override fun startPlay() {
-                Log.d("pipa", "startPlay")
+                Log.d("jv", "startPlay")
             }
 
             override fun toNext() {
-                Log.d("pipa", "toNext")
+                Log.d("jv", "toNext")
             }
 
             override fun endPlay() {
-                Log.d("pipa", "endPlay")
+                Log.d("jv", "endPlay")
             }
 
-        },JvConstant.PlayBackEngine.PLAYBACK_IJK_PLAYER)
+        }, JvConstant.PlayBackEngine.PLAYBACK_IJK_PLAYER)
         mController?.supportShowSysTime(true)
-        mController?.supportAutoPlay(true)
+        mController?.supportAutoPlay(false)
     }
 
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        Log.d("jv", "onWindowFocusChanged")
+    }
     override fun onStart() {
         super.onStart()
     }

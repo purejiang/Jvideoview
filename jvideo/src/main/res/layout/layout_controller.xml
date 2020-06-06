@@ -17,7 +17,7 @@
 
     <include layout="@layout/layout_controller_top"
              android:layout_width="match_parent"
-             android:layout_height="wrap_content"
+             android:layout_height="@dimen/controller_height"
              android:layout_alignParentTop="true"
              android:visibility="gone"/>
 
@@ -29,7 +29,7 @@
 
     <include layout="@layout/layout_control_bottom"
              android:layout_width="match_parent"
-             android:layout_height="wrap_content"
+             android:layout_height="@dimen/controller_height"
              android:layout_alignParentBottom="true"
              android:visibility="gone"
             />

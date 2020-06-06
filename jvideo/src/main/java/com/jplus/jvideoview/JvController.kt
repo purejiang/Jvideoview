@@ -28,11 +28,7 @@ class JvController(
     private var mPosition = -1
 
     init {
-        mPresenter = JvPresenter(
-            mActivity,
-            mView,
-            getPlayEngine(mPlayEngine)
-        )
+        mPresenter = JvPresenter(mActivity, mView, getPlayEngine(mPlayEngine))
         mPresenter?.subscribe()
         initListener()
     }

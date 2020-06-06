@@ -44,59 +44,84 @@ class JvPresenter(
     JvContract.Presenter {
     //播放界面，相当于一块幕布
     private var mSurface: Surface? = null
+
     //播放视图界面，相当于放映的画面所在的区域
     private var mTextureView: TextureView? = null
+
     //音频管理器
     private var mAudioManager: AudioManager? = null
     private var mRunnable: Runnable? = null
+
     //是否在onResume后进行播放操作
     private var mIsBackContinue: Boolean? = null
+
     //播放状态
     private var mPlayState = PlayState.STATE_IDLE
+
     //播放模式
     private var mPlayMode = PlayMode.MODE_NORMAL
+
     //初始音量
     private var mDefaultVolume = 0
+
     //滑动初始进度
     private var mStartPosition = 0L
+
     //初始亮度
     private var mStartLight = 0
+
     //播放进度
     private var mPosition = 0L
+
     //调节的音量
     private var mVolume = 0
+
     //调节的亮度
     private var mLight = 0
+
     //缓存进度
     private var mBufferPercent = 0
+
     //loadingID
     private var mLoadingNums = mutableSetOf<Int>()
+
     //滑动功能模式
     private var mAdjustWay = -1
+
     //是否第一次按下，用于滑动判断
     private var mIsFirstDown = true
+
     //中间的控制view是否显示中
     private var mCenterControlViewIsShow = false
+
     //是否加载中
     private var mIsLoading = false
+
     //是否静音
     private var mIsVolumeMute = false
+
     //是否强制翻转屏幕
     private var mIsForceScreen = false
+
     //是否显示系统时间
     private var mIsShowSysTime = false
+
     //网速获取器
     private var mNetWorkSpeedHandler: NetWorkSpeedHandler? = null
+
     //播放器状态回调
     private var mJvListener: JvListener? = null
+
     //是否自动播放
     private var mIsAutoPlay = false
+
     //默认params
     private var mDefaultParams: ViewGroup.LayoutParams? = null
 
     private val mHandler by lazy {
         Handler()
     }
+
     //播放的视频
     private var mVideo: Video? = null
 
@@ -203,7 +228,7 @@ class JvPresenter(
             player.setOnSeekCompleteListener {
                 // mPlayState = PlayState.STATE_IDLE
                 Log.d(JvCommon.TAG, "setOnSeekCompleteListener")
-                seekCompleted(it.currentPosition)
+                seekCompleted()
             }
 
             //预加载监听
@@ -256,18 +281,6 @@ class JvPresenter(
             }
             //设置IjkMediaPlayer Option
             if (player is IjkMediaPlayer) {
-                /*
-                  rtsp设置 https://ffmpeg.org/ffmpeg-protocols.html#rtsp
-                 */
-//                player.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "rtsp_transport", "tcp")
-//                player.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "rtsp_flags", "prefer_tcp")
-//
-//                player.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "allowed_media_types", "video") //根据媒体类型来配置
-//                player.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "timeout", 10000)
-//                player.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "infbuf", 1)  // 无限读
-//                player.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "analyzemaxduration", 100L)
-//                player.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "probesize", 10240L)
-//                player.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "flush_packets", 1L)
                 //关闭播放器缓冲，这个必须关闭，否则会出现播放一段时间后，一直卡主，控制台打印 FFP_MSG_BUFFERING_START
                 player.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "packet-buffering", 1)
                 player.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "framedrop", 1L)
@@ -294,21 +307,17 @@ class JvPresenter(
                 player.setOnNativeInvokeListener(IjkMediaPlayer.OnNativeInvokeListener { _, _ ->
                     true
                 })
-//                player.setOption(
-//                IjkMediaPlayer.OPT_CATEGORY_FORMAT,
-//                "fflags",
-//                "fastseek"
-//                )//设置seekTo能够快速seek到指定位置并播放
+
                 player.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "reconnect", 5)
                 player.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "dns_cache_clear", 1)
                 //硬解码
-                player.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "mediacodec", 1);
-                player.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "mediacodec-auto-rotate", 1);
+                player.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "mediacodec", 1)
+                player.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "mediacodec-auto-rotate", 1)
                 player.setOption(
                     IjkMediaPlayer.OPT_CATEGORY_PLAYER,
                     "mediacodec-handle-resolution-change",
                     1
-                );
+                )
             }
 
             //设置是否保持屏幕常亮
@@ -408,16 +417,14 @@ class JvPresenter(
 
         closeLoading("预加载完成", 4)
         Log.d(JvCommon.TAG, "setOnPreparedListener")
-        mPlayer.let {
-            mView.setOnTouchListener { _, _ -> false }
-            //预加载后先播放再暂停，1：防止播放错误-38(未开始就停止) 2：可以显示第一帧画面
-            mView.preparedVideo(getVideoTimeStr(null), it.duration.toInt())
-        }
+        mView.setOnTouchListener { _, _ -> false }
+
+        //预加载后先播放再暂停，1：防止播放错误-38(未开始就停止) 2：可以显示第一帧画面
+        mView.preparedVideo(getVideoTimeStr(mVideo?.progress), mVideo?.progress?.toInt() ?: 0, mPlayer.duration.toInt())
+
+        //如果开启自动播放的话就直接播放,否则直接滑动到初始位置
+        if (mIsAutoPlay) startPlay(mVideo?.progress ?: 0)
         showControlUi(false)
-        //如果开启自动播放的话就直接播放
-        mVideo?.progress?.let {
-            if (mIsAutoPlay) startPlay(it)
-        }
     }
 
     //开始播放
@@ -431,7 +438,7 @@ class JvPresenter(
                 it.start()
                 mPlayState = PlayState.STATE_PLAYING
             }
-            mView.startVideo(position)
+            mView.startVideo()
             runVideoTime()
         }
     }
@@ -493,13 +500,6 @@ class JvPresenter(
         }
     }
 
-    private fun seekCompleted(position: Long) {
-        Log.d(JvCommon.TAG, "seekCompleted")
-        closeLoading("seek完成", 5)
-        //缓冲结束解绑实时网速获取器
-        mNetWorkSpeedHandler?.unbindHandler()
-    }
-
     private fun soughtTo(position: Long) {
         //loading
         showLoading("seek中....", 5)
@@ -512,11 +512,29 @@ class JvPresenter(
         })
     }
 
+    private fun seekCompleted() {
+        Log.d(JvCommon.TAG, "seekCompleted")
+        closeLoading("seek完成", 5)
+        if(mPlayState==PlayState.STATE_BUFFERING_PAUSED||mPlayState==PlayState.STATE_BUFFERING_PLAYING){
+            closeLoading("缓冲UI停止", 3)
+            showLoading("缓冲中....", 3)
+            //缓冲开始时绑定实时网速获取器
+            mNetWorkSpeedHandler?.bindHandler(object : NetWorkSpeedHandler.OnNetWorkSpeedListener {
+                override fun netWorkSpeed(speed: String) {
+                    mView.showNetSpeed("$speed/s")
+                }
+            })
+        }
+        //缓冲结束解绑实时网速获取器
+        mNetWorkSpeedHandler?.unbindHandler()
+    }
+
     override fun seekCompletePlay(position: Long) {
         Log.d(JvCommon.TAG, "seekToPlay:$position")
         mPlayer.let {
             if (mPlayState == PlayState.STATE_PAUSED || mPlayState == PlayState.STATE_BUFFERING_PAUSED) {
                 soughtTo(position)
+                continuePlay()//拖动时播放一秒再暂停
                 pausePlay()
             } else if (mPlayState == PlayState.STATE_PLAYING || mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
                 soughtTo(position)
@@ -589,7 +607,7 @@ class JvPresenter(
     override fun errorPlay(what: Int, extra: Int, message: String) {
         mJvListener?.onError()
 
-        Log.d(JvCommon.TAG, "setOnErrorListener:$what,$message")
+        Log.d(JvCommon.TAG, "setOnErrorListener:$what, $message")
         mPlayState = PlayState.STATE_ERROR
         //播放错误时记录下时间点
         mVideo?.progress = if (getPosition() != 0L) {
@@ -724,6 +742,7 @@ class JvPresenter(
             return super.onScroll(e1, e2, distanceX, distanceY)
         }
     }
+
     // 2.创建一个检测器
     private val detector = GestureDetector(mActivity, listener)
     //====================================================================================
@@ -868,7 +887,7 @@ class JvPresenter(
      */
     override fun onPause() {
         //取消屏幕常亮
-        mActivity.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        mActivity.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         mIsBackContinue =
             if (mPlayState == PlayState.STATE_PAUSED || mPlayState == PlayState.STATE_BUFFERING_PAUSED) {
@@ -885,7 +904,7 @@ class JvPresenter(
 
     override fun onResume() {
         //设置屏幕常亮
-        mActivity.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        mActivity.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         //播放器初始化中不做任何操作
         mIsBackContinue?.let {
             if (it) continuePlay() else pausePlay()
@@ -938,9 +957,6 @@ class JvPresenter(
         if (mIsShowSysTime) {
             mView.showSysTime(true)
         }
-        // 隐藏ActionBar、状态栏
-        mActivity.actionBar?.hide()
-
         mActivity.window.setFlags(
             WindowManager.LayoutParams.FLAG_FULLSCREEN,
             WindowManager.LayoutParams.FLAG_FULLSCREEN
@@ -950,11 +966,24 @@ class JvPresenter(
             LinearLayout.LayoutParams.MATCH_PARENT,
             LinearLayout.LayoutParams.MATCH_PARENT
         )
-        //隐藏虚拟按键，并且全屏
-        mActivity.window.decorView.systemUiVisibility =
-            View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or View.SYSTEM_UI_FLAG_FULLSCREEN
         mView.layoutParams = params
-
+        mActivity.window.decorView.apply {
+            //隐藏导航栏，状态栏，并且全屏， 粘性沉浸式（PS:与沉浸式的区别在于会自动收起且不改变原始布局）
+            systemUiVisibility = (View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                    // Set the content to appear under the system bars so that the
+                    // content doesn't resize when the system bars hide and show.
+                    or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                    or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    // Hide the nav bar and status bar
+                    or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                    or View.SYSTEM_UI_FLAG_FULLSCREEN)
+            //隐藏状态栏 SDK_INT<16
+            //    mActivity.window.setFlags(
+            //        WindowManager.LayoutParams.FLAG_FULLSCREEN,
+            //        WindowManager.LayoutParams.FLAG_FULLSCREEN
+            //    )
+        }
         //全屏直接使用手机大小,此时未翻转的话，高宽对调
         val phoneWidth = JvUtil.getPhoneDisplayWidth(mActivity)
         val phoneHeight = JvUtil.getPhoneDisplayHeight(mActivity)
@@ -974,11 +1003,11 @@ class JvPresenter(
         //进入普通模式
         mDefaultParams?.let {
             mPlayMode = PlayMode.MODE_NORMAL
-            mActivity.actionBar?.show()
             mActivity.window.clearFlags(
                 WindowManager.LayoutParams.FLAG_FULLSCREEN
             )
             mActivity.window.decorView.systemUiVisibility = View.VISIBLE
+
             mView.layoutParams = it
             mTextureView?.layoutParams =
                 JvUtil.changeVideoSize(it.width, it.height, mPlayer.videoWidth, mPlayer.videoHeight)

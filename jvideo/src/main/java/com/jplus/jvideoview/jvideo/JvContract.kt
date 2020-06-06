@@ -56,9 +56,10 @@ interface JvContract {
         /**
          * 播放准备就绪
          * @param videoTime 播放时间
+         * @param start 可选任意位置，默认为初始位置 初始进度
          * @param max 最大进度
          */
-        fun preparedVideo(videoTime:String, max:Int)
+        fun preparedVideo(videoTime:String, start:Int, max:Int)
         /**
          * 播放器reset
          */
@@ -84,9 +85,8 @@ interface JvContract {
         fun setThumbnail(bitmap:Bitmap?)
         /**
          * 开始播放
-         * @param position 可选任意位置，默认为初始位置
          */
-        fun startVideo(position: Long = 0)
+        fun startVideo()
         /**
          * 显示实时网速
          * @param speed 实时网速

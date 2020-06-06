@@ -1,6 +1,5 @@
 package com.jplus.jvideoview.view
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.TypedArray
 import android.graphics.Canvas
@@ -8,7 +7,6 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
 import android.util.AttributeSet
-import android.util.Log
 import android.view.View
 import androidx.core.content.ContextCompat
 import com.jplus.jvideoview.R
@@ -28,10 +26,16 @@ class VideoPlayView(context: Context, attrs: AttributeSet) : View(context, attrs
     private var mIsPause = false
 
     private val mMinWidth by lazy {
-        150
+        140
     }
     private val mMinHeight by lazy {
-        mMinWidth
+        140
+    }
+    private val mStartAngle by lazy {
+        120f
+    }
+    private val mSweepAngle by lazy {
+        300f
     }
     private var mStrokeWidth = 0f
 
@@ -50,11 +54,11 @@ class VideoPlayView(context: Context, attrs: AttributeSet) : View(context, attrs
     private fun initPaint(context: Context, typeArray:TypedArray) {
         val circleColor = typeArray.getColor(
             R.styleable.VideoPlayView_circle_color,
-            ContextCompat.getColor(context, R.color.video_play_color)
+            ContextCompat.getColor(context, R.color.video_play_transparent)
         )
         val playColor = typeArray.getColor(
             R.styleable.VideoPlayView_play_color,
-            ContextCompat.getColor(context, R.color.video_play_color)
+            ContextCompat.getColor(context, R.color.video_play_transparent)
         )
         setColor(playColor, circleColor)
     }
@@ -85,13 +89,13 @@ class VideoPlayView(context: Context, attrs: AttributeSet) : View(context, attrs
         }
     }
 
-    private fun initDrawView(r: Float) {
+    private fun initDrawView(max: Float) {
         if (mStrokeWidth == 0f) {
-            mStrokeWidth = r / 10
-            mCirclePaint?.strokeWidth = r / 10f
-            mPlayPaint?.strokeWidth = r / 10f
+            mStrokeWidth = max / 12
+            mCirclePaint?.strokeWidth = max / 10f
+            mPlayPaint?.strokeWidth = max / 10f
         }
-        setDrawCircle(r, 120f, 300f)
+        setDrawCircle(max, mStartAngle, mSweepAngle)
     }
 
 
@@ -114,22 +118,22 @@ class VideoPlayView(context: Context, attrs: AttributeSet) : View(context, attrs
         }
     }
 
-    private fun setDrawPlay(r: Float) {
+    private fun setDrawPlay(max: Float) {
         mPlayPath = Path()
         mPlayPath?.let {
             //播放
-            it.moveTo(mWidth / 2f - r / 6f, mHeight / 2f - r / 6) //移动到
-            it.lineTo(mWidth / 2f - r / 6f, mHeight / 2f + r / 6)
-            it.moveTo(mWidth / 2f + r / 6f, mHeight / 2f - r / 6) //移动到
-            it.lineTo(mWidth / 2f + r / 6f, mHeight / 2f + r / 6)
+            it.moveTo(mWidth / 2f - max / 6f, mHeight / 2f - max / 6) //移动到
+            it.lineTo(mWidth / 2f - max / 6f, mHeight / 2f + max / 6)
+            it.moveTo(mWidth / 2f + max / 6f, mHeight / 2f - max / 6) //移动到
+            it.lineTo(mWidth / 2f + max / 6f, mHeight / 2f + max / 6)
         }
     }
 
-    private fun setDrawPause(r: Float) {
+    private fun setDrawPause(max: Float) {
         mPlayPath = Path()
         mPlayPath?.let {
             //暂停
-            val ran = r / 4f
+            val ran = max / 4f
             val len = ran * 3 / sqrt(3f)
             it.moveTo(mWidth / 2f - ran / 2f, mHeight / 2f)
             it.quadTo(mWidth / 2f - ran / 2f, mHeight / 2f - len / 2f, mWidth / 2f + ran / 4f, mHeight / 2f - len / 4f)
@@ -142,14 +146,14 @@ class VideoPlayView(context: Context, attrs: AttributeSet) : View(context, attrs
         }
     }
 
-    private fun setDrawCircle(r: Float, start: Float, sweep: Float) {
+    private fun setDrawCircle(max: Float, start: Float, sweep: Float) {
         mCirclePath = Path()
         val rectF1 =
             RectF(
-                mWidth / 2f - r / 2f + mStrokeWidth / 2f,
-                mHeight / 2f - r / 2f + mStrokeWidth / 2f,
-                mWidth / 2f + r / 2f - mStrokeWidth / 2f,
-                mHeight / 2f + r / 2f - mStrokeWidth / 2f
+                mWidth / 2f - max / 2f + mStrokeWidth ,
+                mHeight / 2f - max / 2f + mStrokeWidth ,
+                mWidth / 2f + max / 2f - mStrokeWidth ,
+                mHeight / 2f + max / 2f - mStrokeWidth
             )
         mCirclePath?.addArc(rectF1, start, sweep)
     }

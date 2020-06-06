@@ -12,7 +12,6 @@
                 android:layout_height="48dp"
                 android:textColor="@color/video_text_color"
                 android:gravity="center"
-                android:text="10/100"
                 android:background="@color/video_transparent_bg_dark_light"/>
 
 </LinearLayout>

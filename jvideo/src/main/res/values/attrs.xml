@@ -29,8 +29,14 @@
         <attr name="stroke_width" format="float"/>
     </declare-styleable>
 
+    <declare-styleable name="TransPlayView">
+        <attr name="color" format="reference|color" />
+        <attr name="stroke" format="float"/>
+    </declare-styleable>
+
     <declare-styleable name="VideoLoadingView">
         <attr name="lines_color" format="color" />
         <attr name="rate" format="float" />
     </declare-styleable>
+
 </resources>
