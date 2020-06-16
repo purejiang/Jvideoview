@@ -5,4 +5,5 @@ package com.jplus.jvideoview.entity
  */
 data class Video(var name:String,
                  var url:String,
+                 var size:Long,
                  var progress:Long)

@@ -21,12 +21,6 @@
             android:layout_height="150dp"
             android:background="@color/video_bar_bg_gray_light"/>
 
-    <com.jplus.jvideoview.view.TransPlayView
-        android:id="@+id/tp_play"
-        android:layout_width="100dp"
-        android:layout_height="150dp"
-        android:background="@color/video_bar_bg_gray_light"/>
-
     <TextView
             android:id="@+id/tv_test"
             android:layout_width="match_parent"

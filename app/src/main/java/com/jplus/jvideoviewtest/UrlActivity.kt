@@ -27,15 +27,15 @@ class UrlActivity : AppCompatActivity() {
                 true
             }
         }
-        tp_play.setOnClickListener {
-            mIsPause = if(mIsPause){
-                tp_play.pause()
-                false
-            }else{
-                tp_play.play()
-                true
-            }
-        }
+//        tp_play.setOnClickListener {
+//            mIsPause = if(mIsPause){
+//                tp_play.pause()
+//                false
+//            }else{
+//                tp_play.play()
+//                true
+//            }
+//        }
 //        val text = "\n\u3000\u3000贝斯（金妮弗·古德温 Ginnifer Goodwin 饰）从小的梦想就是能够成为一名家庭主妇，如今她嫁给了罗伯特（山姆·贾格 Sam Jaeger 饰）为妻，总算是实现了理想。没想到第三者的出现将她美好的生活幻影撕成了碎片。\n                                    \n\u3000\u3000社交名媛西蒙尼（刘玉玲 饰）嫁给了非常疼爱她的卡尔（杰克·达文波特 Jack Davenport 饰），哪知道竟然在偶然之中发现卡尔竟然是一名同性恋者，在守住秘密和守住尊严之间，西蒙尼必须做出选择。\n                                    \n\u3000\u3000泰勒（柯尔比·豪威尔-巴普蒂斯特 Kirby Howell-Baptiste 饰）和埃里（瑞德·斯科特 Reid Scott 饰）正在进行一场开放式婚姻，泰勒的情人杰德（亚历珊德拉·达达里奥 Alexandra Daddario 饰）的出现让埃里开始觉得，在他们两个人里面再加一个人似乎也是个不错的主意。\n                        "
 //        tv_test.text = text
     }

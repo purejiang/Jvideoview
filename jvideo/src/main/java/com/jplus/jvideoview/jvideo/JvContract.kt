@@ -5,9 +5,6 @@ import android.graphics.Bitmap
 import android.graphics.SurfaceTexture
 import android.view.MotionEvent
 import android.view.TextureView
-import android.view.View
-import com.jplus.jvideoview.BasePresenter
-import com.jplus.jvideoview.BaseView
 import tv.danmaku.ijk.media.player.IMediaPlayer
 
 /**
@@ -16,7 +13,7 @@ import tv.danmaku.ijk.media.player.IMediaPlayer
  */
 interface JvContract {
 
-    interface Views :BaseView<Presenter>{
+    interface View{
         /**
          * 设置播放标题
          * @param title 标题
@@ -40,11 +37,11 @@ interface JvContract {
         /**
          * 显示中间播放控制按钮
          */
-        fun showCenterControlView()
+        fun showCenterPlayView()
         /**
          * 关闭中间播放控制按钮
          */
-        fun closeCenterControlView()
+        fun closeCenterPlayView()
         /**
          * 显示中间提示信息view
          */
@@ -150,10 +147,16 @@ interface JvContract {
         /**
          * 隐藏进度控制ui
          */
-        fun hideAdjustUi()
+        fun hideTopAdjustUi()
+
+        fun setPresenter(t: Presenter)
     }
 
-    interface Presenter:BasePresenter {
+    interface Presenter{
+        /**
+         * 初始化播放器监听
+         */
+        fun initPlayerListener()
         /**
          * 设置播放器状态回调
          */
@@ -233,7 +236,7 @@ interface JvContract {
          * @param view View
          * @param event 手势事件
          */
-        fun slideJudge(view:View, event:MotionEvent)
+        fun slideJudge(view: android.view.View, event:MotionEvent)
         /**
          * 滑动中
          * @param position 进度条进度
@@ -332,5 +335,9 @@ interface JvContract {
          * @param destroyUi 释放MediaPlayer资源后是否退出当前模式
          */
         fun releasePlay(destroyUi:Boolean)
+
+        fun subscribe()
+
+        fun unSubscribe()
     }
 }

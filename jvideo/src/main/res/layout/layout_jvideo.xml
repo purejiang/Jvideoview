@@ -17,7 +17,6 @@
                     android:layout_height="match_parent"/>
         </LinearLayout>
 
-
         <include layout="@layout/layout_controller"/>
 
     </FrameLayout>

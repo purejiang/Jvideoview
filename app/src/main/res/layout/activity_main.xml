@@ -1,22 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-        xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:tools="http://schemas.android.com/tools"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
-        tools:context=".MainActivity">
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
-    <com.jplus.jvideoview.jvideo.JvView
-            android:id="@+id/jv_video_main2"
+    <com.google.android.material.appbar.AppBarLayout
+            android:id="@+id/abl_play_top"
             android:layout_width="match_parent"
-            android:layout_height="300dp"
-            app:progress_drawer="@drawable/draw_seek_bar"
-            app:thumb_color="@color/jv_thumb_color"
-            app:play_btn_color="@color/video_play_transparent"
-            app:loading_color="@color/video_play_transparent"
-            app:num_progress_mode="both_sides"
-            app:lines_drawer="@drawable/video_line_progress"
-    />
+            android:layout_height="wrap_content">
 
-</LinearLayout>
+        <com.google.android.material.appbar.CollapsingToolbarLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+                app:layout_scrollFlags="scroll|exitUntilCollapsed">
+
+            <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                <com.jplus.jvideoview.jvideo.JvView
+                        android:id="@+id/jv_video_play"
+                        android:layout_width="match_parent"
+                        android:layout_height="300dp"
+                        app:num_progress_mode="both_sides"
+                        app:progress_drawer="@drawable/video_seek_bar"
+                        app:lines_drawer="@drawable/video_seek_bar"
+                       />
+            </LinearLayout>
+
+
+            <androidx.appcompat.widget.Toolbar
+                    android:id="@+id/toolbar"
+                    android:layout_width="match_parent"
+                    android:layout_height="?attr/actionBarSize"
+                    app:layout_collapseMode="pin"
+                    app:navigationContentDescription=""
+                    app:navigationIcon="@mipmap/ic_video_back"
+                    app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
+                    app:title="Title" />
+        </com.google.android.material.appbar.CollapsingToolbarLayout>
+    </com.google.android.material.appbar.AppBarLayout>
+
+
+    <androidx.core.widget.NestedScrollView
+            android:id="@+id/nesv_bottom"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="1\n\n\n\n\n1\n\n\n\n\n\n\n\n\\n\n\n\n\n\n\n\n\n\n\1/\/\/\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n1" />
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

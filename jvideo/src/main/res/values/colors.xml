@@ -8,8 +8,8 @@
     <color name="seek_bar_progress_second">#AFFFFFFF</color>
     <color name="seek_bar_progress">#51DDDADA</color>
     <color name="seek_bar_thumb">#51E2E2E2</color>
-    <color name="video_text_color">#FFFFFF</color>
-    <color name="video_play_color">#FFFFFF</color>
-    <color name="jv_thumb_color">#FFFFFF</color>
+    <color name="video_text_color">#AFFFFFFF</color>
+    <color name="video_play_color">#AFFFFFFF</color>
+    <color name="jv_thumb_color">#AFFFFFFF</color>
     <color name="video_play_transparent">#A0FFFFFF</color>
 </resources>

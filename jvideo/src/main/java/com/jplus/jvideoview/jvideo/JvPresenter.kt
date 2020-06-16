@@ -16,6 +16,7 @@ import android.provider.Settings
 import android.util.Log
 import android.view.*
 import android.view.GestureDetector.SimpleOnGestureListener
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import com.jplus.jvideoview.common.JvConstant.*
 import com.jplus.jvideoview.entity.Video
@@ -197,7 +198,7 @@ class JvPresenter(
     }
 
     //初始化播放器监听
-    private fun initPlayerListener() {
+     override fun initPlayerListener() {
         mPlayer.let { player ->
             //设置是否循环播放，默认可不写
             player.isLooping = false
@@ -752,7 +753,7 @@ class JvPresenter(
         when (event.action) {
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                 endAdjust()
-                mView.hideAdjustUi()
+                mView.hideTopAdjustUi()
             }
         }
     }
@@ -937,6 +938,7 @@ class JvPresenter(
                 if (switchMode == SwitchMode.SWITCH_TO_FULL) {
                     //进入全屏模式（在dialog的模式下似乎会有适配问题）
                     mPlayMode = PlayMode.MODE_FULL_SCREEN
+                    mJvListener?.onFullScreen()
                     //屏幕旋转时指定带重力感应的屏幕方向不然会转不过来...，但是没有开启旋转的情况下要强制转屏来达到全屏效果
                     mActivity.requestedOrientation =
                         ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
@@ -945,6 +947,7 @@ class JvPresenter(
                 }
             }
             PlayMode.MODE_FULL_SCREEN -> {
+                mJvListener?.onNormalScreen()
                 exitMode(true, isRotateScreen)
             }
         }
@@ -957,6 +960,8 @@ class JvPresenter(
         if (mIsShowSysTime) {
             mView.showSysTime(true)
         }
+        //该方案只适合父容器为linearLayout且根布局中没有滑动控件，其他父容器下适配捉急
+        //============直接设置根布局改为横屏，然后View宽高改为MATCH_PARENT来实现=======
         mActivity.window.setFlags(
             WindowManager.LayoutParams.FLAG_FULLSCREEN,
             WindowManager.LayoutParams.FLAG_FULLSCREEN
@@ -966,6 +971,7 @@ class JvPresenter(
             LinearLayout.LayoutParams.MATCH_PARENT,
             LinearLayout.LayoutParams.MATCH_PARENT
         )
+//        (mActivity.findViewById<View>(android.R.id.content) as ViewGroup).addView(mView)
         mView.layoutParams = params
         mActivity.window.decorView.apply {
             //隐藏导航栏，状态栏，并且全屏， 粘性沉浸式（PS:与沉浸式的区别在于会自动收起且不改变原始布局）
@@ -984,6 +990,12 @@ class JvPresenter(
             //        WindowManager.LayoutParams.FLAG_FULLSCREEN
             //    )
         }
+        //========================================================
+        //===============2.使view变成全屏===============
+//        val hideFlags = View.SYSTEM_UI_FLAG_LOW_PROFILE or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or View.SYSTEM_UI_FLAG_FULLSCREEN or  View.SYSTEM_UI_FLAG_IMMERSIVE or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+//
+//        mView.systemUiVisibility = hideFlags
+        //========================================================
         //全屏直接使用手机大小,此时未翻转的话，高宽对调
         val phoneWidth = JvUtil.getPhoneDisplayWidth(mActivity)
         val phoneHeight = JvUtil.getPhoneDisplayHeight(mActivity)
@@ -1077,7 +1089,7 @@ class JvPresenter(
     private fun showControlUi(autoHide: Boolean) {
         mCenterControlViewIsShow = true
         if (!mIsLoading) { //不在加载中则显示中心按钮
-            mView.showCenterControlView()
+            mView.showCenterPlayView()
         }
         mView.showController()
         if (autoHide) {
@@ -1124,7 +1136,7 @@ class JvPresenter(
     }
 
     override fun setMessagePromptInCenter(message: String, isShowReset: Boolean) {
-        mView.closeCenterControlView()
+        mView.closeCenterPlayView()
         closeAllLoading()
         mView.showCenterHintView()
         mView.showMessagePrompt(message, isShowReset)

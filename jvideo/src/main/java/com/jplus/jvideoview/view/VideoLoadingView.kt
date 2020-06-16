@@ -6,12 +6,10 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.util.AttributeSet
-import android.util.Log
 import android.view.View
 import android.view.animation.LinearInterpolator
 import androidx.core.content.ContextCompat
 import com.jplus.jvideoview.R
-import com.jplus.jvideoview.jvideo.JvCommon
 
 
 /**
@@ -100,10 +98,10 @@ class VideoLoadingView(context: Context, attrs: AttributeSet) : View(context, at
             mStrokeWidth = mWidth / 9f
             mPaint?.strokeWidth = mStrokeWidth
         }
-        start()
+        if(mAnimatorSet==null) initAnimal()
     }
 
-    private fun start(){
+    private fun initAnimal(){
         val oneHeight = mHeight * 3f / 7f
 
         val valueAnimator = ValueAnimator.ofFloat(0f, oneHeight - mStrokeWidth)
@@ -191,6 +189,13 @@ class VideoLoadingView(context: Context, attrs: AttributeSet) : View(context, at
         }
     }
 
+    fun start(){
+        mAnimatorSet?.start()
+    }
+
+    fun pause(){
+        mAnimatorSet?.pause()
+    }
 
     /**
      * 避免长时间重绘导致内存泄漏

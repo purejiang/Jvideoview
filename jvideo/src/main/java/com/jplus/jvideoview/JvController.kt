@@ -81,13 +81,12 @@ class JvController(
             }
 
             override fun onFullScreen() {
-
+                mCallBack.switchScreen(true)
             }
 
             override fun onNormalScreen() {
-
+                mCallBack.switchScreen(false)
             }
-
         })
     }
 
@@ -175,13 +174,18 @@ class JvController(
         fun startPlay()
 
         /**
-         * 播放下一集
-         */
-        fun toNext()
-
-        /**
          * 全部播放完成
          */
         fun endPlay()
+
+        /**
+         * 播放下一个
+         */
+        fun toNext()
+        /**
+         * 横竖屏切换
+         * @param isFullScreen 是否全屏
+         */
+        fun switchScreen(isFullScreen:Boolean)
     }
 }

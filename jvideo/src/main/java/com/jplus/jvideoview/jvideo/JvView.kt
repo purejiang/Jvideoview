@@ -37,7 +37,7 @@ import kotlinx.android.synthetic.main.view_jv_play.view.*
  * @date 2019/8/30.
  */
 @RequiresApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
-class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListener {
+class JvView : LinearLayout, JvContract.View, TextureView.SurfaceTextureListener {
     companion object {
         private const val BOTH_SIDES_MODE = 0
         private const val LEFT_SIDES_MODE = 1
@@ -242,8 +242,8 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
         pgb_video_line_progress?.progress = start
 
         showBottomControlUi()
-        showTopControlUi()
-        showCenterControlView()
+        showTopBarUi()
+        showCenterPlayView()
 
         vpv_video_control_play?.pause()
         vpv_video_center_play?.pause()
@@ -319,7 +319,7 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
         ly_video_loading?.visibility = VISIBLE
         //中间播放按钮的ui是否显示
         if (ly_video_play?.visibility == VISIBLE) {
-            closeCenterControlView()
+            closeCenterPlayView()
         }
 //        if(ly_video_hint.visibility == VISIBLE){
 //            closeCenterHintView()
@@ -334,7 +334,7 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
         Log.d("jv", "closeLoading")
         ly_video_loading?.visibility = GONE
             if (!mCenterIsShow&&ly_video_play.visibility == GONE) {
-                showCenterControlView()
+                showCenterPlayView()
             }
     }
 
@@ -358,23 +358,23 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
         ly_video_bottom_controller?.visibility = VISIBLE
     }
 
-    private fun closeTopControlUi() {
+    private fun closeTopBarUi() {
         Log.d("jv", "closeTopControlUi")
         ly_video_title?.visibility = GONE
     }
 
-    private fun showTopControlUi() {
+    private fun showTopBarUi() {
         Log.d("jv", "showTopControlUi")
         ly_video_title?.visibility = VISIBLE
     }
 
-    override fun closeCenterControlView() {
+    override fun closeCenterPlayView() {
         mCenterIsShow =false
         Log.d("jv", "closeCenterControlView")
         ly_video_play?.visibility = GONE
     }
 
-    override fun showCenterControlView() {
+    override fun showCenterPlayView() {
         mCenterIsShow =true
         Log.d("jv", "showCenterControlView")
         ly_video_play?.visibility = VISIBLE
@@ -397,7 +397,7 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
         ly_video_hint?.visibility = GONE
     }
 
-    override fun hideAdjustUi() {
+    override fun hideTopAdjustUi() {
         Log.d("jv", "hideAdjustUi")
         ly_video_slide?.visibility = GONE
     }
@@ -418,14 +418,14 @@ class JvView : LinearLayout, JvContract.Views, TextureView.SurfaceTextureListene
 
     override fun hideController() {
         closeBottomControlUi()
-        closeTopControlUi()
-        closeCenterControlView()
+        closeTopBarUi()
+        closeCenterPlayView()
         showBottomLineUi()
     }
 
     override fun showController() {
         showBottomControlUi()
-        showTopControlUi()
+        showTopBarUi()
         hideBottomLineUi()
     }
 
