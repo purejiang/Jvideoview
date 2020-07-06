@@ -16,10 +16,11 @@ import android.provider.Settings
 import android.util.Log
 import android.view.*
 import android.view.GestureDetector.SimpleOnGestureListener
-import android.widget.FrameLayout
 import android.widget.LinearLayout
 import com.jplus.jvideoview.common.JvConstant.*
 import com.jplus.jvideoview.entity.Video
+import com.jplus.jvideoview.other.BatteryManger
+import com.jplus.jvideoview.other.BatteryReceiver
 import com.jplus.jvideoview.utils.JvUtil
 import com.jplus.jvideoview.utils.JvUtil.dt2progress
 import com.jplus.jvideoview.utils.NetWorkSpeedHandler
@@ -143,6 +144,15 @@ class JvPresenter(
         setIsSupShowSpeed(false, 2000L)
         //保存普通状态下的布局参数
         Log.d(JvCommon.TAG, "orientation:" + mActivity.requestedOrientation)
+        BatteryManger.bindAutoBattery(mActivity, object :BatteryReceiver.OnBatteryChangeListener{
+            override fun backBattery(battery: Double) {
+                mView.showBattery(battery)
+            }
+
+            override fun isChargeBattery(isCharge: Boolean) {
+
+            }
+        })
     }
 
 
@@ -158,7 +168,7 @@ class JvPresenter(
     }
 
     override fun unSubscribe() {
-
+        BatteryManger.unbindAutoBattery(mActivity)
     }
 
     //初始化Media和volume
@@ -958,7 +968,7 @@ class JvPresenter(
      */
     private fun entryFullScreen() {
         if (mIsShowSysTime) {
-            mView.showSysTime(true)
+            mView.showSysInfo(true)
         }
         //该方案只适合父容器为linearLayout且根布局中没有滑动控件，其他父容器下适配捉急
         //============直接设置根布局改为横屏，然后View宽高改为MATCH_PARENT来实现=======
@@ -1010,7 +1020,7 @@ class JvPresenter(
 
     private fun entryPortraitScreen() {
         if (mIsShowSysTime) {
-            mView.showSysTime(false)
+            mView.showSysInfo(false)
         }
         //进入普通模式
         mDefaultParams?.let {

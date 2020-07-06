@@ -36,9 +36,7 @@
                     android:layout_height="?attr/actionBarSize"
                     app:layout_collapseMode="pin"
                     app:navigationContentDescription=""
-                    app:navigationIcon="@mipmap/ic_video_back"
-                    app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
-                    app:title="Title" />
+                    app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
         </com.google.android.material.appbar.CollapsingToolbarLayout>
     </com.google.android.material.appbar.AppBarLayout>
 

@@ -23,8 +23,8 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:background="@color/video_transparent_bg"
-            android:maxHeight="5dp"
-            android:minHeight="5dp"
+            android:maxHeight="@dimen/video_progress_height"
+            android:minHeight="@dimen/video_progress_height"
             android:splitTrack="false" />
 
     <include

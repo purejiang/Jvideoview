@@ -13,7 +13,7 @@
             android:layout_height="wrap_content"
             android:layout_margin="@dimen/view_margin_normal"
             android:textColor="@color/video_text_color"
-            android:textSize="12sp" />
+            android:textSize="@dimen/text_size_video_normal" />
 
         <TextView
             android:id="@+id/tv_video_refresh"
@@ -21,7 +21,7 @@
             android:layout_height="wrap_content"
             android:layout_margin="@dimen/view_margin_normal"
             android:layout_toEndOf="@id/tv_video_hint"
-            android:text="请点击重试~"
+            android:text="@string/video_refresh"
             android:textColor="@color/video_text_color"
-            android:textSize="12sp" />
+            android:textSize="@dimen/text_size_video_normal" />
     </RelativeLayout>

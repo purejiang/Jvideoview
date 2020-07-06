@@ -131,9 +131,24 @@ class JvView : LinearLayout, JvContract.View, TextureView.SurfaceTextureListener
         }
     }
 
-    private fun initListener() {
-        ly_video_title?.setOnTouchListener { _, _ -> true }
+    private fun isBanTouch(isBan:Boolean){
+        //第一次预加载完成前禁止点击
+        ly_video_slide?.setOnTouchListener { _, _ -> isBan }
+        ly_video_center?.setOnTouchListener { _, _ -> isBan }
+        ly_video_title?.setOnTouchListener { _, _ -> isBan }
+        ly_video_line?.setOnTouchListener { _, _ -> isBan }
+        ly_video_bottom_controller?.setOnTouchListener { _, _ -> isBan }
+        if(!isBan) {
+            ly_video_center?.setOnTouchListener { v, event ->
+                //屏幕滑动设置播放参数
+                mPresenter?.slideJudge(v, event)
+                true
+            }
+        }
+    }
 
+    private fun initListener() {
+        isBanTouch(true)
         mPresenter?.setPlayForm(PlayForm.PLAY_FORM_TURN)
         //设置Texture监听
         ttv_video_player?.surfaceTextureListener = this
@@ -146,7 +161,6 @@ class JvView : LinearLayout, JvContract.View, TextureView.SurfaceTextureListener
             mPresenter?.controlPlay()
         }
         seek_video_progress?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-
             override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
                 //seekBar滑动中的回调
                 mPresenter?.seekingPlay(seekBar.progress.toLong(), false)
@@ -162,16 +176,6 @@ class JvView : LinearLayout, JvContract.View, TextureView.SurfaceTextureListener
             }
 
         })
-
-        //预加载完成前禁止拖动seekBar
-        seek_video_progress?.setOnTouchListener { _, _ -> true }
-        //预加载完成前禁止点击bottom的控制按钮
-        vpv_video_control_play?.setOnTouchListener { _, _ -> true }
-        ly_video_center?.setOnTouchListener { v, event ->
-            //屏幕滑动设置播放参数
-            mPresenter?.slideJudge(v, event)
-            true
-        }
         img_screen_change?.setOnClickListener {
             mPresenter?.switchSpecialMode(SwitchMode.SWITCH_TO_FULL, false)
         }
@@ -229,12 +233,9 @@ class JvView : LinearLayout, JvContract.View, TextureView.SurfaceTextureListener
     }
 
     override fun preparedVideo(videoTime: String, start: Int, max: Int) {
-
+        isBanTouch(false)
         setNumProgress(videoTime)
-        //加载完成后可以拖动seekBar
-        seek_video_progress.setOnTouchListener { _, _ -> false }
-        //加载完成后可以点击控制按钮
-        vpv_video_control_play.setOnTouchListener { _, _ -> false }
+
         seek_video_progress?.max = max
         seek_video_progress?.progress = start
 
@@ -326,8 +327,9 @@ class JvView : LinearLayout, JvContract.View, TextureView.SurfaceTextureListener
 //        }
     }
 
-    override fun showSysTime(isShow: Boolean) {
-//        tc_video_sys_time?.visibility =  if (isShow) VISIBLE else GONE
+    override fun showSysInfo(isShow: Boolean) {
+        tc_video_sys_time?.visibility =  if (isShow) VISIBLE else GONE
+        tv_battery_info?.visibility =  if (isShow) VISIBLE else GONE
     }
 
     override fun closeLoading(text: String) {
@@ -400,6 +402,10 @@ class JvView : LinearLayout, JvContract.View, TextureView.SurfaceTextureListener
     override fun hideTopAdjustUi() {
         Log.d("jv", "hideAdjustUi")
         ly_video_slide?.visibility = GONE
+    }
+
+    override fun showBattery(battery: Double) {
+        tv_battery_info?.text = String.format("电量：%.1f%%", battery)
     }
 
     override fun entryFullMode() {

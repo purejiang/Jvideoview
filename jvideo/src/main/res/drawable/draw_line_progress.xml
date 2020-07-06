@@ -2,8 +2,8 @@
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:id="@android:id/background">
         <shape>
-            <corners android:radius="1.5dp" />
-            <size android:height="3dp"/>
+            <corners android:radius="@dimen/radius_video_progress" />
+            <size android:height="@dimen/radius_video_progress"/>
             <solid android:color="@color/video_transparent_bg"/>
         </shape>
     </item>
@@ -11,8 +11,8 @@
     <item android:id="@android:id/secondaryProgress">
         <clip>
             <shape>
-                <corners android:radius="1.5dp"/>
-                <size android:height="5dp"/>
+                <corners android:radius="@dimen/radius_video_progress"/>
+                <size android:height="@dimen/radius_video_progress"/>
                 <solid android:color="@color/seek_bar_progress_second"/>
             </shape>
         </clip>
@@ -21,8 +21,8 @@
     <item android:id="@android:id/progress">
         <clip>
             <shape>
-                <corners android:radius="1.5dp"/>
-                <size android:height="3dp"/>
+                <corners android:radius="@dimen/radius_video_progress"/>
+                <size android:height="@dimen/radius_video_progress"/>
                 <gradient android:centerColor="@color/seek_bar_progress"/>
             </shape>
         </clip>

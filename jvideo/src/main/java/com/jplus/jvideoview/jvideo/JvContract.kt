@@ -23,7 +23,7 @@ interface JvContract {
          * 显示系统时间
          * @param isShow 是否显示
          */
-        fun showSysTime(isShow:Boolean)
+        fun showSysInfo(isShow:Boolean)
         /**
          * 开启播放器loading
          * @param text 提示文字
@@ -148,6 +148,11 @@ interface JvContract {
          * 隐藏进度控制ui
          */
         fun hideTopAdjustUi()
+        /**
+         * 显示电池信息
+         * @param battery 电池电量
+         */
+        fun showBattery(battery:Double)
 
         fun setPresenter(t: Presenter)
     }

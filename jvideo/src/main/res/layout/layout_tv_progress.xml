@@ -9,19 +9,19 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="@color/video_text_color"
-            android:text="00:00"
-            android:textSize="@dimen/video_progress_size_tv"/>
+            android:text="@string/default_video_progress_time"
+            android:textSize="@dimen/text_size_video_progress"/>
     <TextView
             android:id="@+id/tv_video_playing_split"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="@color/video_text_color"
-            android:text="/"/>
+            android:text="@string/default_video_time_split"/>
     <TextView
             android:id="@+id/tv_video_playing_count"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="@color/video_text_color"
-            android:text="00:00"
-            android:textSize="@dimen/video_progress_size_tv"/>
+            android:text="@string/default_video_progress_time"
+            android:textSize="@dimen/text_size_video_progress"/>
 </LinearLayout>

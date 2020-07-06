@@ -8,8 +8,8 @@
 
         <TextView
                 android:id="@+id/tv_slide_top"
-                android:layout_width="150dp"
-                android:layout_height="48dp"
+                android:layout_width="@dimen/video_top_slide_width"
+                android:layout_height="@dimen/video_top_slide_height"
                 android:textColor="@color/video_text_color"
                 android:gravity="center"
                 android:background="@color/video_transparent_bg_dark_light"/>

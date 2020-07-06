@@ -41,7 +41,7 @@ class MainActivity : AppCompatActivity() {
                     Log.d("jv", "toNext")
                 }
 
-                override fun switchScreen(isFullScreen: Boolean) {
+                override fun switchScreen(isFullScreen: Boolean ) {
                     val mAppBarChildAt: View = abl_play_top.getChildAt(0)
                     val mAppBarParams = mAppBarChildAt.layoutParams as AppBarLayout.LayoutParams
                      if(isFullScreen) {
