@@ -123,7 +123,7 @@ interface JvContract {
          * 调节音量
          * @param volumePercent 音量百分比
          */
-        fun setVolumeUi(volumePercent:Int)
+        fun setVolumeUi(volumePercent:Double)
         /**
          * 进入全屏模式
          */
@@ -151,8 +151,9 @@ interface JvContract {
         /**
          * 显示电池信息
          * @param battery 电池电量
+         * @param isCharge 是否充电
          */
-        fun showBattery(battery:Double)
+        fun showBattery(battery:Double, isCharge: Boolean)
 
         fun setPresenter(t: Presenter)
     }

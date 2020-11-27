@@ -6,6 +6,7 @@
     <dimen name="view_margin_smaller">3dp</dimen>
     <dimen name="view_margin_normal">8dp</dimen>
     <dimen name="view_margin_big">12dp</dimen>
+    <dimen name="view_margin_bigger">24dp</dimen>
     <dimen name="view_slide_margin_top">60dp</dimen>
     <dimen name="video_line_bottom">2.5dp</dimen>
 
@@ -17,4 +18,8 @@
     <dimen name="text_size_video_progress">10sp</dimen>
     <dimen name="text_size_video_title">12sp</dimen>
     <dimen name="text_size_video_normal">13sp</dimen>
+
+    <dimen name="text_icon_small">12sp</dimen>
+    <dimen name="text_icon_normal">24sp</dimen>
+    <dimen name="text_icon_big">32sp</dimen>
 </resources>

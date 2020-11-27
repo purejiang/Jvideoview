@@ -73,7 +73,6 @@ class VideoPlayView(context: Context, attrs: AttributeSet) : View(context, attrs
             mCirclePaint = mCirclePaint?:Paint()
             mCirclePaint?.init(it)
         }
-
     }
 
     private fun Paint.init(color: Int) {

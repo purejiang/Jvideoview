@@ -14,7 +14,7 @@ import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
     private var mController: JvController? = null
-    private var mIsAuto =false
+    private var mIsAuto = false
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -27,38 +27,50 @@ class MainActivity : AppCompatActivity() {
             list.add(Video("视频$id", it1.replace("\n| ", ""), 0, 20000L))
             id++
         }
-            mController = JvController(this, jv_video_play, object : JvController.JvCallBack {
-                override fun initSuccess() {
-                    Log.d("jv", "initSuccess" )
-                    mController?.playVideos(list)
+        var mAppBarParams: AppBarLayout.LayoutParams? = null
+
+        mController = JvController(this, jv_video_play, object : JvController.JvCallBack {
+            override fun initSuccess() {
+                Log.d("jv", "initSuccess")
+//                val mAppBarChildAt: View = abl_play_top.getChildAt(0)
+//                mAppBarParams = mAppBarChildAt.layoutParams as AppBarLayout.LayoutParams
+                mController?.playVideos(list)
+            }
+
+            override fun startPlay() {
+                Log.d("jv", "startPlay")
+//                val mAppBarChildAt: View = abl_play_top.getChildAt(0)
+                mAppBarParams?.let {
+                    it.scrollFlags = 0
+//                    mAppBarChildAt.layoutParams = it
+                }
+            }
+
+            override fun toNext() {
+                Log.d("jv", "toNext")
+            }
+
+            override fun switchScreen(isFullScreen: Boolean) {
+
+            }
+
+            override fun endPlay() {
+                Log.d("jv", "endPlay")
+            }
+
+            override fun pausePlay() {
+
+//                val mAppBarChildAt: View = abl_play_top.getChildAt(0)
+                mAppBarParams?.let {
+                    it.scrollFlags =
+                        AppBarLayout.LayoutParams.SCROLL_FLAG_SCROLL or AppBarLayout.LayoutParams.SCROLL_FLAG_EXIT_UNTIL_COLLAPSED
+//                    mAppBarChildAt.layoutParams = it
                 }
 
-                override fun startPlay() {
-                    Log.d("jv", "startPlay")
-                }
-
-                override fun toNext() {
-                    Log.d("jv", "toNext")
-                }
-
-                override fun switchScreen(isFullScreen: Boolean ) {
-                    val mAppBarChildAt: View = abl_play_top.getChildAt(0)
-                    val mAppBarParams = mAppBarChildAt.layoutParams as AppBarLayout.LayoutParams
-                     if(isFullScreen) {
-                         mAppBarParams.scrollFlags = 0
-                    } else {
-                         mAppBarParams.scrollFlags = AppBarLayout.LayoutParams.SCROLL_FLAG_SCROLL or AppBarLayout.LayoutParams.SCROLL_FLAG_EXIT_UNTIL_COLLAPSED
-                         mAppBarChildAt.layoutParams = mAppBarParams
-                    }
-                }
-
-                override fun endPlay() {
-                    Log.d("jv", "endPlay")
-                }
-
-            }, JvConstant.PlayBackEngine.PLAYBACK_IJK_PLAYER)
-            mController?.supportShowSysTime(true)
-            mController?.supportAutoPlay(mIsAuto)
+            }
+        }, JvConstant.PlayBackEngine.PLAYBACK_IJK_PLAYER)
+        mController?.supportShowSysTime(true)
+        mController?.supportAutoPlay(mIsAuto)
 
     }
 
@@ -66,6 +78,7 @@ class MainActivity : AppCompatActivity() {
         super.onWindowFocusChanged(hasFocus)
         Log.d("jv", "onWindowFocusChanged")
     }
+
     override fun onStart() {
         super.onStart()
     }

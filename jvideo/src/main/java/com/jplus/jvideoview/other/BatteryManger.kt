@@ -29,6 +29,7 @@ class BatteryManger {
         fun unbindAutoBattery(context: Context) {
             if (batteryReceiver != null) {
                 context.unregisterReceiver(batteryReceiver)
+                batteryReceiver = null
             }
         }
     }

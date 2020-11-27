@@ -3,4 +3,20 @@
     <string name="video_refresh">请点击重试</string>
     <string name="default_video_progress_time">00:00</string>
     <string name="default_video_time_split">/</string>
+    <string name="icon_full_screen">&#xe614;</string>
+    <string name="icon_normal_screen">&#xe617;</string>
+    <string name="icon_audio_open">&#xe76e;</string>
+    <string name="icon_audio_close">&#xea50;</string>
+    <string name="icon_back">&#xe64a;</string>
+    <string name="icon_battery_empty">&#xe613;</string>
+    <string name="icon_battery_one">&#xe610;</string>
+    <string name="icon_battery_half">&#xe60e;</string>
+    <string name="icon_battery_three_quarters">&#xe611;</string>
+    <string name="icon_battery_full">&#xe60f;</string>
+    <string name="icon_battery_recharge_empty">&#xe612;</string>
+    <string name="icon_battery_recharge_one">&#xe615;</string>
+    <string name="icon_battery_recharge_half">&#xe615;</string>
+    <string name="icon_battery_recharge_three_quarters">&#xe616;</string>
+    <string name="icon_battery_recharge_full">&#xe616;</string>
+
 </resources>

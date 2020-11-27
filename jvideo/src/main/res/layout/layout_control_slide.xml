@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
               android:id="@+id/ly_video_slide"
-              android:layout_width="match_parent"
-              android:layout_height="wrap_content"
+              android:layout_width="@dimen/video_top_slide_width"
+              android:layout_height="@dimen/video_top_slide_height"
               android:gravity="center"
               android:layout_weight="1">
 

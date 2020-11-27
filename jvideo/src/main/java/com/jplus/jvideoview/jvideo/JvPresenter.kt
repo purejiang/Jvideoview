@@ -145,12 +145,8 @@ class JvPresenter(
         //保存普通状态下的布局参数
         Log.d(JvCommon.TAG, "orientation:" + mActivity.requestedOrientation)
         BatteryManger.bindAutoBattery(mActivity, object :BatteryReceiver.OnBatteryChangeListener{
-            override fun backBattery(battery: Double) {
-                mView.showBattery(battery)
-            }
-
-            override fun isChargeBattery(isCharge: Boolean) {
-
+            override fun backBattery(battery: Double, isCharge: Boolean) {
+                mView.showBattery(battery, isCharge)
             }
         })
     }
@@ -733,6 +729,7 @@ class JvPresenter(
             val distX = e2.x - e1.x
             //竖直滑动的距离
             val distY = e2.y - e1.y
+            Log.d("jv", "e1.x:${e1.x},e1.y:${e1.y},  e2.x:${e2.x}, e2.y:${e2.y}")
             //从手指落下时判断滑动时改变的模式
             when (mAdjustWay) {
                 PlayAdjust.ADJUST_VOLUME -> {
@@ -837,7 +834,7 @@ class JvPresenter(
                     distance,
                     getDuration(),
                     (mView as LinearLayout).width,
-                    0.2
+                    0.3
                 )
             ).toLong()
         when {
@@ -855,7 +852,7 @@ class JvPresenter(
                 distance,
                 255,
                 (mView as LinearLayout).height,
-                1.0
+                0.5
             )
         ).toInt()
         when {
@@ -872,25 +869,24 @@ class JvPresenter(
     }
 
     private fun setVolume(startVolume: Int, distance: Float) {
+
         var volume =
             startVolume + floor(
                 dt2progress(
                     distance,
                     getVolume(true).toLong(),
                     (mView as LinearLayout).height,
-                    1.0
+                    0.5
                 )
-            ).toInt()
+            )
         when {
-            volume in 0..getVolume(true) -> {
-
-            }
-            volume <= 0 -> volume = 0
-            else -> volume = getVolume(true)
+            volume <= 0.0 -> volume = 0.0
+            volume >= getVolume(true)*1.0 -> volume = getVolume(true)*1.0
         }
-        mAudioManager?.setStreamVolume(AudioManager.STREAM_MUSIC, volume, 0)
-        mVolume = volume
-        mView.setVolumeUi(volume * 100 / getVolume(true))
+        Log.d(JvCommon.TAG, "max:${getVolume(true)},volume:$volume")
+        mAudioManager?.setStreamVolume(AudioManager.STREAM_MUSIC, volume.toInt(), 0)
+        mVolume = volume.toInt()
+        mView.setVolumeUi(volume * 100.0 / getVolume(true))
     }
 
     /*
@@ -950,14 +946,12 @@ class JvPresenter(
                     mPlayMode = PlayMode.MODE_FULL_SCREEN
                     mJvListener?.onFullScreen()
                     //屏幕旋转时指定带重力感应的屏幕方向不然会转不过来...，但是没有开启旋转的情况下要强制转屏来达到全屏效果
-                    mActivity.requestedOrientation =
-                        ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                    mActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
                     //屏幕方向改为未知，保证下次能够旋转屏幕
 //                    mActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
                 }
             }
             PlayMode.MODE_FULL_SCREEN -> {
-                mJvListener?.onNormalScreen()
                 exitMode(true, isRotateScreen)
             }
         }
@@ -1046,6 +1040,7 @@ class JvPresenter(
             mActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
             //屏幕方向改为未知，保证下次能够旋转屏幕
 //            mActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            mJvListener?.onNormalScreen()
         }
     }
 
@@ -1058,7 +1053,7 @@ class JvPresenter(
         mRunnable = mRunnable ?: Runnable {
             mPlayer.let {
                 if (it.isPlaying) {
-                    //更新播放进度
+                    //更新播放进度showCenterControlView
                     mView.playing(
                         getVideoTimeStr(it.currentPosition),
                         it.currentPosition

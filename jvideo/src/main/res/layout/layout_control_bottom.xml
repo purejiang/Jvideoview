@@ -31,18 +31,36 @@
             android:id="@+id/ly_tv_progress_right"
             layout="@layout/layout_tv_progress" />
 
-    <ImageView
-            android:id="@+id/img_video_volume_open"
+    <TextView
+            android:id="@+id/tv_icon_volume_open"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_margin="@dimen/view_margin_small"
-            android:src="@mipmap/ic_video_volume_open" />
+            android:text="@string/icon_audio_open"
+            android:textSize="@dimen/text_icon_normal"
+            android:textColor="@color/video_text_color"/>
 
-    <ImageView
-            android:id="@+id/img_screen_change"
+    <TextView
+            android:id="@+id/tv_icon_screen_change"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="@dimen/view_margin_small"
             android:layout_marginEnd="@dimen/view_margin_big"
-            android:src="@mipmap/ic_video_arrawsalt" />
+            android:text="@string/icon_full_screen"
+            android:textSize="@dimen/text_icon_normal"
+            android:textColor="@color/video_text_color"/>
+    <!--    <ImageView-->
+    <!--            android:id="@+id/img_video_volume_open"-->
+    <!--            android:layout_width="wrap_content"-->
+    <!--            android:layout_height="wrap_content"-->
+    <!--            android:layout_margin="@dimen/view_margin_small"-->
+    <!--            android:src="@mipmap/ic_video_volume_open" />-->
+
+    <!--    <ImageView-->
+    <!--            android:id="@+id/img_screen_change"-->
+    <!--            android:layout_width="wrap_content"-->
+    <!--            android:layout_height="wrap_content"-->
+    <!--            android:layout_marginStart="@dimen/view_margin_small"-->
+    <!--            android:layout_marginEnd="@dimen/view_margin_big"-->
+    <!--            android:src="@mipmap/ic_video_arrawsalt" />-->
 </LinearLayout>

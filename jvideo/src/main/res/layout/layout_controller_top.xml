@@ -1,30 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/ly_video_title"
-    android:layout_width="match_parent"
-    android:layout_height="@dimen/video_top_slide_height"
-    android:background="@drawable/bg_top_controller_trans"
-    android:gravity="center_vertical">
-
-    <ImageButton
-        android:id="@+id/imb_video_back"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerVertical="true"
-        android:background="@color/video_transparent_bg"
-        android:visibility="gone"
-        android:src="@mipmap/ic_video_back" />
+        android:id="@+id/ly_video_title"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/video_top_slide_height"
+        android:background="@drawable/bg_top_controller_trans"
+        android:gravity="center_vertical">
 
     <TextView
-        android:id="@+id/tv_video_title"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerVertical="true"
-        android:layout_marginStart="@dimen/view_margin_big"
-        android:layout_marginEnd="@dimen/view_margin_big"
-        android:layout_toEndOf="@id/imb_video_back"
-        android:textColor="@color/video_text_color"
-        android:textSize="@dimen/text_size_video_title" />
+            android:id="@+id/tv_icon_back"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:text="@string/icon_back"
+            android:layout_marginStart="@dimen/view_margin_big"
+            android:textColor="@color/video_text_color"
+            android:textSize="@dimen/text_icon_normal"
+            android:visibility="gone"
+           />
+
+    <TextView
+            android:id="@+id/tv_video_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_marginStart="@dimen/view_margin_big"
+            android:layout_marginEnd="@dimen/view_margin_big"
+            android:layout_toEndOf="@id/tv_icon_back"
+            android:textColor="@color/video_text_color"
+            android:textSize="@dimen/text_size_video_title" />
 
     <TextView
             android:id="@+id/tv_battery_info"
@@ -33,21 +36,21 @@
             android:layout_centerVertical="true"
             android:layout_marginStart="@dimen/view_margin_big"
             android:layout_marginEnd="@dimen/view_margin_big"
+            android:layout_toStartOf="@+id/tc_video_sys_time"
             android:textColor="@color/video_text_color"
-            android:textSize="@dimen/text_size_video_progress"
-            android:visibility="gone"
-            android:layout_toStartOf="@+id/tc_video_sys_time"/>
+            android:textSize="@dimen/text_icon_normal"
+            android:visibility="gone" />
 
     <TextClock
             android:id="@+id/tc_video_sys_time"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:format24Hour="HH:mm"
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
+            android:layout_marginEnd="@dimen/view_margin_bigger"
+            android:format24Hour="HH:mm"
             android:gravity="center"
-            android:layout_marginEnd="@dimen/view_margin_normal"
-            android:visibility="gone"
             android:textColor="@color/video_text_color"
-            android:textSize="@dimen/text_size_video_progress" />
+            android:textSize="@dimen/text_size_video_title"
+            android:visibility="gone" />
 </RelativeLayout>

@@ -5,6 +5,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.PorterDuff
 import android.graphics.SurfaceTexture
+import android.graphics.Typeface
 import android.graphics.drawable.BitmapDrawable
 import android.os.Build
 import android.util.AttributeSet
@@ -129,6 +130,7 @@ class JvView : LinearLayout, JvContract.View, TextureView.SurfaceTextureListener
                 ly_tv_progress_left?.visibility = GONE
             }
         }
+        initListener(context)
     }
 
     private fun isBanTouch(isBan:Boolean){
@@ -147,7 +149,8 @@ class JvView : LinearLayout, JvContract.View, TextureView.SurfaceTextureListener
         }
     }
 
-    private fun initListener() {
+    private fun initListener(context:Context) {
+        val typeFace = Typeface.createFromAsset(context.assets, "iconfont.ttf");
         isBanTouch(true)
         mPresenter?.setPlayForm(PlayForm.PLAY_FORM_TURN)
         //设置Texture监听
@@ -176,17 +179,23 @@ class JvView : LinearLayout, JvContract.View, TextureView.SurfaceTextureListener
             }
 
         })
-        img_screen_change?.setOnClickListener {
+        //设置图标typeface
+        tv_icon_volume_open.typeface = typeFace
+        tv_icon_screen_change.typeface = typeFace
+        tv_icon_back.typeface = typeFace
+        tv_battery_info.typeface = typeFace
+
+        tv_icon_screen_change?.setOnClickListener {
             mPresenter?.switchSpecialMode(SwitchMode.SWITCH_TO_FULL, false)
         }
         tv_video_refresh?.setOnClickListener {
             //重新播放
             mPresenter?.reStartPlay()
         }
-        img_video_volume_open?.setOnClickListener {
+        tv_icon_volume_open?.setOnClickListener {
             mPresenter?.switchVolumeMute()
         }
-        imb_video_back?.setOnClickListener {
+        tv_icon_back?.setOnClickListener {
             mPresenter?.exitMode(isBackNormal = true, isRotateScreen = false)
         }
     }
@@ -201,9 +210,9 @@ class JvView : LinearLayout, JvContract.View, TextureView.SurfaceTextureListener
 
     override fun setVolumeMute(isMute: Boolean) {
         if (isMute) {
-            img_video_volume_open?.setImageResource(R.mipmap.ic_video_volume_close)
+            tv_icon_volume_open?.text = resources.getString(R.string.icon_audio_close)
         } else {
-            img_video_volume_open?.setImageResource(R.mipmap.ic_video_volume_open)
+            tv_icon_volume_open?.text = resources.getString(R.string.icon_audio_open)
         }
     }
 
@@ -219,7 +228,6 @@ class JvView : LinearLayout, JvContract.View, TextureView.SurfaceTextureListener
 
     override fun setPresenter(t: JvContract.Presenter) {
         mPresenter = t
-        initListener()
     }
 
     override fun setTitle(title: String) {
@@ -298,9 +306,10 @@ class JvView : LinearLayout, JvContract.View, TextureView.SurfaceTextureListener
         showTopAdjustUi("亮度：$light%")
     }
 
-    override fun setVolumeUi(volumePercent: Int) {
-        img_video_volume_open?.setImageResource(R.mipmap.ic_video_volume_open)
-        showTopAdjustUi("音量：$volumePercent%")
+    override fun setVolumeUi(volumePercent: Double) {
+        Log.d("jv", "volumePercent:${volumePercent}")
+        tv_icon_volume_open?.text = resources.getString(R.string.icon_audio_open)
+        showTopAdjustUi(String.format("音量：%.1f%%", volumePercent))
     }
 
     override fun seekingVideo(videoTime: String, position: Long, isSlide: Boolean) {
@@ -404,22 +413,29 @@ class JvView : LinearLayout, JvContract.View, TextureView.SurfaceTextureListener
         ly_video_slide?.visibility = GONE
     }
 
-    override fun showBattery(battery: Double) {
-        tv_battery_info?.text = String.format("电量：%.1f%%", battery)
+    override fun showBattery(battery: Double, isCharge: Boolean) {
+        Log.d("jv", "battery:${battery}, isCharge:${isCharge}")
+        when{
+            battery>90.0 -> tv_battery_info?.text = resources.getString(if(isCharge) R.string.icon_battery_recharge_full else R.string.icon_battery_full)
+            battery<90.0 && battery>75.0 -> tv_battery_info?.text = resources.getString(if(isCharge) R.string.icon_battery_recharge_three_quarters else R.string.icon_battery_recharge_three_quarters)
+            battery<75.0 && battery>50.0 -> tv_battery_info?.text = resources.getString(if(isCharge) R.string.icon_battery_recharge_half else R.string.icon_battery_half)
+            battery<50.0 && battery>25.0 -> tv_battery_info?.text = resources.getString(if(isCharge) R.string.icon_battery_recharge_one else R.string.icon_battery_one)
+            battery<25.0 -> tv_battery_info?.text = resources.getString(if(isCharge) R.string.icon_battery_recharge_empty else R.string.icon_battery_empty)
+        }
     }
 
     override fun entryFullMode() {
         Log.d("jv", "entryFullMode")
-        img_screen_change?.setImageResource(R.mipmap.ic_video_shrink)
+        tv_icon_screen_change?.text = resources.getString(R.string.icon_normal_screen)
         //显示返回键
-        imb_video_back?.visibility = VISIBLE
+        tv_icon_back?.visibility = VISIBLE
     }
 
     override fun exitMode() {
         Log.d("jv", "exitMode")
-        img_screen_change?.setImageResource(R.mipmap.ic_video_arrawsalt)
+        tv_icon_screen_change?.text = resources.getString(R.string.icon_full_screen)
         //隐藏返回键
-        imb_video_back?.visibility = GONE
+        tv_icon_back?.visibility = GONE
     }
 
     override fun hideController() {
@@ -445,7 +461,7 @@ class JvView : LinearLayout, JvContract.View, TextureView.SurfaceTextureListener
     }
 
     override fun onSurfaceTextureUpdated(surface: SurfaceTexture?) {
-//        Log.d(JVideoCommon.TAG, "onSurfaceTextureUpdated")
+
     }
 
     override fun onSurfaceTextureDestroyed(surface: SurfaceTexture?): Boolean {

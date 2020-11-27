@@ -17,12 +17,10 @@ class BatteryReceiver: BroadcastReceiver() {
             val level = intent.getIntExtra("level", 0)
             val scale = intent.getIntExtra("scale", 100)
             val battery = level * 100.0 / scale
-            mOnBatteryChangeListener?.backBattery(battery)
+
             val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
-            mOnBatteryChangeListener?.isChargeBattery(
-                status == BatteryManager.BATTERY_STATUS_CHARGING ||
-                        status == BatteryManager.BATTERY_STATUS_FULL
-            )
+            mOnBatteryChangeListener?.backBattery(battery, status == BatteryManager.BATTERY_STATUS_CHARGING ||
+                    status == BatteryManager.BATTERY_STATUS_FULL)
         }
     }
 
@@ -35,15 +33,10 @@ class BatteryReceiver: BroadcastReceiver() {
      */
     interface OnBatteryChangeListener {
         /**
-         * 返回的电量
+         * 返回的电量、充电状态
          * @param battery 电量信息
-         */
-        fun backBattery(battery: Double)
-
-        /**
-         * 返回充电状态
          * @param isCharge 是否充电
          */
-        fun isChargeBattery(isCharge: Boolean)
+        fun backBattery(battery: Double, isCharge: Boolean)
     }
 }

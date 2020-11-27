@@ -40,6 +40,7 @@ class JvController(
             }
 
             override fun onPrepared() {
+
             }
 
             override fun onReset() {
@@ -51,7 +52,7 @@ class JvController(
             }
 
             override fun onStartPlay() {
-
+                mCallBack.startPlay()
             }
 
             override fun onReStart() {
@@ -63,7 +64,7 @@ class JvController(
             }
 
             override fun onPausePlay() {
-
+                mCallBack.pausePlay()
             }
 
             override fun onCompleted() {
@@ -177,6 +178,11 @@ class JvController(
          * 全部播放完成
          */
         fun endPlay()
+
+        /**
+         * 播放暂停
+         */
+        fun pausePlay()
 
         /**
          * 播放下一个

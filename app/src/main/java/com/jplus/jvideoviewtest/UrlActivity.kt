@@ -1,6 +1,7 @@
 package com.jplus.jvideoviewtest
 
 import android.content.Intent
+import android.graphics.Typeface
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -27,6 +28,8 @@ class UrlActivity : AppCompatActivity() {
                 true
             }
         }
+        tv_test.typeface = Typeface.createFromAsset(assets, "iconfont.ttf");
+        tv_test.text = resources.getString(R.string.normal_screen)
 //        tp_play.setOnClickListener {
 //            mIsPause = if(mIsPause){
 //                tp_play.pause()
