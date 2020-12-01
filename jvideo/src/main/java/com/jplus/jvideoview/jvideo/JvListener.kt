@@ -31,6 +31,10 @@ interface JvListener {
      */
     fun onReStart()
     /**
+     * 播放下一个
+     */
+    fun onNextPlay()
+    /**
      * 播放中
      */
     fun onPlaying()

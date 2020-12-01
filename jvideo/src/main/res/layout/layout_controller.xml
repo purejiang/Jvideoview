@@ -5,9 +5,10 @@
                 android:layout_height="match_parent">
 
     <include layout="@layout/layout_control_slide"
-             android:layout_width="match_parent"
-             android:layout_height="wrap_content"
+            android:layout_width="@dimen/video_top_slide_width"
+            android:layout_height="wrap_content"
              android:layout_marginTop="@dimen/view_slide_margin_top"
+            android:layout_centerHorizontal="true"
              android:visibility="gone"/>
 
 

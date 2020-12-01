@@ -146,7 +146,7 @@ class JvPresenter(
         Log.d(JvCommon.TAG, "orientation:" + mActivity.requestedOrientation)
         BatteryManger.bindAutoBattery(mActivity, object :BatteryReceiver.OnBatteryChangeListener{
             override fun backBattery(battery: Double, isCharge: Boolean) {
-                mView.showBattery(battery, isCharge)
+                mView.showBatteryInfo(battery, isCharge)
             }
         })
     }
@@ -450,6 +450,10 @@ class JvPresenter(
         }
     }
 
+    override fun nextPlay() {
+        mJvListener?.onNextPlay()
+    }
+
     //暂停播放
     override fun pausePlay() {
         mJvListener?.onPausePlay()
@@ -500,7 +504,7 @@ class JvPresenter(
     override fun reStartPlay() {
         mJvListener?.onReStart()
 
-        mView.closeCenterHintView()
+        mView.closeMessagePrompt()
         resetPlay()
         mVideo?.let {
             startVideo(it)
@@ -729,7 +733,7 @@ class JvPresenter(
             val distX = e2.x - e1.x
             //竖直滑动的距离
             val distY = e2.y - e1.y
-            Log.d("jv", "e1.x:${e1.x},e1.y:${e1.y},  e2.x:${e2.x}, e2.y:${e2.y}")
+            Log.d(JvCommon.TAG, "e1.x:${e1.x},e1.y:${e1.y},  e2.x:${e2.x}, e2.y:${e2.y}")
             //从手指落下时判断滑动时改变的模式
             when (mAdjustWay) {
                 PlayAdjust.ADJUST_VOLUME -> {
@@ -871,19 +875,17 @@ class JvPresenter(
     private fun setVolume(startVolume: Int, distance: Float) {
 
         var volume =
-            startVolume + floor(
+            startVolume +
                 dt2progress(
                     distance,
                     getVolume(true).toLong(),
                     (mView as LinearLayout).height,
-                    0.5
+                    1.0
                 )
-            )
         when {
             volume <= 0.0 -> volume = 0.0
             volume >= getVolume(true)*1.0 -> volume = getVolume(true)*1.0
         }
-        Log.d(JvCommon.TAG, "max:${getVolume(true)},volume:$volume")
         mAudioManager?.setStreamVolume(AudioManager.STREAM_MUSIC, volume.toInt(), 0)
         mVolume = volume.toInt()
         mView.setVolumeUi(volume * 100.0 / getVolume(true))
@@ -1141,9 +1143,8 @@ class JvPresenter(
     }
 
     override fun setMessagePromptInCenter(message: String, isShowReset: Boolean) {
-        mView.closeCenterPlayView()
         closeAllLoading()
-        mView.showCenterHintView()
+        mView.closeCenterPlayView()
         mView.showMessagePrompt(message, isShowReset)
     }
 

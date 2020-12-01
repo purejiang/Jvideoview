@@ -43,14 +43,6 @@ interface JvContract {
          */
         fun closeCenterPlayView()
         /**
-         * 显示中间提示信息view
-         */
-        fun showCenterHintView()
-        /**
-         * 关闭中间提示信息view
-         */
-        fun closeCenterHintView()
-        /**
          * 播放准备就绪
          * @param videoTime 播放时间
          * @param start 可选任意位置，默认为初始位置 初始进度
@@ -58,7 +50,7 @@ interface JvContract {
          */
         fun preparedVideo(videoTime:String, start:Int, max:Int)
         /**
-         * 播放器reset
+         * 播放器各个View reset
          */
         fun reset()
         /**
@@ -115,6 +107,10 @@ interface JvContract {
          */
         fun showMessagePrompt(message:String, isShow: Boolean)
         /**
+         * 关闭提示消息
+         */
+        fun closeMessagePrompt()
+        /**
          * 调节亮度
          * @param light 亮度
          */
@@ -153,7 +149,7 @@ interface JvContract {
          * @param battery 电池电量
          * @param isCharge 是否充电
          */
-        fun showBattery(battery:Double, isCharge: Boolean)
+        fun showBatteryInfo(battery:Double, isCharge: Boolean)
 
         fun setPresenter(t: Presenter)
     }
@@ -208,6 +204,10 @@ interface JvContract {
          * @param position 可选任意位置，默认为初始位置
          */
         fun startPlay(position: Long = 0)
+        /**
+         * 手动播放下一X
+         */
+        fun nextPlay()
         /**
          * 暂停播放
          */

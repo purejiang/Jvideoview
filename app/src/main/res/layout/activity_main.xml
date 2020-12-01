@@ -26,9 +26,9 @@
                         android:id="@+id/jv_video_play"
                         android:layout_width="match_parent"
                         android:layout_height="300dp"
-                        app:num_progress_mode="both_sides"
-                        app:progress_drawer="@drawable/video_seek_bar"
-                        app:lines_drawer="@drawable/video_seek_bar"
+                        app:num_progress_mode="right_sides"
+
+
                        />
             </LinearLayout>
 

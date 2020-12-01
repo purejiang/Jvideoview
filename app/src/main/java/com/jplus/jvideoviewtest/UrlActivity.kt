@@ -50,7 +50,7 @@ class UrlActivity : AppCompatActivity() {
         val view = LayoutInflater.from(this).inflate(R.layout.view_url_dialog, null, false)
         val edt = view?.findViewById<EditText>(R.id.edt_url)
         edt?.setText(
-            "https://bili.let-1977cdn.com/20190902/MJZBTF8k/index.m3u8"
+            "https://bili.let-1977cdn.com/20190902/MJZBTF8k/index.m3u8\nhttps://media.w3.org/2010/05/sintel/trailer.mp4\nhttp://www.w3school.com.cn/example/html5/mov_bbb.mp4"
         )
 
         AlertDialog.Builder(this)
@@ -80,7 +80,7 @@ class UrlActivity : AppCompatActivity() {
 //        val rootView = (this.findViewById(android.R.id.content) as ViewGroup).getChildAt(0)
 //        val width = ly_url_test.width
 //        val height = ly_url_test.height
-//        Log.d("jv", "rootView:${rootView},height$height")
+//        Log.d(JvCommon.TAG, "rootView:${rootView},height$height")
 //
 //        val animator = ValueAnimator.ofInt(500, 530, 500)
 //        animator.duration = 2000

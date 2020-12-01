@@ -59,6 +59,10 @@ class JvController(
 
             }
 
+            override fun onNextPlay() {
+                toNextPlay()
+            }
+
             override fun onPlaying() {
 
             }
@@ -68,13 +72,7 @@ class JvController(
             }
 
             override fun onCompleted() {
-                mPosition += 1
-                if (mPosition >= mVideos.size) {
-                    mCallBack.endPlay()
-                    return
-                }
-                mCallBack.toNext()
-                play(mVideos[mPosition])
+                toNextPlay()
             }
 
             override fun onError() {
@@ -90,6 +88,17 @@ class JvController(
             }
         })
     }
+
+    private fun toNextPlay(){
+        mPosition += 1
+        if (mPosition >= mVideos.size) {
+            mCallBack.endPlay()
+            return
+        }
+        mCallBack.autoToNext()
+        play(mVideos[mPosition])
+    }
+
 
     private fun getPlayEngine(playEngine: Int): IMediaPlayer {
         return when (playEngine) {
@@ -185,9 +194,13 @@ class JvController(
         fun pausePlay()
 
         /**
-         * 播放下一个
+         * 自动播放下一个
          */
-        fun toNext()
+        fun autoToNext()
+        /**
+         * 手动播放下一个
+         */
+        fun manualToNext()
         /**
          * 横竖屏切换
          * @param isFullScreen 是否全屏

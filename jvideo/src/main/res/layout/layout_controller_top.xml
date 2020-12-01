@@ -12,7 +12,7 @@
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:text="@string/icon_back"
-            android:layout_marginStart="@dimen/view_margin_big"
+            android:layout_marginStart="@dimen/view_margin_normal"
             android:textColor="@color/video_text_color"
             android:textSize="@dimen/text_icon_normal"
             android:visibility="gone"

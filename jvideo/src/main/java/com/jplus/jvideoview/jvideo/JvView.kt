@@ -133,14 +133,10 @@ class JvView : LinearLayout, JvContract.View, TextureView.SurfaceTextureListener
         initListener(context)
     }
 
-    private fun isBanTouch(isBan:Boolean){
+    private fun isBanTouch(isBan: Boolean) {
         //第一次预加载完成前禁止点击
-        ly_video_slide?.setOnTouchListener { _, _ -> isBan }
-        ly_video_center?.setOnTouchListener { _, _ -> isBan }
-        ly_video_title?.setOnTouchListener { _, _ -> isBan }
-        ly_video_line?.setOnTouchListener { _, _ -> isBan }
-        ly_video_bottom_controller?.setOnTouchListener { _, _ -> isBan }
-        if(!isBan) {
+        this?.setOnTouchListener { _, _ -> isBan }
+        if (!isBan) {
             ly_video_center?.setOnTouchListener { v, event ->
                 //屏幕滑动设置播放参数
                 mPresenter?.slideJudge(v, event)
@@ -149,7 +145,7 @@ class JvView : LinearLayout, JvContract.View, TextureView.SurfaceTextureListener
         }
     }
 
-    private fun initListener(context:Context) {
+    private fun initListener(context: Context) {
         val typeFace = Typeface.createFromAsset(context.assets, "iconfont.ttf");
         isBanTouch(true)
         mPresenter?.setPlayForm(PlayForm.PLAY_FORM_TURN)
@@ -184,6 +180,8 @@ class JvView : LinearLayout, JvContract.View, TextureView.SurfaceTextureListener
         tv_icon_screen_change.typeface = typeFace
         tv_icon_back.typeface = typeFace
         tv_battery_info.typeface = typeFace
+        tv_battery_info.typeface = typeFace
+        tv_next_video.typeface = typeFace
 
         tv_icon_screen_change?.setOnClickListener {
             mPresenter?.switchSpecialMode(SwitchMode.SWITCH_TO_FULL, false)
@@ -198,10 +196,19 @@ class JvView : LinearLayout, JvContract.View, TextureView.SurfaceTextureListener
         tv_icon_back?.setOnClickListener {
             mPresenter?.exitMode(isBackNormal = true, isRotateScreen = false)
         }
+        tv_next_video?.setOnClickListener {
+            mPresenter?.nextPlay()
+        }
     }
 
     override fun reset() {
+        seek_video_progress?.max = 0
+        seek_video_progress?.progress = 0
+        seek_video_progress?.secondaryProgress = 0
 
+        pgb_video_line_progress?.max = 0
+        pgb_video_line_progress?.progress = 0
+        pgb_video_line_progress?.secondaryProgress = 0
     }
 
     override fun showSwitchEngine(isSupport: Boolean) {
@@ -235,9 +242,14 @@ class JvView : LinearLayout, JvContract.View, TextureView.SurfaceTextureListener
     }
 
     override fun showMessagePrompt(message: String, isShow: Boolean) {
+        ly_video_hint?.visibility = View.VISIBLE
         tv_video_refresh?.text = "重新播放"
-        tv_video_refresh?.visibility = if(isShow) VISIBLE else GONE
+        tv_video_refresh?.visibility = if (isShow) View.VISIBLE else View.GONE
         tv_video_hint?.text = message
+    }
+
+    override fun closeMessagePrompt() {
+        ly_video_hint?.visibility = View.GONE
     }
 
     override fun preparedVideo(videoTime: String, start: Int, max: Int) {
@@ -303,19 +315,23 @@ class JvView : LinearLayout, JvContract.View, TextureView.SurfaceTextureListener
     }
 
     override fun setLightUi(light: Int) {
-        showTopAdjustUi("亮度：$light%")
+        showTopAdjustUi("亮度", light, 100)
     }
 
     override fun setVolumeUi(volumePercent: Double) {
-        Log.d("jv", "volumePercent:${volumePercent}")
+        Log.d(JvCommon.TAG, "volumePercent:${volumePercent}")
         tv_icon_volume_open?.text = resources.getString(R.string.icon_audio_open)
-        showTopAdjustUi(String.format("音量：%.1f%%", volumePercent))
+        showTopAdjustUi("音量", volumePercent.toInt(), 100)
     }
 
     override fun seekingVideo(videoTime: String, position: Long, isSlide: Boolean) {
         setNumProgress(videoTime)
         if (isSlide) {
-            showTopAdjustUi("进度：${videoTime.split("&")[0]}/${videoTime.split("&")[1]}")
+            showTopAdjustUi(
+                "进度：${videoTime.split("&")[0]}/${videoTime.split("&")[1]}",
+                position.toInt(),
+                seek_video_progress?.max ?: 0
+            )
             seek_video_progress?.progress = position.toInt()
             if (ly_video_line?.visibility == VISIBLE) {
                 pgb_video_line_progress?.progress = position.toInt()
@@ -324,7 +340,7 @@ class JvView : LinearLayout, JvContract.View, TextureView.SurfaceTextureListener
     }
 
     override fun showLoading(text: String) {
-        Log.d("jv", "showLoading")
+        Log.d(JvCommon.TAG, "showLoading")
         tv_video_loading?.text = text
         ly_video_loading?.visibility = VISIBLE
         //中间播放按钮的ui是否显示
@@ -337,102 +353,99 @@ class JvView : LinearLayout, JvContract.View, TextureView.SurfaceTextureListener
     }
 
     override fun showSysInfo(isShow: Boolean) {
-        tc_video_sys_time?.visibility =  if (isShow) VISIBLE else GONE
-        tv_battery_info?.visibility =  if (isShow) VISIBLE else GONE
+        tc_video_sys_time?.visibility = if (isShow) VISIBLE else GONE
+        tv_battery_info?.visibility = if (isShow) VISIBLE else GONE
     }
 
     override fun closeLoading(text: String) {
-        Log.d("jv", "closeLoading")
+        Log.d(JvCommon.TAG, "closeLoading")
         ly_video_loading?.visibility = GONE
-            if (!mCenterIsShow&&ly_video_play.visibility == GONE) {
-                showCenterPlayView()
-            }
+        if (!mCenterIsShow && ly_video_play.visibility == GONE) {
+            showCenterPlayView()
+        }
     }
 
     private fun showBottomLineUi() {
-        Log.d("jv", "showBottomLineUi")
+        Log.d(JvCommon.TAG, "showBottomLineUi")
         ly_video_line?.visibility = VISIBLE
     }
 
     private fun hideBottomLineUi() {
-        Log.d("jv", "hideBottomLineUi")
+        Log.d(JvCommon.TAG, "hideBottomLineUi")
         ly_video_line?.visibility = GONE
     }
 
     private fun closeBottomControlUi() {
-        Log.d("jv", "closeBottomControlUi")
+        Log.d(JvCommon.TAG, "closeBottomControlUi")
         ly_video_bottom_controller?.visibility = GONE
     }
 
     private fun showBottomControlUi() {
-        Log.d("jv", "showBottomControlUi")
+        Log.d(JvCommon.TAG, "showBottomControlUi")
         ly_video_bottom_controller?.visibility = VISIBLE
     }
 
     private fun closeTopBarUi() {
-        Log.d("jv", "closeTopControlUi")
+        Log.d(JvCommon.TAG, "closeTopControlUi")
         ly_video_title?.visibility = GONE
     }
 
     private fun showTopBarUi() {
-        Log.d("jv", "showTopControlUi")
+        Log.d(JvCommon.TAG, "showTopControlUi")
         ly_video_title?.visibility = VISIBLE
     }
 
     override fun closeCenterPlayView() {
-        mCenterIsShow =false
-        Log.d("jv", "closeCenterControlView")
+        mCenterIsShow = false
+        Log.d(JvCommon.TAG, "closeCenterControlView")
         ly_video_play?.visibility = GONE
     }
 
     override fun showCenterPlayView() {
-        mCenterIsShow =true
-        Log.d("jv", "showCenterControlView")
+        mCenterIsShow = true
+        Log.d(JvCommon.TAG, "showCenterControlView")
         ly_video_play?.visibility = VISIBLE
 
     }
 
-    private fun showTopAdjustUi(text: String) {
-        Log.d("jv", "showTopAdjustUi")
+    private fun showTopAdjustUi(title: String, progress: Int, max: Int) {
+        Log.d(JvCommon.TAG, "showTopAdjustUi")
         ly_video_slide?.visibility = VISIBLE
-        tv_slide_top?.text = text
-    }
-
-    override fun showCenterHintView() {
-        Log.d("jv", "showCenterHintView")
-        ly_video_hint?.visibility = VISIBLE
-    }
-
-    override fun closeCenterHintView() {
-        Log.d("jv", "closeCenterHintView")
-        ly_video_hint?.visibility = GONE
+        tv_slide_top?.text = title
+        pgb_slide_top?.max = max
+        pgb_slide_top?.progress = progress
     }
 
     override fun hideTopAdjustUi() {
-        Log.d("jv", "hideAdjustUi")
+        Log.d(JvCommon.TAG, "hideAdjustUi")
         ly_video_slide?.visibility = GONE
     }
 
-    override fun showBattery(battery: Double, isCharge: Boolean) {
-        Log.d("jv", "battery:${battery}, isCharge:${isCharge}")
-        when{
-            battery>90.0 -> tv_battery_info?.text = resources.getString(if(isCharge) R.string.icon_battery_recharge_full else R.string.icon_battery_full)
-            battery<90.0 && battery>75.0 -> tv_battery_info?.text = resources.getString(if(isCharge) R.string.icon_battery_recharge_three_quarters else R.string.icon_battery_recharge_three_quarters)
-            battery<75.0 && battery>50.0 -> tv_battery_info?.text = resources.getString(if(isCharge) R.string.icon_battery_recharge_half else R.string.icon_battery_half)
-            battery<50.0 && battery>25.0 -> tv_battery_info?.text = resources.getString(if(isCharge) R.string.icon_battery_recharge_one else R.string.icon_battery_one)
-            battery<25.0 -> tv_battery_info?.text = resources.getString(if(isCharge) R.string.icon_battery_recharge_empty else R.string.icon_battery_empty)
+    override fun showBatteryInfo(battery: Double, isCharge: Boolean) {
+        Log.d(JvCommon.TAG, "battery:${battery}, isCharge:${isCharge}")
+        when {
+            battery > 90.0 -> tv_battery_info?.text =
+                resources.getString(if (isCharge) R.string.icon_battery_recharge_full else R.string.icon_battery_full)
+            battery < 90.0 && battery > 75.0 -> tv_battery_info?.text =
+                resources.getString(if (isCharge) R.string.icon_battery_recharge_three_quarters else R.string.icon_battery_three_quarters)
+            battery < 75.0 && battery > 50.0 -> tv_battery_info?.text =
+                resources.getString(if (isCharge) R.string.icon_battery_recharge_half else R.string.icon_battery_half)
+            battery < 50.0 && battery > 25.0 -> tv_battery_info?.text =
+                resources.getString(if (isCharge) R.string.icon_battery_recharge_one else R.string.icon_battery_one)
+            battery < 25.0 -> tv_battery_info?.text =
+                resources.getString(if (isCharge) R.string.icon_battery_recharge_empty else R.string.icon_battery_empty)
         }
     }
 
     override fun entryFullMode() {
-        Log.d("jv", "entryFullMode")
+        Log.d(JvCommon.TAG, "entryFullMode")
         tv_icon_screen_change?.text = resources.getString(R.string.icon_normal_screen)
         //显示返回键
         tv_icon_back?.visibility = VISIBLE
     }
 
     override fun exitMode() {
-        Log.d("jv", "exitMode")
+        Log.d(JvCommon.TAG, "exitMode")
         tv_icon_screen_change?.text = resources.getString(R.string.icon_full_screen)
         //隐藏返回键
         tv_icon_back?.visibility = GONE

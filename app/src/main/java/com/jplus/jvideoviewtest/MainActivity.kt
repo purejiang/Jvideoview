@@ -9,6 +9,7 @@ import com.google.android.material.appbar.AppBarLayout
 import com.jplus.jvideoview.JvController
 import com.jplus.jvideoview.common.JvConstant
 import com.jplus.jvideoview.entity.Video
+import com.jplus.jvideoview.jvideo.JvCommon
 import kotlinx.android.synthetic.main.activity_main.*
 
 
@@ -23,7 +24,7 @@ class MainActivity : AppCompatActivity() {
         var id = 0
         val list = mutableListOf<Video>()
         urls.split(s1).forEach { it1 ->
-            Log.d("jv", "split:$it1")
+            Log.d(JvCommon.TAG, "split:$it1")
             list.add(Video("视频$id", it1.replace("\n| ", ""), 0, 20000L))
             id++
         }
@@ -31,14 +32,14 @@ class MainActivity : AppCompatActivity() {
 
         mController = JvController(this, jv_video_play, object : JvController.JvCallBack {
             override fun initSuccess() {
-                Log.d("jv", "initSuccess")
+                Log.d(JvCommon.TAG, "initSuccess")
 //                val mAppBarChildAt: View = abl_play_top.getChildAt(0)
 //                mAppBarParams = mAppBarChildAt.layoutParams as AppBarLayout.LayoutParams
                 mController?.playVideos(list)
             }
 
             override fun startPlay() {
-                Log.d("jv", "startPlay")
+                Log.d(JvCommon.TAG, "startPlay")
 //                val mAppBarChildAt: View = abl_play_top.getChildAt(0)
                 mAppBarParams?.let {
                     it.scrollFlags = 0
@@ -46,20 +47,15 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-            override fun toNext() {
-                Log.d("jv", "toNext")
-            }
-
             override fun switchScreen(isFullScreen: Boolean) {
 
             }
 
             override fun endPlay() {
-                Log.d("jv", "endPlay")
+                Log.d(JvCommon.TAG, "endPlay")
             }
 
             override fun pausePlay() {
-
 //                val mAppBarChildAt: View = abl_play_top.getChildAt(0)
                 mAppBarParams?.let {
                     it.scrollFlags =
@@ -67,6 +63,14 @@ class MainActivity : AppCompatActivity() {
 //                    mAppBarChildAt.layoutParams = it
                 }
 
+            }
+
+            override fun autoToNext() {
+                Log.d(JvCommon.TAG, "autoToNext")
+            }
+
+            override fun manualToNext() {
+                Log.d(JvCommon.TAG, "manualToNext")
             }
         }, JvConstant.PlayBackEngine.PLAYBACK_IJK_PLAYER)
         mController?.supportShowSysTime(true)
@@ -76,7 +80,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        Log.d("jv", "onWindowFocusChanged")
+        Log.d(JvCommon.TAG, "onWindowFocusChanged")
     }
 
     override fun onStart() {
