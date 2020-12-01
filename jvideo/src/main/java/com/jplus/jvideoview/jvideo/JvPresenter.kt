@@ -497,6 +497,7 @@ class JvPresenter(
 
         mPlayer.reset()
         mView.reset()
+        mView.closeMessagePrompt()
         mPlayState = PlayState.STATE_IDLE
         mView.setOnTouchListener { _, _ -> true }
     }
