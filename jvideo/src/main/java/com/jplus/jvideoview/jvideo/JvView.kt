@@ -130,7 +130,7 @@ class JvView : LinearLayout, JvContract.View, TextureView.SurfaceTextureListener
                 ly_tv_progress_left?.visibility = GONE
             }
         }
-        initListener(context)
+
     }
 
     private fun isBanTouch(isBan: Boolean) {
@@ -146,8 +146,8 @@ class JvView : LinearLayout, JvContract.View, TextureView.SurfaceTextureListener
     }
 
     private fun initListener(context: Context) {
-        val typeFace = Typeface.createFromAsset(context.assets, "iconfont.ttf");
         isBanTouch(true)
+        val typeFace = Typeface.createFromAsset(context.assets, "iconfont.ttf");
         mPresenter?.setPlayForm(PlayForm.PLAY_FORM_TURN)
         //设置Texture监听
         ttv_video_player?.surfaceTextureListener = this
@@ -184,7 +184,7 @@ class JvView : LinearLayout, JvContract.View, TextureView.SurfaceTextureListener
         tv_next_video.typeface = typeFace
 
         tv_icon_screen_change?.setOnClickListener {
-            mPresenter?.switchSpecialMode(SwitchMode.SWITCH_TO_FULL, false)
+            mPresenter?.switchFullOrWindowMode(SwitchMode.SWITCH_FULL_OR_NORMAL, false)
         }
         tv_video_refresh?.setOnClickListener {
             //重新播放
@@ -194,7 +194,7 @@ class JvView : LinearLayout, JvContract.View, TextureView.SurfaceTextureListener
             mPresenter?.switchVolumeMute()
         }
         tv_icon_back?.setOnClickListener {
-            mPresenter?.exitMode(isBackNormal = true, isRotateScreen = false)
+            mPresenter?.exitFullOrWindowMode(isBackNormal = true, isRotateScreen = false)
         }
         tv_next_video?.setOnClickListener {
             mPresenter?.nextPlay()
@@ -235,6 +235,7 @@ class JvView : LinearLayout, JvContract.View, TextureView.SurfaceTextureListener
 
     override fun setPresenter(t: JvContract.Presenter) {
         mPresenter = t
+        initListener(context)
     }
 
     override fun setTitle(title: String) {
@@ -328,7 +329,7 @@ class JvView : LinearLayout, JvContract.View, TextureView.SurfaceTextureListener
         setNumProgress(videoTime)
         if (isSlide) {
             showTopAdjustUi(
-                "进度：${videoTime.split("&")[0]}/${videoTime.split("&")[1]}",
+                "进度\n${videoTime.split("&")[0]}/${videoTime.split("&")[1]}",
                 position.toInt(),
                 seek_video_progress?.max ?: 0
             )
@@ -442,6 +443,8 @@ class JvView : LinearLayout, JvContract.View, TextureView.SurfaceTextureListener
         tv_icon_screen_change?.text = resources.getString(R.string.icon_normal_screen)
         //显示返回键
         tv_icon_back?.visibility = VISIBLE
+        ly_video_bottom_controller?.setPadding(resources.getDimensionPixelSize(R.dimen.view_margin_bigger), 0, resources.getDimensionPixelSize(R.dimen.view_margin_bigger), 0)
+        ly_video_title?.setPadding(resources.getDimensionPixelSize(R.dimen.view_margin_bigger), 0, resources.getDimensionPixelSize(R.dimen.view_margin_bigger), 0)
     }
 
     override fun exitMode() {
@@ -449,6 +452,8 @@ class JvView : LinearLayout, JvContract.View, TextureView.SurfaceTextureListener
         tv_icon_screen_change?.text = resources.getString(R.string.icon_full_screen)
         //隐藏返回键
         tv_icon_back?.visibility = GONE
+        ly_video_title?.setPadding(0, 0, 0, 0)
+        ly_video_bottom_controller?.setPadding(0, 0, 0, 0)
     }
 
     override fun hideController() {

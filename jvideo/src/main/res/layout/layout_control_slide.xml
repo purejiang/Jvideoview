@@ -15,6 +15,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_margin="@dimen/view_margin_small"
+            android:gravity="center_horizontal"
             android:textColor="@color/video_text_color" />
         <ProgressBar
                 android:id="@+id/pgb_slide_top"

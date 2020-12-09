@@ -259,13 +259,13 @@ interface JvContract {
          * @param switchMode 切换的模式
          * @param isRotateScreen 是否旋转屏幕
          */
-        fun switchSpecialMode(switchMode:Int, isRotateScreen:Boolean)
+        fun switchFullOrWindowMode(switchMode:Int, isRotateScreen:Boolean)
         /**
          * 退出当前模式
          * @param isBackNormal  是否恢复普通模式
          * @param isRotateScreen 是否旋转屏幕
          */
-        fun exitMode(isBackNormal:Boolean, isRotateScreen: Boolean)
+        fun exitFullOrWindowMode(isBackNormal:Boolean, isRotateScreen: Boolean)
         /**
          * 设置播放顺序
          * @param playForm

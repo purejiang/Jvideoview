@@ -5,7 +5,8 @@
         android:layout_height="@dimen/controller_height"
         android:background="@drawable/bg_bottom_controller_trans"
         android:gravity="center_vertical"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+    >
 
     <com.jplus.jvideoview.view.VideoPlayView
             android:id="@+id/vpv_video_control_play"
@@ -17,7 +18,7 @@
             android:id="@+id/tv_next_video"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/view_margin_small"
+            android:layout_margin="@dimen/view_margin_smaller"
             android:text="@string/icon_next_video"
             android:textSize="@dimen/text_icon_normal"
             android:textColor="@color/video_text_color"/>

@@ -80,13 +80,13 @@ class JvConstant {
     class SwitchMode {
         companion object {
             /**
-             * 普通->全屏模式
+             * 普通->全屏->普通模式
              */
-            const val SWITCH_TO_FULL = 50
+            const val SWITCH_FULL_OR_NORMAL = 50
             /**
              * 普通->窗口模式
              */
-            const val SWITCH_TO_WINDOW = 51
+            const val SWITCH_WINDOW_OR_NORMAL = 51
 
         }
     }

@@ -1,6 +1,5 @@
 package com.jplus.jvideoview.jvideo
 
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.pm.ActivityInfo
@@ -23,6 +22,7 @@ import com.jplus.jvideoview.other.BatteryManger
 import com.jplus.jvideoview.other.BatteryReceiver
 import com.jplus.jvideoview.utils.JvUtil
 import com.jplus.jvideoview.utils.JvUtil.dt2progress
+import com.jplus.jvideoview.utils.JvUtil.getIsOpenRotate
 import com.jplus.jvideoview.utils.NetWorkSpeedHandler
 import tv.danmaku.ijk.media.player.AndroidMediaPlayer
 import tv.danmaku.ijk.media.player.IMediaPlayer
@@ -347,7 +347,7 @@ class JvPresenter(
         //设置title
         mView.setTitle(if (video.name.isEmpty()) "未知视频" else video.name)
         mPlayer.let {
-
+            Log.d(JvCommon.TAG, "mPlayState:$mPlayState")
             //如果不是IDLE状态就改变播放器状态
             if (mPlayState != PlayState.STATE_IDLE) {
                 resetPlay()
@@ -413,7 +413,7 @@ class JvPresenter(
             mSurface = Surface(surface)
         }
         mTextureView = mTextureView ?: textureView
-        mPlayState = PlayState.STATE_PREPARING
+//        mPlayState = PlayState.STATE_PREPARING
         mJvListener?.onInitSuccess()
     }
 
@@ -493,11 +493,11 @@ class JvPresenter(
     }
 
     override fun resetPlay() {
+        Log.d(JvCommon.TAG, "resetPlay")
         mJvListener?.onReset()
-
-        mPlayer.reset()
         mView.reset()
         mView.closeMessagePrompt()
+        mPlayer.reset()
         mPlayState = PlayState.STATE_IDLE
         mView.setOnTouchListener { _, _ -> true }
     }
@@ -923,39 +923,42 @@ class JvPresenter(
 
     override fun onConfigChanged(newConfig: Configuration) {
         if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) {
-            entryPortraitScreen()
+            autoEntryPortraitScreen()
             Log.d(JvCommon.TAG, "Configuration.ORIENTATION_PORTRAIT")
         }
         if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            entryFullScreen()
+            autoEntryFullScreen()
             Log.d(JvCommon.TAG, "Configuration.ORIENTATION_LANDSCAPE")
         }
     }
 
     override fun onBackProcess(): Boolean {
         if (mPlayMode == PlayMode.MODE_FULL_SCREEN) {
-            exitMode(isBackNormal = true, isRotateScreen = true)
+            exitFullOrWindowMode(isBackNormal = true, isRotateScreen = true)
             return true
         }
         return false
     }
 
-    override fun switchSpecialMode(switchMode: Int, isRotateScreen: Boolean) {
+    override fun switchFullOrWindowMode(switchMode: Int, isRotateScreen: Boolean) {
         Log.d(JvCommon.TAG, "playMode$mPlayMode")
         when (mPlayMode) {
             PlayMode.MODE_NORMAL -> {
-                if (switchMode == SwitchMode.SWITCH_TO_FULL) {
+                if (switchMode == SwitchMode.SWITCH_FULL_OR_NORMAL) {
                     //进入全屏模式（在dialog的模式下似乎会有适配问题）
                     mPlayMode = PlayMode.MODE_FULL_SCREEN
                     mJvListener?.onFullScreen()
-                    //屏幕旋转时指定带重力感应的屏幕方向不然会转不过来...，但是没有开启旋转的情况下要强制转屏来达到全屏效果
-                    mActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-                    //屏幕方向改为未知，保证下次能够旋转屏幕
-//                    mActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                    //没有开启旋转的情况下要强制转屏来达到全屏效果
+                    mActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+
+                    if(getIsOpenRotate(mActivity)) {
+                        //开启旋转的情况下可以在转屏后恢复到默认状态， 屏幕旋转时指定默认的屏幕方向不然会转不过来...
+                        mActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                    }
                 }
             }
             PlayMode.MODE_FULL_SCREEN -> {
-                exitMode(true, isRotateScreen)
+                exitFullOrWindowMode(true, isRotateScreen)
             }
         }
     }
@@ -963,7 +966,11 @@ class JvPresenter(
     /*
     模式切换方法
      */
-    private fun entryFullScreen() {
+    /**
+     * 根据onConfigChanged自动切换横屏
+     */
+    private fun autoEntryFullScreen() {
+        //显示手机状态
         if (mIsShowSysTime) {
             mView.showSysInfo(true)
         }
@@ -978,7 +985,6 @@ class JvPresenter(
             LinearLayout.LayoutParams.MATCH_PARENT,
             LinearLayout.LayoutParams.MATCH_PARENT
         )
-//        (mActivity.findViewById<View>(android.R.id.content) as ViewGroup).addView(mView)
         mView.layoutParams = params
         mActivity.window.decorView.apply {
             //隐藏导航栏，状态栏，并且全屏， 粘性沉浸式（PS:与沉浸式的区别在于会自动收起且不改变原始布局）
@@ -990,19 +996,10 @@ class JvPresenter(
                     or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
                     // Hide the nav bar and status bar
                     or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                    or View.SYSTEM_UI_FLAG_FULLSCREEN)
-            //隐藏状态栏 SDK_INT<16
-            //    mActivity.window.setFlags(
-            //        WindowManager.LayoutParams.FLAG_FULLSCREEN,
-            //        WindowManager.LayoutParams.FLAG_FULLSCREEN
-            //    )
+                    or View.SYSTEM_UI_FLAG_FULLSCREEN
+                    )
         }
-        //========================================================
-        //===============2.使view变成全屏===============
-//        val hideFlags = View.SYSTEM_UI_FLAG_LOW_PROFILE or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or View.SYSTEM_UI_FLAG_FULLSCREEN or  View.SYSTEM_UI_FLAG_IMMERSIVE or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-//
-//        mView.systemUiVisibility = hideFlags
-        //========================================================
+
         //全屏直接使用手机大小,此时未翻转的话，高宽对调
         val phoneWidth = JvUtil.getPhoneDisplayWidth(mActivity)
         val phoneHeight = JvUtil.getPhoneDisplayHeight(mActivity)
@@ -1014,8 +1011,10 @@ class JvPresenter(
         )
         mView.entryFullMode()
     }
-
-    private fun entryPortraitScreen() {
+    /**
+     * 根据onConfigChanged自动切换竖屏
+     */
+    private fun autoEntryPortraitScreen() {
         if (mIsShowSysTime) {
             mView.showSysInfo(false)
         }
@@ -1031,18 +1030,18 @@ class JvPresenter(
             mTextureView?.layoutParams =
                 JvUtil.changeVideoSize(it.width, it.height, mPlayer.videoWidth, mPlayer.videoHeight)
         }
-        //屏幕方向改为未知，保证下次能够旋转屏幕
-//        mActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         mView.exitMode()
     }
 
-    @SuppressLint("SourceLockedOrientationActivity")
-    override fun exitMode(isBackNormal: Boolean, isRotateScreen: Boolean) {
+    override fun exitFullOrWindowMode(isBackNormal: Boolean, isRotateScreen: Boolean) {
         Log.d(JvCommon.TAG, "exitMode")
         if (getPlayMode() != PlayMode.MODE_NORMAL && isBackNormal) {
-            mActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-            //屏幕方向改为未知，保证下次能够旋转屏幕
-//            mActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            //屏幕方向改为竖屏
+            mActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            if(getIsOpenRotate(mActivity)) {
+                //开启旋转的情况下可以在转屏后恢复到默认状态，确保下次能够旋转屏幕
+                mActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            }
             mJvListener?.onNormalScreen()
         }
     }
@@ -1086,11 +1085,11 @@ class JvPresenter(
         }
     }
 
-    private fun runHideControlUi(time: Long) {
+    private fun runHideControlUi(delayMillis: Long) {
         Log.d(JvCommon.TAG, "runHideControlUi")
         if (mPlayState == PlayState.STATE_PLAYING || mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
             stopHideControlUi()
-            mHandler.postDelayed(mHideRunnable, time)
+            mHandler.postDelayed(mHideRunnable, delayMillis)
         }
     }
 

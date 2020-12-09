@@ -4,7 +4,7 @@
     <string name="default_video_progress_time">00:00</string>
     <string name="default_video_time_split">/</string>
     <string name="icon_full_screen">&#xe614;</string>
-    <string name="icon_next_video">&#xe618;</string>
+    <string name="icon_next_video">&#xe66a;</string>
     <string name="icon_normal_screen">&#xe617;</string>
     <string name="icon_audio_open">&#xe76e;</string>
     <string name="icon_audio_close">&#xea50;</string>

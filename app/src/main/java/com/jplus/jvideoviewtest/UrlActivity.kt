@@ -2,9 +2,11 @@ package com.jplus.jvideoviewtest
 
 import android.content.Intent
 import android.graphics.Typeface
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
+import android.view.WindowManager
 import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -18,6 +20,14 @@ class UrlActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_url)
+        val windowManager: WindowManager.LayoutParams = window.attributes
+        //异形屏适配，横屏时显示刘海区域
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            windowManager.layoutInDisplayCutoutMode =
+                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            window.attributes = windowManager
+        }
+
         showDialog()
         lv_loading.setOnClickListener {
             mIsPause = if(mIsPause){

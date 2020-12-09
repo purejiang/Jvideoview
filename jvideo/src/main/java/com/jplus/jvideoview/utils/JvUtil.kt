@@ -105,6 +105,7 @@ object JvUtil {
     /**
      * 获取手机是否开启自动旋转屏幕
      * @param context 上下文
+     * @return 是否已开启自动旋转屏幕功能
      */
     fun getIsOpenRotate(context: Context): Boolean {
         return Settings.System.getInt(

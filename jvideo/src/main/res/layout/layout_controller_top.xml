@@ -4,7 +4,8 @@
         android:layout_width="match_parent"
         android:layout_height="@dimen/video_top_slide_height"
         android:background="@drawable/bg_top_controller_trans"
-        android:gravity="center_vertical">
+        android:gravity="center_vertical"
+        >
 
     <TextView
             android:id="@+id/tv_icon_back"
