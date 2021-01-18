@@ -37,7 +37,7 @@ class VideoPlayView(context: Context, attrs: AttributeSet) : View(context, attrs
     private val mSweepAngle by lazy {
         300f
     }
-    private var mStrokeWidth = 0f
+    private var mStrokeWidth = 0
 
     init {
         initPlayView(context, attrs)
@@ -45,7 +45,7 @@ class VideoPlayView(context: Context, attrs: AttributeSet) : View(context, attrs
 
     private fun initPlayView(context: Context, attrs: AttributeSet) {
         val typeArray = context.obtainStyledAttributes(attrs, R.styleable.VideoPlayView)
-        mStrokeWidth = typeArray.getFloat(R.styleable.VideoPlayView_stroke_width, 0f)
+        mStrokeWidth = typeArray.getDimensionPixelSize(R.styleable.VideoPlayView_stroke_width, 0)
         initPaint(context, typeArray)
         //释放资源
         typeArray.recycle()
@@ -89,8 +89,8 @@ class VideoPlayView(context: Context, attrs: AttributeSet) : View(context, attrs
     }
 
     private fun initDrawView(max: Float) {
-        if (mStrokeWidth == 0f) {
-            mStrokeWidth = max / 12
+        if (mStrokeWidth == 0) {
+            mStrokeWidth = (max / 12).toInt()
             mCirclePaint?.strokeWidth = max / 10f
             mPlayPaint?.strokeWidth = max / 10f
         }

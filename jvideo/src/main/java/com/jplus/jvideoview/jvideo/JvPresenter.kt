@@ -44,6 +44,20 @@ class JvPresenter(
     private var mPlayer: IMediaPlayer
 ) :
     JvContract.Presenter {
+
+    companion object {
+        //实时网速获取，间隔时间
+        private const val  SPEED_DELAY = 2000L
+        //进度控制区域
+        private const val START_PERCENT_X = 0.25
+        private const val END_PERCENT_X= 0.75
+        //横向和纵向滑动不做处理的区域
+        private const val BAN_START_PERCENT_Y = 0.05
+        private const val BAN_END_PERCENT_Y= 0.95
+        private const val BAN_START_PERCENT_X = 0.05
+        private const val BAN_END_PERCENT_X= 0.95
+    }
+
     //播放界面，相当于一块幕布
     private var mSurface: Surface? = null
 
@@ -83,6 +97,7 @@ class JvPresenter(
 
     //缓存进度
     private var mBufferPercent = 0
+
 
     //loadingID
     private var mLoadingNums = mutableSetOf<Int>()
@@ -141,10 +156,10 @@ class JvPresenter(
         mView.setPresenter(this)
         mView.setOnTouchListener { _, _ -> true }
         //默认显示网速
-        setIsSupShowSpeed(false, 2000L)
+        setIsSupShowSpeed(false, SPEED_DELAY)
         //保存普通状态下的布局参数
         Log.d(JvCommon.TAG, "orientation:" + mActivity.requestedOrientation)
-        BatteryManger.bindAutoBattery(mActivity, object :BatteryReceiver.OnBatteryChangeListener{
+        BatteryManger.bindAutoBattery(mActivity, object : BatteryReceiver.OnBatteryChangeListener {
             override fun backBattery(battery: Double, isCharge: Boolean) {
                 mView.showBatteryInfo(battery, isCharge)
             }
@@ -204,7 +219,7 @@ class JvPresenter(
     }
 
     //初始化播放器监听
-     override fun initPlayerListener() {
+    override fun initPlayerListener() {
         mPlayer.let { player ->
             //设置是否循环播放，默认可不写
             player.isLooping = false
@@ -427,7 +442,11 @@ class JvPresenter(
         mView.setOnTouchListener { _, _ -> false }
 
         //预加载后先播放再暂停，1：防止播放错误-38(未开始就停止) 2：可以显示第一帧画面
-        mView.preparedVideo(getVideoTimeStr(mVideo?.progress), mVideo?.progress?.toInt() ?: 0, mPlayer.duration.toInt())
+        mView.preparedVideo(
+            getVideoTimeStr(mVideo?.progress),
+            mVideo?.progress?.toInt() ?: 0,
+            mPlayer.duration.toInt()
+        )
 
         //如果开启自动播放的话就直接播放,否则直接滑动到初始位置
         if (mIsAutoPlay) startPlay(mVideo?.progress ?: 0)
@@ -527,7 +546,7 @@ class JvPresenter(
     private fun seekCompleted() {
         Log.d(JvCommon.TAG, "seekCompleted")
         closeLoading("seek完成", 5)
-        if(mPlayState==PlayState.STATE_BUFFERING_PAUSED||mPlayState==PlayState.STATE_BUFFERING_PLAYING){
+        if (mPlayState == PlayState.STATE_BUFFERING_PAUSED || mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
             closeLoading("缓冲UI停止", 3)
             showLoading("缓冲中....", 3)
             //缓冲开始时绑定实时网速获取器
@@ -701,15 +720,7 @@ class JvPresenter(
 
         override fun onDoubleTap(e: MotionEvent): Boolean {
             Log.d(JvCommon.TAG, "onDoubleTap")
-            mPlayer.let {
-                if (mPlayState == PlayState.STATE_PLAYING || mPlayState == PlayState.STATE_BUFFERING_PLAYING) {
-                    pausePlay()
-                } else if (mPlayState == PlayState.STATE_BUFFERING_PAUSED || mPlayState == PlayState.STATE_PAUSED) {
-                    continuePlay()
-                } else if (mPlayState == PlayState.STATE_PREPARED) {
-                    startPlay()
-                }
-            }
+            controlPlay()
             return super.onDoubleTap(e)
         }
 
@@ -774,18 +785,21 @@ class JvPresenter(
         //调整前获取调整的模式
         Log.d(JvCommon.TAG, "getAdjustMode")
         val width = mView.width
+        val height = mView.height
         return when {
             //通过起始点坐标判断滑动是 快进/后退、亮度调节、音量调节
-            event.x >= 0.8 * width -> {
+            event.x >= END_PERCENT_X * width && event.x <= BAN_END_PERCENT_X * width && event.y >= BAN_START_PERCENT_Y * height && event.y <= BAN_END_PERCENT_Y * height -> {
                 PlayAdjust.ADJUST_VOLUME
             }
-            event.x <= 0.2 * width -> {
+            event.x <= START_PERCENT_X * width && event.x >= BAN_START_PERCENT_X * width && event.y >= BAN_START_PERCENT_Y * height && event.y <= BAN_END_PERCENT_Y * height -> {
                 PlayAdjust.ADJUST_LIGHT
             }
-            else -> {
+            event.x >= START_PERCENT_X * width && event.x<= END_PERCENT_X * width && event.y >= BAN_START_PERCENT_Y * height && event.y <= BAN_END_PERCENT_Y * height -> {
                 mStartPosition = getPosition()
                 stopVideoTime()
                 PlayAdjust.ADJUST_VIDEO
+            }else -> {
+                PlayAdjust.ADJUST_UNKNOWN
             }
         }
     }
@@ -877,15 +891,15 @@ class JvPresenter(
 
         var volume =
             startVolume +
-                dt2progress(
-                    distance,
-                    getVolume(true).toLong(),
-                    (mView as LinearLayout).height,
-                    1.0
-                )
+                    dt2progress(
+                        distance,
+                        getVolume(true).toLong(),
+                        (mView as LinearLayout).height,
+                        1.0
+                    )
         when {
             volume <= 0.0 -> volume = 0.0
-            volume >= getVolume(true)*1.0 -> volume = getVolume(true)*1.0
+            volume >= getVolume(true) * 1.0 -> volume = getVolume(true) * 1.0
         }
         mAudioManager?.setStreamVolume(AudioManager.STREAM_MUSIC, volume.toInt(), 0)
         mVolume = volume.toInt()
@@ -951,7 +965,7 @@ class JvPresenter(
                     //没有开启旋转的情况下要强制转屏来达到全屏效果
                     mActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
 
-                    if(getIsOpenRotate(mActivity)) {
+                    if (getIsOpenRotate(mActivity)) {
                         //开启旋转的情况下可以在转屏后恢复到默认状态， 屏幕旋转时指定默认的屏幕方向不然会转不过来...
                         mActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
                     }
@@ -1011,6 +1025,7 @@ class JvPresenter(
         )
         mView.entryFullMode()
     }
+
     /**
      * 根据onConfigChanged自动切换竖屏
      */
@@ -1038,7 +1053,7 @@ class JvPresenter(
         if (getPlayMode() != PlayMode.MODE_NORMAL && isBackNormal) {
             //屏幕方向改为竖屏
             mActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-            if(getIsOpenRotate(mActivity)) {
+            if (getIsOpenRotate(mActivity)) {
                 //开启旋转的情况下可以在转屏后恢复到默认状态，确保下次能够旋转屏幕
                 mActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
             }

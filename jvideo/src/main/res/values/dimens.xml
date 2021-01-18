@@ -22,4 +22,9 @@
     <dimen name="text_icon_small">12sp</dimen>
     <dimen name="text_icon_normal">24sp</dimen>
     <dimen name="text_icon_big">32sp</dimen>
+
+    <dimen name="video_play_width_height">52dp</dimen>
+
+    <dimen name="video_play_width_height_small">48dp</dimen>
+
 </resources>

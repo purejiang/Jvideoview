@@ -10,8 +10,8 @@
 
     <com.jplus.jvideoview.view.VideoLoadingView
         android:id="@+id/vlv_video_loading"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
+        android:layout_width="@dimen/video_play_width_height"
+        android:layout_height="@dimen/video_play_width_height" />
 
     <TextView
         android:id="@+id/tv_video_loading"

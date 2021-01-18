@@ -108,6 +108,10 @@ class JvConstant {
              * 快退快进
              */
             const val ADJUST_VIDEO = 22
+            /**
+             * 不调节
+             */
+            const val ADJUST_UNKNOWN = 23
         }
     }
 
